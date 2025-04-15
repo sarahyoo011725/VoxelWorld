@@ -1,1 +1,5 @@
-# VoxelGame
+I've struggled to fix Visual Studio not recognizing additional inclue and lib path directory for what I felt like a decade...
+If you have any issue of importing external heading / lib files, simply change Debug mode into 'Release' mode in the top panel.
+I don't know why Debug mode does not know my local file path tho?!?! (I have specified it in the project config).
+Fuck you all assholes...
+Now I can code a Minecraft clone!!!!
