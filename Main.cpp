@@ -5,17 +5,25 @@
 #include "Shader.h"
 #include "VAO.h"
 #include "VBO.h"
+#include "EBO.h"
 
 using namespace std;
 
 const unsigned int width = 1200;
 const unsigned int height = 700;
 
-GLfloat vertices[] = {
+//rectangle verticies
+GLfloat vertices[] = { 
 //	x		y		z
-	-0.5f, -0.5f, 0.0f,
-	0.5f, -0.5f, 0.0f,
-	0.0f, 0.5f, 0.0f
+	-0.5f,  0.5f, 0.0f,   // top left 
+	0.5f,  0.5f, 0.0f,  // top right
+	-0.5f, -0.5f, 0.0f,  // bottom left
+	0.5f, -0.5f, 0.0f,  // bottom right
+};
+
+GLuint indices[] = {
+	0, 1, 3,
+	0, 2, 3
 };
 
 void resize_window(GLFWwindow* window, int width, int height);
@@ -49,29 +57,34 @@ int main() {
 	Shader shader("default.vert", "default.frag");
 	VAO vao;
 	VBO vbo(vertices, sizeof(vertices));
+	EBO ebo(indices, sizeof(indices));
 
 	vao.bind();
 	vao.link_VBO(vbo, 0);
+	//unbind all to prevent accidentally motifying them
 	vao.unbind();
 	vbo.unbind();
+	ebo.unbind();
 
 	while (!glfwWindowShouldClose(window)) {
 		process_input(window);
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		//draws a triangle
+		//draws a rectangle
 		shader.activate();
 		vao.bind();
-		glDrawArrays(GL_TRIANGLES, 0, sizeof(vertices));
-
+		ebo.bind();
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
 		glfwPollEvents(); //checks if any events triggered
 	}
 
-	//terminates the program, destroying all components including window and cursors.
+	//terminates the program, destroying everything including window
 	vao.destroy();
 	vbo.destroy();
+	ebo.destroy();
 	shader.destroy();
 	glfwDestroyWindow(window);
 	glfwTerminate();
