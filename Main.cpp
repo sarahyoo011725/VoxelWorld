@@ -16,7 +16,7 @@ bool wireframe = false;
 
 //rectangle verticies
 GLfloat vertices[] = { 
-//	x		y		z
+//	  x		 y		z
 	-0.5f,  0.5f, 0.0f,   // top left 
 	0.5f,  0.5f, 0.0f,  // top right
 	-0.5f, -0.5f, 0.0f,  // bottom left
@@ -80,8 +80,18 @@ int main() {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 
-		//draws a rectangle
 		shader.activate();
+
+		//changes color gradually over time
+		float dt = glfwGetTime();
+		float b = sin(dt)/2 + 0.5;
+		int vertex_color_location = glGetUniformLocation(shader.id, "test_color");
+		if (vertex_color_location < 0) {
+			cout << "unable to find the color location" << endl;
+		}
+		glUniform4f(vertex_color_location, 0.0f, 0.0f, b, 1.0f);
+		
+		//draws a rectangle
 		vao.bind();
 		ebo.bind();
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
