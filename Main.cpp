@@ -12,6 +12,8 @@ using namespace std;
 const unsigned int width = 1200;
 const unsigned int height = 700;
 
+bool wireframe = false;
+
 //rectangle verticies
 GLfloat vertices[] = { 
 //	x		y		z
@@ -71,6 +73,13 @@ int main() {
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		if (wireframe) {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		}
+		else {
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		}
+
 		//draws a rectangle
 		shader.activate();
 		vao.bind();
@@ -99,5 +108,8 @@ void resize_window(GLFWwindow* window, int width, int height) {
 void process_input(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
+	}
+	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+		wireframe = !wireframe;
 	}
 }
