@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <vector>
 #include "Shader.h"
+#include "Texture.h"
 #include "VAO.h"
 #include "VBO.h"
 #include "EBO.h"
@@ -16,11 +17,11 @@ bool wireframe = false;
 
 //rectangle verticies
 GLfloat vertices[] = { 
-//	  x		 y		z
-	-0.5f,  0.5f, 0.0f,   // top left 
-	0.5f,  0.5f, 0.0f,  // top right
-	-0.5f, -0.5f, 0.0f,  // bottom left
-	0.5f, -0.5f, 0.0f,  // bottom right
+//	  x		 y		z		  texture
+	-0.5f,  0.5f, 0.0f, 	0.0f, 1.0f,		// top left 
+	0.5f,  0.5f, 0.0f,		1.0f, 1.0f,		// top right
+	-0.5f, -0.5f, 0.0f,		0.0f, 0.0f,		// bottom left
+	0.5f, -0.5f, 0.0f,		1.0f, 0.0f,		// bottom right
 };
 
 GLuint indices[] = {
@@ -57,12 +58,15 @@ int main() {
 	}
 
 	Shader shader("default.vert", "default.frag");
+	Texture texture("dirt.jpg", 1, 1, 1);
 	VAO vao;
 	VBO vbo(vertices, sizeof(vertices));
 	EBO ebo(indices, sizeof(indices));
 
 	vao.bind();
-	vao.link_VBO(vbo, 0);
+	vao.link_attrib(vbo, 0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0); //vertex positions
+	vao.link_attrib(vbo, 1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); //texture coordinates
+	
 	//unbind all to prevent accidentally motifying them
 	vao.unbind();
 	vbo.unbind();
@@ -80,18 +84,9 @@ int main() {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 
-		shader.activate();
-
-		//changes color gradually over time
-		float dt = glfwGetTime();
-		float b = sin(dt)/2 + 0.5;
-		int vertex_color_location = glGetUniformLocation(shader.id, "test_color");
-		if (vertex_color_location < 0) {
-			cout << "unable to find the color location" << endl;
-		}
-		glUniform4f(vertex_color_location, 0.0f, 0.0f, b, 1.0f);
-		
 		//draws a rectangle
+		shader.activate();
+		texture.bind();
 		vao.bind();
 		ebo.bind();
 		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -104,6 +99,7 @@ int main() {
 	vao.destroy();
 	vbo.destroy();
 	ebo.destroy();
+	texture.destroy();
 	shader.destroy();
 	glfwDestroyWindow(window);
 	glfwTerminate();
