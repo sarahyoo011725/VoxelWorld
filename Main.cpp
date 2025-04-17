@@ -10,6 +10,7 @@
 #include "VAO.h"
 #include "VBO.h"
 #include "EBO.h"
+#include "Camera.h"
 
 using namespace std;
 
@@ -74,8 +75,8 @@ GLuint indices[] = {
 	22,23,20,
 };
 
-void resize_window(GLFWwindow* window, int width, int height);
-void process_input(GLFWwindow* window);
+void resize_window(GLFWwindow *window, int width, int height);
+void process_input(GLFWwindow *window);
 
 int main() {
 	//initializees glfw libraries
@@ -117,11 +118,15 @@ int main() {
 	vbo.unbind();
 	ebo.unbind();
 
-	GLuint trans_loc = glGetUniformLocation(shader.id, "transform");
 	glEnable(GL_DEPTH_TEST);
+
+	Camera cam(window, glm::vec3(0.0));
+	GLuint trans_loc = glGetUniformLocation(shader.id, "trans");
 
 	while (!glfwWindowShouldClose(window)) {
 		process_input(window);
+		cam.update();
+		cam.update_view(shader, "view");
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -132,18 +137,18 @@ int main() {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 
-		double dt = glfwGetTime();
+		//rotate rectangle
+		float dt = (float)glfwGetTime();
 		glm::mat4 trans(1.0f);
 		trans = glm::translate(trans, glm::vec3(0.0, 0.0, 0.0));
-		trans = glm::rotate(trans, (float)(dt * 0.5), glm::vec3(1.0f, 1.0f, 1.0f));
+		trans = glm::rotate(trans, dt, glm::vec3(1.0, 1.0, 1.0));
 		glUniformMatrix4fv(trans_loc, 1, false, glm::value_ptr(trans));
-		
+
 		//draws a rectangle
 		shader.activate();
 		texture.bind();
 		vao.bind();
 		ebo.bind();
-		//of sizeof(indices) / sizeof(GLuint)
 		glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
@@ -161,12 +166,12 @@ int main() {
 	return 0;
 }
 
-void resize_window(GLFWwindow* window, int width, int height) {
+void resize_window(GLFWwindow *window, int width, int height) {
 	//tells glad how to display data and coordinates to the window
 	glViewport(0, 0, width, height);
 }
 
-void process_input(GLFWwindow* window) {
+void process_input(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
