@@ -2,6 +2,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <vector>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include "Shader.h"
 #include "Texture.h"
 #include "VAO.h"
@@ -15,18 +18,60 @@ const unsigned int height = 700;
 
 bool wireframe = false;
 
-//rectangle verticies
+//cube verticies
 GLfloat vertices[] = { 
-//	  x		 y		z		  texture
-	-0.5f,  0.5f, 0.0f, 	0.0f, 1.0f,		// top left 
-	0.5f,  0.5f, 0.0f,		1.0f, 1.0f,		// top right
-	-0.5f, -0.5f, 0.0f,		0.0f, 0.0f,		// bottom left
-	0.5f, -0.5f, 0.0f,		1.0f, 0.0f,		// bottom right
+//    x     y      z      texture
+	//front
+	-0.5, 0.5, 0.5,		0.0, 1.0,	// Front Top Left		
+	0.5,  0.5, 0.5,		1.0, 1.0,	// Front Top Right	
+	0.5, -0.5, 0.5,		1.0, 0.0,	// Front Bottom Right	
+	-0.5,-0.5, 0.5,		0.0, 0.0,	// Front Bottom Left
+	//back
+	-0.5, 0.5,-0.5,		0.0, 1.0,	// Back Top Left
+	0.5, 0.5, -0.5,		1.0, 1.0, 	// Back Top Right
+	0.5,-0.5, -0.5,		1.0, 0.0,	// Back Bottom Right
+	-0.5,-0.5,-0.5,		0.0, 0.0,	// Back Bottom Left		
+	//left
+	-0.5, 0.5, 0.5,		0.0, 1.0,
+	-0.5,0.5, -0.5, 	1.0, 1.0,
+	-0.5,-0.5,-0.5,		1.0, 0.0,
+	-0.5, -0.5, 0.5,	0.0, 0.0,
+	//right
+	0.5, 0.5, 0.5,		0.0, 1.0,
+	0.5, 0.5, -0.5,		1.0, 1.0,
+	0.5,-0.5, -0.5,		1.0, 0.0,
+	0.5, -0.5, 0.5,		0.0, 0.0,
+	//top
+	-0.5, 0.5, -0.5,	0.0, 1.0,
+	0.5, 0.5, -0.5,		1.0, 1.0,
+	0.5, 0.5, 0.5,		1.0, 0.0,
+	-0.5, 0.5, 0.5,		0.0, 0.0,
+	//bottom
+	-0.5, -0.5, -0.5,	0.0, 1.0,
+	0.5, -0.5, -0.5,	1.0, 1.0,
+	0.5, -0.5, 0.5,		1.0, 0.0,
+	-0.5, -0.5, 0.5,	0.0, 0.0,
 };
-
+//cube indices
 GLuint indices[] = {
-	0, 1, 3,
-	0, 2, 3
+//front
+	0,1,2,  
+	2,3,0,
+//back
+	4,5,6,	
+	6,7,4,
+//left
+	8,9,10,
+	10,11,8,
+//right
+	12,13,14,
+	14,15,12,
+//top
+	16,17,18,
+	18,19,16,
+//bottom
+	20,21,22,
+	22,23,20,
 };
 
 void resize_window(GLFWwindow* window, int width, int height);
@@ -72,10 +117,13 @@ int main() {
 	vbo.unbind();
 	ebo.unbind();
 
+	GLuint trans_loc = glGetUniformLocation(shader.id, "transform");
+	glEnable(GL_DEPTH_TEST);
+
 	while (!glfwWindowShouldClose(window)) {
 		process_input(window);
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
-		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		if (wireframe) {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -84,12 +132,19 @@ int main() {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 
+		double dt = glfwGetTime();
+		glm::mat4 trans(1.0f);
+		trans = glm::translate(trans, glm::vec3(0.0, 0.0, 0.0));
+		trans = glm::rotate(trans, (float)(dt * 0.5), glm::vec3(1.0f, 1.0f, 1.0f));
+		glUniformMatrix4fv(trans_loc, 1, false, glm::value_ptr(trans));
+		
 		//draws a rectangle
 		shader.activate();
 		texture.bind();
 		vao.bind();
 		ebo.bind();
-		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+		//of sizeof(indices) / sizeof(GLuint)
+		glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
 		glfwPollEvents(); //checks if any events triggered
