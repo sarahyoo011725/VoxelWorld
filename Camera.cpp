@@ -48,11 +48,13 @@ void Camera::process_inputs() {
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
 		position -= up * speed * dt;
 	}
+
 	//TODO: check ground
 	process_mouse_inputs();
 }
 
 void Camera::update_view(Shader &shader) {
+	//TODO: add FOV and zooming
 	mat4 view = lookAt(position, position + direction, up);
 	GLuint location = glGetUniformLocation(shader.id, "view");
 	glUniformMatrix4fv(location, 1, false, value_ptr(view));

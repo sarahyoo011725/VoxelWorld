@@ -18,6 +18,7 @@ const unsigned int width = 1200;
 const unsigned int height = 700;
 
 bool wireframe = false;
+bool isWindowActive = true;
 
 //cube verticies
 GLfloat vertices[] = { 
@@ -76,7 +77,11 @@ GLuint indices[] = {
 };
 
 void resize_window(GLFWwindow *window, int width, int height);
-void process_input(GLFWwindow *window);
+void process_inputs(GLFWwindow *window);
+void focus_callback(GLFWwindow* window, int focused);
+
+void on_window_focused(GLFWwindow* window);
+void unfocus_winow(GLFWwindow* window);
 
 int main() {
 	//initializees glfw libraries
@@ -95,6 +100,8 @@ int main() {
 		return -1;
 	}
 	glfwMakeContextCurrent(window);
+	glfwFocusWindow(window);
+	glfwSetWindowFocusCallback(window, focus_callback);
 	glfwSetFramebufferSizeCallback(window, resize_window);
 	
 	gladLoadGL();
@@ -121,11 +128,11 @@ int main() {
 	glEnable(GL_DEPTH_TEST);
 
 	Camera cam(window, width, height);
-	GLuint trans_loc = glGetUniformLocation(shader.id, "trans");
-
 	while (!glfwWindowShouldClose(window)) {
-		process_input(window);
-		cam.process_inputs();
+		process_inputs(window);
+		if (isWindowActive) {
+			cam.process_inputs();
+		}
 		cam.update_view(shader);
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -136,13 +143,6 @@ int main() {
 		else {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
-
-		//rotate rectangle
-		float dt = (float)glfwGetTime();
-		glm::mat4 trans(1.0f);
-		trans = glm::translate(trans, glm::vec3(0.0, 0.0, 0.0));
-		trans = glm::rotate(trans, dt, glm::vec3(1.0, 1.0, 1.0));
-		glUniformMatrix4fv(trans_loc, 1, false, glm::value_ptr(trans));
 
 		//draws a rectangle
 		shader.activate();
@@ -171,11 +171,33 @@ void resize_window(GLFWwindow *window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 
-void process_input(GLFWwindow *window) {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-		glfwSetWindowShouldClose(window, true);
+void process_inputs(GLFWwindow *window) {
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+		unfocus_winow();
 	}
-	if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+	if (GLFW_HOVERED && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
+		glfwFocusWindow(window);
+	}
+	if (glfwGetKey(window, GLFW_KEY_1)) {
 		wireframe = !wireframe;
 	}
+}
+
+void focus_callback(GLFWwindow* window, int focused) {
+	if (focused) {
+		on_window_focused(window);
+	}
+	else {
+		unfocus_winow(window);
+	}
+}
+
+void on_window_focused(GLFWwindow* window) {
+	isWindowActive = false;
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
+void unfocus_winow(GLFWwindow* window) {
+	isWindowActive = false;
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }
