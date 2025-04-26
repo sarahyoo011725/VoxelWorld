@@ -24,14 +24,15 @@ private:
 	float far_plane = 100.0f;
 	const float mouse_sensitivity = 0.1f;
 	float speed = 5.0f;
+
+	void process_mouse_inputs();
 public:
 	vec3 position = vec3(0.0); //local camera position
 	vec3 direction = vec3(0.0);
 	vec3 up = vec3(0.0, 1.0, 0.0);
 	//bool window_refocused = false; //TODO: prevent cam view jump on window re-focus
 	Camera(GLFWwindow *window, int window_width, int window_height, vec3 position);
-	void process_inputs();
-	void process_mouse_inputs();
+	void update();
 	void update_matrix(int shader_id);
 };
 

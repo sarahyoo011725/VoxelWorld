@@ -14,7 +14,7 @@ Camera::Camera(GLFWwindow *window, int window_width, int window_height, vec3 pos
 }
 
 //updates anything required periodically
-void Camera::process_inputs() {
+void Camera::update() {
 	float frame = (float)glfwGetTime();
 	dt = frame - last_frame;
 	last_frame = frame;

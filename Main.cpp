@@ -131,7 +131,7 @@ int main() {
 	while (!glfwWindowShouldClose(window)) {
 		process_inputs(window);
 		if (isWindowActive) {
-			cam.process_inputs();
+			cam.update();
 		}
 		cam.update_matrix(shader.id);
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
