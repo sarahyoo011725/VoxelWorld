@@ -120,7 +120,7 @@ int main() {
 
 	glEnable(GL_DEPTH_TEST);
 
-	Camera cam(window, glm::vec3(0.0));
+	Camera cam(window, width, height);
 	GLuint trans_loc = glGetUniformLocation(shader.id, "trans");
 
 	while (!glfwWindowShouldClose(window)) {

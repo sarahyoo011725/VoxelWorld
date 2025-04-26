@@ -12,14 +12,12 @@ class Camera
 {
 private:
 	GLFWwindow *window;
-	vec3 forward = vec3(0.0, 0.0, -1.0);
+	int window_width, window_height;
 	float dt = 0.0;
 	float last_frame = 0.0;
 	double mouse_xpos = 0.0;
 	double mouse_ypos = 0.0;
-	//initial camera position: (600, 350) center
-	double last_xpos = 1200 / 2;
-	double  last_ypos = 700 / 2;
+	double last_xpos, last_ypos;
 	float yaw = -90.0f;
 	float pitch = 0.0f;
 	const float mouse_sensitivity = 0.1f;
@@ -28,7 +26,8 @@ public:
 	vec3 position = vec3(0.0); //local camera position
 	vec3 direction = vec3(0.0); //direction of camera (reversed?)
 	vec3 up = vec3(0.0, 1.0, 0.0);
-	Camera(GLFWwindow *window, vec3 position);
+	Camera(GLFWwindow *window, vec3 position, int window_width, int window_height);
+	Camera(GLFWwindow* window, int window_width, int window_height);
 	void process_inputs();
 	void process_mouse_inputs();
 	void update_view(Shader &shader);

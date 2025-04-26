@@ -1,8 +1,23 @@
 #include "Camera.h"
 
-Camera::Camera(GLFWwindow *window, vec3 position) {
+Camera::Camera(GLFWwindow *window, vec3 position, int window_width, int window_height) {
 	this->window = window;
+	this->window_width = window_width;
+	this->window_height = window_height;
 	this->position = position;
+	//sets last cursor position to be at the center of the window
+	last_xpos = window_width / 2;
+	last_ypos = window_height / 2;
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+}
+
+Camera::Camera(GLFWwindow* window, int window_width, int window_height) {
+	this->window = window;
+	this->window_width = window_width;
+	this->window_height = window_height;
+	this->position = vec3(0.0f);
+	last_xpos = window_width / 2;
+	last_ypos = window_height / 2;
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
@@ -27,6 +42,13 @@ void Camera::process_inputs() {
 	if (glfwGetKey(window, GLFW_KEY_D)) {
 		position += right * speed * dt;
 	}
+	if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+		position += up * speed * dt;
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
+		position -= up * speed * dt;
+	}
+	//TODO: check ground
 	process_mouse_inputs();
 }
 
@@ -49,10 +71,12 @@ void Camera::process_mouse_inputs() {
 	yaw += x_offset;
 	pitch += y_offset;
 
+	/*
 	if (pitch > 89.0f)
 		pitch = 89.0f;
 	if (pitch < -89.0f) 
 		pitch = -89.0f;
+	*/
 
 	vec3 new_direction;
 	new_direction.x = cos(radians(yaw) * cos(radians(pitch)));
