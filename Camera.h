@@ -23,7 +23,7 @@ private:
 	float near_plane = 1.0f;
 	float far_plane = 100.0f;
 	const float mouse_sensitivity = 0.1f;
-	const float speed = 5.0f;
+	float speed = 5.0f;
 public:
 	vec3 position = vec3(0.0); //local camera position
 	vec3 direction = vec3(0.0);

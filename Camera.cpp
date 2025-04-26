@@ -40,13 +40,17 @@ void Camera::process_inputs() {
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
 		position -= up * speed * dt;
 	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+	if (glfwGetKey(window, GLFW_KEY_LEFT_ALT)) {
 		fov_degrees -= 23.0f * dt;
 		if (fov_degrees < 10.f)
 			fov_degrees = 10.0f;
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE) {	
+	} else {
 		fov_degrees = 45.0f;
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) {
+		speed = 10.0f;
+	} else {
+		speed = 5.0f;
 	}
 	//TODO: check ground
 	process_mouse_inputs();
