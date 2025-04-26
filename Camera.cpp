@@ -1,6 +1,6 @@
 #include "Camera.h"
 
-Camera::Camera(GLFWwindow *window, vec3 position, int window_width, int window_height) {
+Camera::Camera(GLFWwindow *window, int window_width, int window_height, vec3 position) {
 	this->window = window;
 	this->window_width = window_width;
 	this->window_height = window_height;
@@ -23,10 +23,10 @@ void Camera::process_inputs() {
 	up = normalize(cross(right, direction));
 
 	if (glfwGetKey(window, GLFW_KEY_W)) {
-		position -= speed * direction * dt;
+		position += speed * direction * dt;
 	}
 	if (glfwGetKey(window, GLFW_KEY_S)) {
-		position += speed * direction * dt;
+		position -= speed * direction * dt;
 	}
 	if (glfwGetKey(window, GLFW_KEY_A)) { 
 		position -= right * speed * dt;
@@ -45,11 +45,12 @@ void Camera::process_inputs() {
 	process_mouse_inputs();
 }
 
-void Camera::update_view(Shader &shader) {
+void Camera::update_matrix(int shader_id, float fov_degrees, float near_plane, float far_plane) {
 	//TODO: add FOV and zooming
 	mat4 view = lookAt(position, position + direction, up);
-	GLuint location = glGetUniformLocation(shader.id, "view");
-	glUniformMatrix4fv(location, 1, false, value_ptr(view));
+	mat4 projection = perspective(radians(fov_degrees), (float)window_width/window_height, near_plane, far_plane);
+	GLuint location = glGetUniformLocation(shader_id, "cam_matrix");
+	glUniformMatrix4fv(location, 1, false, value_ptr(projection * view));
 }
 
 void Camera::process_mouse_inputs() {
@@ -81,7 +82,7 @@ void Camera::process_mouse_inputs() {
 	*/
 
 	vec3 new_direction;
-	new_direction.x = cos(radians(yaw) * cos(radians(pitch)));
+	new_direction.x = cos(radians(yaw)) * cos(radians(pitch));
 	new_direction.y = sin(radians(pitch));
 	new_direction.z = sin(radians(yaw)) * cos(radians(pitch));
 	direction = normalize(new_direction);

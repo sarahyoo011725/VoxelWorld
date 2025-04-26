@@ -127,13 +127,13 @@ int main() {
 
 	glEnable(GL_DEPTH_TEST);
 
-	Camera cam(window, glm::vec3(0.0), width, height);
+	Camera cam(window, width, height, glm::vec3(0.0, 0.0, 3.0));
 	while (!glfwWindowShouldClose(window)) {
 		process_inputs(window);
 		if (isWindowActive) {
 			cam.process_inputs();
 		}
-		cam.update_view(shader);
+		cam.update_matrix(shader.id, 45.0f, 1.0f, 100.0f);
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
