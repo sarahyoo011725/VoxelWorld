@@ -26,14 +26,11 @@ private:
 	const float speed = 1.5f;
 public:
 	vec3 position = vec3(0.0); //local camera position
-	vec3 target = vec3(0.0); //TODO: what is this for? 
 	vec3 direction = vec3(0.0); //direction of camera (reversed?)
 	vec3 up = vec3(0.0, 1.0, 0.0);
-	vec3 right = vec3(0.0);
-	mat4 view = mat4(0.0);
 	Camera(GLFWwindow *window, vec3 position);
 	void process_inputs();
 	void process_mouse_inputs();
-	void update_view(Shader &shader, const char* uniform_name);
+	void update_view(Shader &shader);
 };
 

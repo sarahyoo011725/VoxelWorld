@@ -3,11 +3,6 @@
 Camera::Camera(GLFWwindow *window, vec3 position) {
 	this->window = window;
 	this->position = position;
-	this->target = target;
-	direction = normalize(position - target);
-	right = normalize(cross(up, direction));
-	up = cross(direction, right);
-	view = lookAt(position, target, up);
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
@@ -17,28 +12,27 @@ void Camera::process_inputs() {
 	dt = frame - last_frame;
 	last_frame = frame;
 	
+	vec3 right = normalize(cross(direction, vec3(0.0, 1.0, 0.0)));
+	up = normalize(cross(right, direction));
+
 	if (glfwGetKey(window, GLFW_KEY_W)) {
-		position -= dt * speed * forward;
+		position -= speed * direction * dt;
 	}
 	if (glfwGetKey(window, GLFW_KEY_S)) {
-		position += dt * speed * forward;
+		position += speed * direction * dt;
 	}
 	if (glfwGetKey(window, GLFW_KEY_A)) { 
-		position -= normalize(cross(up, forward)) * speed * dt;
+		position -= right * speed * dt;
 	}
 	if (glfwGetKey(window, GLFW_KEY_D)) {
-		position += normalize(cross(up, forward)) * speed * dt;
+		position += right * speed * dt;
 	}
-
-	direction = normalize(position - target);
-	right = normalize(cross(vec3(0.0, 1.0, 0.0), direction));
-	up = cross(direction, right);
-	view = lookAt(position, position + forward, up);
 	process_mouse_inputs();
 }
 
-void Camera::update_view(Shader &shader, const char* uniform_name) {
-	GLuint location = glGetUniformLocation(shader.id, uniform_name);
+void Camera::update_view(Shader &shader) {
+	mat4 view = lookAt(position, position + direction, up);
+	GLuint location = glGetUniformLocation(shader.id, "view");
 	glUniformMatrix4fv(location, 1, false, value_ptr(view));
 }
 
@@ -60,9 +54,9 @@ void Camera::process_mouse_inputs() {
 	if (pitch < -89.0f) 
 		pitch = -89.0f;
 
-	vec3 direction;
-	direction.x = cos(radians(yaw) * cos(radians(pitch)));
-	direction.y = sin(radians(pitch));
-	direction.z = sin(radians(yaw)) * cos(radians(pitch));
-	forward = normalize(direction);
+	vec3 new_direction;
+	new_direction.x = cos(radians(yaw) * cos(radians(pitch)));
+	new_direction.y = sin(radians(pitch));
+	new_direction.z = sin(radians(yaw)) * cos(radians(pitch));
+	direction = normalize(new_direction);
 }

@@ -126,7 +126,7 @@ int main() {
 	while (!glfwWindowShouldClose(window)) {
 		process_input(window);
 		cam.process_inputs();
-		cam.update_view(shader, "view");
+		cam.update_view(shader);
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
