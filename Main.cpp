@@ -81,7 +81,7 @@ void process_inputs(GLFWwindow *window);
 void focus_callback(GLFWwindow* window, int focused);
 
 void on_window_focused(GLFWwindow* window);
-void unfocus_winow(GLFWwindow* window);
+void unfocus_window(GLFWwindow* window);
 
 int main() {
 	//initializees glfw libraries
@@ -127,7 +127,7 @@ int main() {
 
 	glEnable(GL_DEPTH_TEST);
 
-	Camera cam(window, width, height);
+	Camera cam(window, glm::vec3(0.0), width, height);
 	while (!glfwWindowShouldClose(window)) {
 		process_inputs(window);
 		if (isWindowActive) {
@@ -173,10 +173,10 @@ void resize_window(GLFWwindow *window, int width, int height) {
 
 void process_inputs(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
-		unfocus_winow();
+		unfocus_window(window);
 	}
 	if (GLFW_HOVERED && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
-		glfwFocusWindow(window);
+		on_window_focused(window);
 	}
 	if (glfwGetKey(window, GLFW_KEY_1)) {
 		wireframe = !wireframe;
@@ -188,16 +188,16 @@ void focus_callback(GLFWwindow* window, int focused) {
 		on_window_focused(window);
 	}
 	else {
-		unfocus_winow(window);
+		unfocus_window(window);
 	}
 }
 
 void on_window_focused(GLFWwindow* window) {
-	isWindowActive = false;
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+	isWindowActive = true;
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
-void unfocus_winow(GLFWwindow* window) {
+void unfocus_window(GLFWwindow* window) {
 	isWindowActive = false;
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }

@@ -8,16 +8,8 @@ Camera::Camera(GLFWwindow *window, vec3 position, int window_width, int window_h
 	//sets last cursor position to be at the center of the window
 	last_xpos = window_width / 2;
 	last_ypos = window_height / 2;
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-}
-
-Camera::Camera(GLFWwindow* window, int window_width, int window_height) {
-	this->window = window;
-	this->window_width = window_width;
-	this->window_height = window_height;
-	this->position = vec3(0.0f);
-	last_xpos = window_width / 2;
-	last_ypos = window_height / 2;
+	mouse_xpos = last_xpos;
+	mouse_ypos = last_ypos;
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 

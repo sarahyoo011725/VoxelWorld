@@ -27,7 +27,6 @@ public:
 	vec3 up = vec3(0.0, 1.0, 0.0);
 	//bool window_refocused = false; //TODO: prevent cam view jump on window re-focus
 	Camera(GLFWwindow *window, vec3 position, int window_width, int window_height);
-	Camera(GLFWwindow* window, int window_width, int window_height);
 	void process_inputs();
 	void process_mouse_inputs();
 	void update_view(Shader &shader);
