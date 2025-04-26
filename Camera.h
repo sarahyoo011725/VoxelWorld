@@ -15,8 +15,7 @@ private:
 	int window_width, window_height;
 	float dt = 0.0;
 	float last_frame = 0.0;
-	double mouse_xpos = 0.0;
-	double mouse_ypos = 0.0;
+	double mouse_xpos, mouse_ypos;
 	double last_xpos, last_ypos;
 	float yaw = -90.0f;
 	float pitch = 0.0f;
@@ -26,6 +25,7 @@ public:
 	vec3 position = vec3(0.0); //local camera position
 	vec3 direction = vec3(0.0); //direction of camera (reversed?)
 	vec3 up = vec3(0.0, 1.0, 0.0);
+	//bool window_refocused = false; //TODO: prevent cam view jump on window re-focus
 	Camera(GLFWwindow *window, vec3 position, int window_width, int window_height);
 	Camera(GLFWwindow* window, int window_width, int window_height);
 	void process_inputs();
