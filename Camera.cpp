@@ -40,13 +40,19 @@ void Camera::process_inputs() {
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
 		position -= up * speed * dt;
 	}
-
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+		fov_degrees -= 23.0f * dt;
+		if (fov_degrees < 10.f)
+			fov_degrees = 10.0f;
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE) {	
+		fov_degrees = 45.0f;
+	}
 	//TODO: check ground
 	process_mouse_inputs();
 }
 
-void Camera::update_matrix(int shader_id, float fov_degrees, float near_plane, float far_plane) {
-	//TODO: add FOV and zooming
+void Camera::update_matrix(int shader_id ) {
 	mat4 view = lookAt(position, position + direction, up);
 	mat4 projection = perspective(radians(fov_degrees), (float)window_width/window_height, near_plane, far_plane);
 	GLuint location = glGetUniformLocation(shader_id, "cam_matrix");

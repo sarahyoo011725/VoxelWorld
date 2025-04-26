@@ -19,6 +19,9 @@ private:
 	double last_xpos, last_ypos;
 	float yaw = -90.0f;
 	float pitch = 0.0f;
+	float fov_degrees = 45.0f;
+	float near_plane = 1.0f;
+	float far_plane = 100.0f;
 	const float mouse_sensitivity = 0.1f;
 	const float speed = 5.0f;
 public:
@@ -29,6 +32,6 @@ public:
 	Camera(GLFWwindow *window, int window_width, int window_height, vec3 position);
 	void process_inputs();
 	void process_mouse_inputs();
-	void update_matrix(int shader_id, float fov_degrees, float near_plane, float far_plane);
+	void update_matrix(int shader_id);
 };
 

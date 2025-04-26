@@ -133,7 +133,7 @@ int main() {
 		if (isWindowActive) {
 			cam.process_inputs();
 		}
-		cam.update_matrix(shader.id, 45.0f, 1.0f, 100.0f);
+		cam.update_matrix(shader.id);
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
