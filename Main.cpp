@@ -13,6 +13,7 @@
 #include "Camera.h"
 
 using namespace std;
+using namespace glm;
 
 const unsigned int width = 1200;
 const unsigned int height = 700;
@@ -143,13 +144,25 @@ int main() {
 		else {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
-
+		
 		//draws a rectangle
 		shader.activate();
 		texture.bind();
 		vao.bind();
 		ebo.bind();
-		glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
+		for (int x = 0; x < 4; ++x) {
+			for (int y = 0; y < 4; ++y) {
+				for (int z = 0; z < 4; ++z) {
+					mat4 trans = mat4(1.0);
+					trans = translate(trans, vec3(x, y, z));
+					GLfloat loc = glGetUniformLocation(shader.id, "trans");
+					glUniformMatrix4fv(loc, 1, false, value_ptr(trans));
+					glDrawElements(GL_TRIANGLES, sizeof(indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
+
+				}
+			}
+		}
+
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
 		glfwPollEvents(); //checks if any events triggered

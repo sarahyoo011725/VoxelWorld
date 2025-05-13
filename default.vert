@@ -4,10 +4,11 @@ layout (location = 0) in vec3 pos;
 layout (location = 1) in vec2 texture_coord;
 
 uniform mat4 cam_matrix;
+uniform mat4 trans;
 
 out vec2 m_texture_coord;
 
 void main() {
-	gl_Position = cam_matrix * vec4(pos, 1.0);
+	gl_Position = cam_matrix * trans * vec4(pos, 1.0);
 	m_texture_coord = texture_coord;
 }	
