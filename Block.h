@@ -1,26 +1,22 @@
 #pragma once
 
-#include <GLFW/glfw3.h>
+#include <glad/glad.h>
 
-enum BlockType {
-	None,
-	Dirt,
-	Stone,
-	Grass,
-	Wood,
-	Sand
+enum block_type {
+	none,
+	dirt
 };
 
 class Block
 {
 public:
+	Block();
+	~Block();
 	bool active = true;
-	BlockType type;
-	Block(BlockType type);
+	block_type type;
 };
 
-//cube verticies
-GLfloat cube_vertices[] = { 
+static GLfloat cube_vertices[] = {
 //    x     y      z      texture
 	//front
 	-0.5, 0.5, 0.5,		0.0, 1.0,	// Front Top Left		
@@ -54,7 +50,7 @@ GLfloat cube_vertices[] = {
 	-0.5, -0.5, 0.5,	0.0, 0.0,
 };
 //cube indices
-GLuint cube_indices[] = {
+static GLuint cube_indices[] = {
 //front
 	0,1,2,  
 	2,3,0,
@@ -74,4 +70,3 @@ GLuint cube_indices[] = {
 	20,21,22,
 	22,23,20,
 };
-

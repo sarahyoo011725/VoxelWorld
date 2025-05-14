@@ -1,5 +1,9 @@
 #include "Block.h"
 
-Block::Block(BlockType type) {
-	this->type = type;
+Block::Block()
+{
+}
+
+Block::~Block()
+{
 }
