@@ -3,10 +3,10 @@
 
 #include "VBO.h"
 
-VBO::VBO(GLfloat* vertices, GLsizeiptr size) {
+VBO::VBO(vector<vertex> vertices, GLsizeiptr size) {
 	glGenBuffers(1, &id);
 	glBindBuffer(GL_ARRAY_BUFFER, id);
-	glBufferData(GL_ARRAY_BUFFER, size, vertices, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, size, vertices.data(), GL_STATIC_DRAW);
 }
 
 void VBO::bind() {

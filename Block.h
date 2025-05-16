@@ -1,10 +1,30 @@
 #pragma once
 
 #include <glad/glad.h>
+#include <map>
+#include <glm/glm.hpp>
+#include <vector>
+
+using namespace std;
+using namespace glm;
 
 enum block_type {
 	none,
-	dirt
+	dirt,
+};
+
+enum block_face {
+	Front,
+	Back,
+	Left,
+	Right,
+	Top,
+	Bottom,
+};
+
+struct vertex {
+	vec3 position;
+	vec2 texture;
 };
 
 class Block
@@ -13,60 +33,44 @@ public:
 	Block();
 	~Block();
 	bool active = true;
-	block_type type;
+	block_type type = none;
 };
 
-static GLfloat cube_vertices[] = {
-//    x     y      z      texture
-	//front
-	-0.5, 0.5, 0.5,		0.0, 1.0,	// Front Top Left		
-	0.5,  0.5, 0.5,		1.0, 1.0,	// Front Top Right	
-	0.5, -0.5, 0.5,		1.0, 0.0,	// Front Bottom Right	
-	-0.5,-0.5, 0.5,		0.0, 0.0,	// Front Bottom Left
-	//back
-	-0.5, 0.5,-0.5,		0.0, 1.0,	// Back Top Left
-	0.5, 0.5, -0.5,		1.0, 1.0, 	// Back Top Right
-	0.5,-0.5, -0.5,		1.0, 0.0,	// Back Bottom Right
-	-0.5,-0.5,-0.5,		0.0, 0.0,	// Back Bottom Left		
-	//left
-	-0.5, 0.5, 0.5,		0.0, 1.0,
-	-0.5,0.5, -0.5, 	1.0, 1.0,
-	-0.5,-0.5,-0.5,		1.0, 0.0,
-	-0.5, -0.5, 0.5,	0.0, 0.0,
-	//right
-	0.5, 0.5, 0.5,		0.0, 1.0,
-	0.5, 0.5, -0.5,		1.0, 1.0,
-	0.5,-0.5, -0.5,		1.0, 0.0,
-	0.5, -0.5, 0.5,		0.0, 0.0,
-	//top
-	-0.5, 0.5, -0.5,	0.0, 1.0,
-	0.5, 0.5, -0.5,		1.0, 1.0,
-	0.5, 0.5, 0.5,		1.0, 0.0,
-	-0.5, 0.5, 0.5,		0.0, 0.0,
-	//bottom
-	-0.5, -0.5, -0.5,	0.0, 1.0,
-	0.5, -0.5, -0.5,	1.0, 1.0,
-	0.5, -0.5, 0.5,		1.0, 0.0,
-	-0.5, -0.5, 0.5,	0.0, 0.0,
-};
-//cube indices
-static GLuint cube_indices[] = {
-//front
-	0,1,2,  
-	2,3,0,
-//back
-	4,5,6,	
-	6,7,4,
-//left
-	8,9,10,
-	10,11,8,
-//right
-	12,13,14,
-	14,15,12,
-//top
-	16,17,18,
-	18,19,16,
-//bottom
-	20,21,22,
-	22,23,20,
+static map<block_face, vector<vertex>> face_map = {
+	{Front, {
+		{vec3(-0.5, 0.5, 0.5),  vec2(0.0, 1.0)},
+		{vec3(0.5, 0.5, 0.5),	vec2(1.0, 1.0)},
+		{vec3(0.5, -0.5, 0.5),	vec2(1.0, 0.0)},	
+		{vec3(-0.5,-0.5, 0.5),	vec2(0.0, 0.0)},
+	}},
+	{Back, {
+		{vec3(-0.5, 0.5,-0.5),	vec2(0.0, 1.0)},
+		{vec3(0.5, 0.5, -0.5) ,	vec2(1.0, 1.0)},
+		{vec3(0.5,-0.5, -0.5),	vec2(1.0, 0.0)},
+		{vec3(-0.5,-0.5,-0.5),	vec2(0.0, 0.0)},
+	}},
+	{Left, {
+		{vec3(-0.5, 0.5, 0.5),	vec2(0.0, 1.0)},
+		{vec3(-0.5, 0.5, -0.5),	vec2(1.0, 1.0)},
+		{vec3(-0.5, -0.5,-0.5),	vec2(1.0, 0.0)},
+		{vec3(-0.5, -0.5, 0.5),	vec2(0.0, 0.0)},
+	}},
+	{Right, {
+		{vec3(0.5, 0.5, 0.5),	vec2(0.0, 1.0)},
+		{vec3(0.5, 0.5, -0.5),	vec2(1.0, 1.0)},
+		{vec3(0.5,-0.5, -0.5),	vec2(1.0, 0.0)},
+		{vec3(0.5, -0.5, 0.5),	vec2(0.0, 0.0)},
+	}},
+	{Top, {
+		{vec3(-0.5,0.5,-0.5),	vec2(0.0, 1.0)},
+		{vec3(0.5, 0.5, -0.5),	vec2(1.0, 1.0)},
+		{vec3(0.5, 0.5, 0.5),	vec2(1.0, 0.0)},
+		{vec3(-0.5, 0.5, 0.5),	vec2(0.0, 0.0)},
+	}},
+	{Bottom, {
+		{vec3(-0.5,-0.5,-0.5),	vec2(0.0, 1.0)},
+		{vec3(0.5, -0.5, -0.5), vec2(1.0, 1.0)},
+		{vec3(0.5, -0.5, 0.5),	vec2(1.0, 0.0)},
+		{vec3(-0.5, -0.5, 0.5),	vec2(0.0, 0.0)},
+	}},
 };

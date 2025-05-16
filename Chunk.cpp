@@ -1,6 +1,7 @@
 #include "Chunk.h"
 
 Chunk::Chunk() {
+	//TODO: optimize blocks initialization
 	blocks = new Block * *[size];
 	for (int x = 0; x < size; ++x) {
 		blocks[x] = new Block * [size];
@@ -9,9 +10,22 @@ Chunk::Chunk() {
 		}
 	}
 
+	//define block types
+	for (int x = 0; x < size; ++x) {
+		for (int y = 0; y < size; ++y) {
+			for (int z = 0; z < size; ++z) {
+				blocks[x][y][z].type = dirt;
+			}
+		}
+	}
+
+	create_chunk();
+
+	vbo = VBO(vertices, sizeof(vertex) * vertices.size());
+	ebo = EBO(indices, sizeof(GLuint) * indices.size());
 	vao.bind();
-	vao.link_attrib(vbo, 0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0); //vertex positions
-	vao.link_attrib(vbo, 1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float))); //texture coordinates
+	vao.link_attrib(vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0); //vertex positions
+	vao.link_attrib(vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float))); //texture coordinates
 
 	//unbind all to prevent accidentally motifying them
 	vao.unbind();
@@ -23,26 +37,55 @@ void Chunk::render() {
 	texture.bind();
 	vao.bind();
 	ebo.bind();
-	create_chunk();
+	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 }
 
-void Chunk::create_cube(int x, int y, int z) {
-	mat4 trans = mat4(1.0);
-	trans = translate(trans, vec3(x, y, z));
-	GLfloat loc = glGetUniformLocation(shader_id, "trans");
-	glUniformMatrix4fv(loc, 1, false, value_ptr(trans));
-	glDrawElements(GL_TRIANGLES, sizeof(cube_indices) / sizeof(GLuint), GL_UNSIGNED_INT, 0);
+void Chunk::add_face(block_face face, vec3 pos) {
+	vector<vertex> verts = face_map[face];
+	//transforms vertices
+	for (vertex v : verts) {
+		v.position.x += pos.x;
+		v.position.y += pos.y;
+		v.position.z += pos.z;
+		vertices.push_back(v);
+	}
+
+	//generates indices to draw faces with EBO
+	GLuint base_index = vertices.size() - 4; //forces base index start at 0
+	indices.push_back(base_index);
+	indices.push_back(base_index + 1);
+	indices.push_back(base_index + 2);
+	indices.push_back(base_index + 2);
+	indices.push_back(base_index + 3);
+	indices.push_back(base_index);
 }
 
 void Chunk::create_chunk() {
 	for (int x = 0; x < size; ++x) {
 		for (int y = 0; y < size; ++y) {
 			for (int z = 0; z < size; ++z) {
-				if (blocks[x][y][z].active == false) {
+				if (blocks[x][y][z].active == false || blocks[x][y][z].type == none) {
 					continue;
 				}
-				blocks[x][y][z].type = dirt;
-				create_cube(x, y, z);
+				vec3 pos = vec3(x, y, z);
+				if (x == 0 || x > 0 && blocks[x - 1][y][z].type == none) {
+					add_face(Left, pos);
+				}
+				if (y == 0 || y > 0 && blocks[x][y - 1][z].type == none) {
+					add_face(Bottom, pos);
+				}
+				if (z == 0 || z > 0 && blocks[x][y][z - 1].type == none) {
+					add_face(Back, pos);
+				}
+				if (x == size - 1 || x < size - 1 && blocks[x + 1][y][z].type == none) {
+					add_face(Right, pos);
+				}
+				if (y == size - 1 || y < size - 1 && blocks[x][y + 1][z].type == none) {
+					add_face(Top, pos);
+				}
+				if (z == size - 1 || z < size - 1 && blocks[x][y][z + 1].type == none) {
+					add_face(Front, pos);
+				}
 			}
 		}
 	}

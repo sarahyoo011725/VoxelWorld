@@ -10,18 +10,21 @@
 #include "EBO.h"
 #include "Texture.h"
 #include "Shader.h"
+#include <vector>
 
 using namespace glm;
 
 class Chunk
 {
 private: 
+	vector<vertex> vertices;
+	vector<GLuint> indices;
 	VAO vao = VAO();
+	VBO vbo = VBO(vertices, sizeof(vertex) * vertices.size());
+	EBO ebo = EBO(indices, sizeof(GLuint) * indices.size());
 	Texture texture = Texture("dirt.jpg", 1, 1, 1);
-	VBO vbo = VBO(cube_vertices, sizeof(cube_vertices));
-	EBO ebo = EBO(cube_indices, sizeof(cube_indices));
-	void create_cube(int x, int y, int z);
 	void create_chunk();
+	void add_face(block_face face, vec3 pos);
 public:
 	const int size = 16;
 	Block*** blocks;
