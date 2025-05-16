@@ -59,7 +59,7 @@ int main() {
 
 	Camera cam(window, width, height, glm::vec3(0.0, 0.0, 3.0));
 	Shader shader = Shader("default.vert", "default.frag");
-	Chunk chunk = Chunk();
+	Chunk chunk = Chunk(4, 5, 3);
 	chunk.shader_id = shader.id;
 	
 	glEnable(GL_DEPTH_TEST);

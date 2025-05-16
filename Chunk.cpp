@@ -1,19 +1,22 @@
 #include "Chunk.h"
 
-Chunk::Chunk() {
+Chunk::Chunk(int width, int length, int height) {
+	this->width = width;
+	this->length = length;
+	this->height = height;
 	//TODO: optimize blocks initialization
-	blocks = new Block * *[size];
-	for (int x = 0; x < size; ++x) {
-		blocks[x] = new Block * [size];
-		for (int y = 0; y < size; ++y) {
-			blocks[x][y] = new Block[size];
+	blocks = new Block * *[width];
+	for (int x = 0; x < width; ++x) {
+		blocks[x] = new Block * [height];
+		for (int y = 0; y < height; ++y) {
+			blocks[x][y] = new Block[length];
 		}
 	}
 
 	//define block types
-	for (int x = 0; x < size; ++x) {
-		for (int y = 0; y < size; ++y) {
-			for (int z = 0; z < size; ++z) {
+	for (int x = 0; x < width; ++x) {
+		for (int y = 0; y < height; ++y) {
+			for (int z = 0; z < length; ++z) {
 				blocks[x][y][z].type = dirt;
 			}
 		}
@@ -61,9 +64,9 @@ void Chunk::add_face(block_face face, vec3 pos) {
 }
 
 void Chunk::create_chunk() {
-	for (int x = 0; x < size; ++x) {
-		for (int y = 0; y < size; ++y) {
-			for (int z = 0; z < size; ++z) {
+	for (int x = 0; x < width; ++x) {
+		for (int y = 0; y < height; ++y) {
+			for (int z = 0; z < length; ++z) {
 				if (blocks[x][y][z].active == false || blocks[x][y][z].type == none) {
 					continue;
 				}
@@ -77,13 +80,13 @@ void Chunk::create_chunk() {
 				if (z == 0 || z > 0 && blocks[x][y][z - 1].type == none) {
 					add_face(Back, pos);
 				}
-				if (x == size - 1 || x < size - 1 && blocks[x + 1][y][z].type == none) {
+				if (x == width - 1 || x < width - 1 && blocks[x + 1][y][z].type == none) {
 					add_face(Right, pos);
 				}
-				if (y == size - 1 || y < size - 1 && blocks[x][y + 1][z].type == none) {
+				if (y == height - 1 || y < height - 1 && blocks[x][y + 1][z].type == none) {
 					add_face(Top, pos);
 				}
-				if (z == size - 1 || z < size - 1 && blocks[x][y][z + 1].type == none) {
+				if (z == length - 1 || z < length - 1 && blocks[x][y][z + 1].type == none) {
 					add_face(Front, pos);
 				}
 			}
@@ -99,8 +102,8 @@ void Chunk::destroy() {
 }
 
 Chunk::~Chunk() {
-	for (int x = 0; x < size; ++x) {
-		for (int y = 0; y < size; ++y) {
+	for (int x = 0; x < width; ++x) {
+		for (int y = 0; y < height; ++y) {
 			delete[] blocks[x][y];
 		}
 		delete[] blocks[x];

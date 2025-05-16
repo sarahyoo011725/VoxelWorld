@@ -27,9 +27,10 @@ private:
 	void add_face(block_face face, vec3 pos);
 public:
 	const int size = 16;
+	int width = 16, length = 16, height = 16;
 	Block*** blocks;
 	GLuint shader_id = 0;
-	Chunk();
+	Chunk(int width, int length, int height);
 	~Chunk();
 	void render();
 	void destroy();
