@@ -4,13 +4,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <vector>
 #include "Block.h"
 #include "VAO.h"
 #include "VBO.h"
 #include "EBO.h"
 #include "Texture.h"
 #include "Shader.h"
-#include <vector>
 
 using namespace glm;
 
@@ -23,8 +23,10 @@ private:
 	VBO vbo = VBO(vertices, sizeof(vertex) * vertices.size());
 	EBO ebo = EBO(indices, sizeof(GLuint) * indices.size());
 	Texture texture = Texture("dirt.jpg", 1, 1, 1);
+	int** height_map;
 	void create_chunk();
 	void add_face(block_face face, vec3 pos);
+	int** get_heightmap();
 public:
 	const int size = 16;
 	int width = 16, length = 16, height = 16;
