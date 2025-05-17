@@ -24,7 +24,7 @@ private:
 	float far_plane = 100.0f;
 	const float mouse_sensitivity = 0.1f;
 	float speed = 5.0f;
-
+	bool is_running = false;
 	void process_mouse_inputs();
 public:
 	vec3 position = vec3(0.0); //local camera position

@@ -1,9 +1,9 @@
 #include "Chunk.h"
 
-Chunk::Chunk(int width, int length, int height) {
+Chunk::Chunk(int width, int height, int length) {
 	this->width = width;
-	this->length = length;
 	this->height = height;
+	this->length = length;
 	//TODO: optimize blocks initialization
 	blocks = new Block * *[width];
 	for (int x = 0; x < width; ++x) {
@@ -13,8 +13,8 @@ Chunk::Chunk(int width, int length, int height) {
 		}
 	}
 
-	height_map = get_heightmap();
 	//define block types
+	height_map = get_heightmap();
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
 			for (int y = 0; y < height_map[x][z]; ++y) {
@@ -45,7 +45,7 @@ int** Chunk::get_heightmap() {
 
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
-			map[x][z] = (int)4 * sin(x) + 9;
+			map[x][z] = abs(static_cast<int> (get_noise(x, z) * 20));
 		}
 	}
 	return map;
@@ -81,7 +81,7 @@ void Chunk::add_face(block_face face, vec3 pos) {
 void Chunk::create_chunk() {
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
-			for (int y = 0; y < height_map[x][y]; ++y) {
+			for (int y = 0; y < height; ++y) {
 				if (blocks[x][y][z].active == false || blocks[x][y][z].type == none) {
 					continue;
 				}
@@ -98,7 +98,7 @@ void Chunk::create_chunk() {
 				if (x == width - 1 || x < width - 1 && blocks[x + 1][y][z].type == none) {
 					add_face(Right, pos);
 				}
-				if (y == height_map[x][z] - 1 || y < height_map[x][z] - 1 && blocks[x][y + 1][z].type == none) {
+				if (y == height - 1 || y < height - 1 && blocks[x][y + 1][z].type == none) {
 					add_face(Top, pos);
 				}
 				if (z == length - 1 || z < length - 1 && blocks[x][y][z + 1].type == none) {

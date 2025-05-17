@@ -48,10 +48,9 @@ void Camera::update() {
 		fov_degrees = 45.0f;
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) {
-		speed = 10.0f;
-	} else {
-		speed = 5.0f;
+		is_running = !is_running;
 	}
+	speed = (is_running) ? 20.0f : 5.0f;
 	//TODO: check ground
 	process_mouse_inputs();
 }

@@ -5,6 +5,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
+#include <FastNoise/FastNoiseLite.h>
+
 #include "Block.h"
 #include "VAO.h"
 #include "VBO.h"
@@ -32,9 +34,14 @@ public:
 	int width = 16, length = 16, height = 16;
 	Block*** blocks;
 	GLuint shader_id = 0;
-	Chunk(int width, int length, int height);
+	Chunk(int width, int height, int length);
 	~Chunk();
 	void render();
 	void destroy();
 };
 
+static FastNoiseLite m_noise;
+
+static float get_noise(int x, int z) {
+	return m_noise.GetNoise((float)x, (float)z);
+}
