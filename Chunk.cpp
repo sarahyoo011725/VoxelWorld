@@ -1,9 +1,7 @@
 #include "Chunk.h"
 
-Chunk::Chunk(int width, int height, int length) {
-	this->width = width;
-	this->height = height;
-	this->length = length;
+Chunk::Chunk(vec3 spawn_coord) {
+	this->spawn_coord = spawn_coord;
 	//TODO: optimize blocks initialization
 	blocks = new Block * *[width];
 	for (int x = 0; x < width; ++x) {
@@ -45,7 +43,9 @@ int** Chunk::get_heightmap() {
 
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
-			map[x][z] = abs(static_cast<int> (get_noise(x, z) * 20));
+			int height_val = abs(static_cast<int> (get_noise(x, z) * 20)) + 4;
+			if (height_val > height) height_val = height;
+			map[x][z] = height_val;
 		}
 	}
 	return map;
@@ -62,9 +62,9 @@ void Chunk::add_face(block_face face, vec3 pos) {
 	vector<vertex> verts = face_map[face];
 	//transforms vertices
 	for (vertex v : verts) {
-		v.position.x += pos.x;
-		v.position.y += pos.y;
-		v.position.z += pos.z;
+		v.position.x += pos.x + spawn_coord.x;
+		v.position.y += pos.y + spawn_coord.y;
+		v.position.z += pos.z + spawn_coord.z;
 		vertices.push_back(v);
 	}
 

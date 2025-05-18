@@ -13,6 +13,7 @@
 #include "Camera.h"
 #include "Block.h"
 #include "Chunk.h"
+#include "Terrain.h"
 
 using namespace std;
 using namespace glm;
@@ -59,7 +60,8 @@ int main() {
 
 	Camera cam(window, width, height, glm::vec3(0.0, 0.0, 3.0));
 	Shader shader = Shader("default.vert", "default.frag");
-	Chunk chunk = Chunk(100, 100, 100);
+	Chunk chunk = Chunk(vec3(0, 10, 0));
+	Terrain world = Terrain(&cam.position);
 	chunk.shader_id = shader.id;
 	
 	glEnable(GL_DEPTH_TEST);
@@ -83,6 +85,7 @@ int main() {
 		//draws mesh
 		shader.activate();
 		chunk.render();
+		world.render();
 
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
 		glfwPollEvents(); //checks if any events triggered

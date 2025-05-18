@@ -34,14 +34,16 @@ public:
 	int width = 16, length = 16, height = 16;
 	Block*** blocks;
 	GLuint shader_id = 0;
-	Chunk(int width, int height, int length);
+	vec3 spawn_coord = vec3(0.0f);
+	Chunk(vec3 spawn_coord);
 	~Chunk();
 	void render();
 	void destroy();
 };
 
-static FastNoiseLite m_noise;
-
-static float get_noise(int x, int z) {
-	return m_noise.GetNoise((float)x, (float)z);
+namespace {
+	static FastNoiseLite m_noise;
+	float get_noise(int x, int z) {
+		return m_noise.GetNoise((float)x, (float)z);
+	}
 }

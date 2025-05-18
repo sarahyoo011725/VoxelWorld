@@ -5,7 +5,7 @@
 using namespace std;
 
 /*
-	Technical Note:
+Technical Note:
 	It is better to manually initialize vbo and ebo with their array byte size as a parameter.
 	Specifying their size in constructor by default causes some byte allocating issue, which makes nothing drawn on the window.
 	To calculate byte size of array or vector:
