@@ -1,6 +1,9 @@
 #include "Chunk.h"
 
 Chunk::Chunk(vec3 spawn_coord) {
+	width = 100;
+	height = 100;
+	length = 100;
 	this->spawn_coord = spawn_coord;
 	//TODO: optimize blocks initialization
 	blocks = new Block * *[width];
@@ -16,7 +19,18 @@ Chunk::Chunk(vec3 spawn_coord) {
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
 			for (int y = 0; y < height_map[x][z]; ++y) {
-				blocks[x][y][z].type = dirt;
+				block_type type = none;
+				if (y == height_map[x][z] - 1) {
+					type = grass;
+				}
+				else {
+					type = dirt;
+					if (y < height_map[x][z] - 5) {
+						type = stone;
+					}
+				}
+			
+				blocks[x][y][z].type = type;
 			}
 		}
 	}
@@ -58,13 +72,15 @@ void Chunk::render() {
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 }
 
-void Chunk::add_face(block_face face, vec3 pos) {
+void Chunk::add_face(block_face face, block_type type, vec3 pos) {
 	vector<vertex> verts = face_map[face];
+	vec2 texture_coord = texture_map[type][face];
+	
 	//transforms vertices
-	for (vertex v : verts) {
-		v.position.x += pos.x + spawn_coord.x;
-		v.position.y += pos.y + spawn_coord.y;
-		v.position.z += pos.z + spawn_coord.z;
+	for (int i = 0; i < verts.size(); ++i) {
+		vertex v = verts[i];
+		v.position += pos + spawn_coord;
+		v.texture = convert_to_uv(i, texture_coord);
 		vertices.push_back(v);
 	}
 
@@ -86,23 +102,24 @@ void Chunk::create_chunk() {
 					continue;
 				}
 				vec3 pos = vec3(x, y, z);
+				block_type type = blocks[x][y][z].type;
 				if (x == 0 || x > 0 && blocks[x - 1][y][z].type == none) {
-					add_face(Left, pos);
+					add_face(Left, type, pos);
 				}
 				if (y == 0 || y > 0 && blocks[x][y - 1][z].type == none) {
-					add_face(Bottom, pos);
+					add_face(Bottom, type, pos);
 				}
 				if (z == 0 || z > 0 && blocks[x][y][z - 1].type == none) {
-					add_face(Back, pos);
+					add_face(Back, type, pos);
 				}
 				if (x == width - 1 || x < width - 1 && blocks[x + 1][y][z].type == none) {
-					add_face(Right, pos);
+					add_face(Right, type, pos);
 				}
 				if (y == height - 1 || y < height - 1 && blocks[x][y + 1][z].type == none) {
-					add_face(Top, pos);
+					add_face(Top, type, pos);
 				}
 				if (z == length - 1 || z < length - 1 && blocks[x][y][z + 1].type == none) {
-					add_face(Front, pos);
+					add_face(Front, type, pos);
 				}
 			}
 		}

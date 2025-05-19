@@ -9,5 +9,5 @@ Terrain::~Terrain() {
 }
 
 void Terrain::render() {
-	//cout << player_pos->y << endl;
+	
 }

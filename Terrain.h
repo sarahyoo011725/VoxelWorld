@@ -14,9 +14,10 @@ private:
 	double render_dist = 16;
 public:
 	vec3 *player_pos;
-	map<vec3, Chunk> chunks;
+	map<vec3, Chunk> chunks; //idk
 	Terrain(vec3 *cam_pos);
 	~Terrain();
 	void render();
 };
 
+//TODO: procedural terrain / chunk generation

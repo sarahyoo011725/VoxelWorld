@@ -60,7 +60,7 @@ int main() {
 
 	Camera cam(window, width, height, glm::vec3(0.0, 0.0, 3.0));
 	Shader shader = Shader("default.vert", "default.frag");
-	Chunk chunk = Chunk(vec3(0, 10, 0));
+	Chunk chunk = Chunk(vec3(0, 0, 0));
 	Terrain world = Terrain(&cam.position);
 	chunk.shader_id = shader.id;
 	

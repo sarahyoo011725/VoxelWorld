@@ -24,11 +24,11 @@ private:
 	VAO vao = VAO();
 	VBO vbo = VBO(vertices, sizeof(vertex) * vertices.size());
 	EBO ebo = EBO(indices, sizeof(GLuint) * indices.size());
-	Texture texture = Texture("dirt.jpg", 1, 1, 1);
+	Texture texture = Texture("texture_atlas.png");
 	int** height_map;
-	void create_chunk();
-	void add_face(block_face face, vec3 pos);
 	int** get_heightmap();
+	void add_face(block_face face, block_type type, vec3 pos);
+	void create_chunk();
 public:
 	const int size = 16;
 	int width = 16, length = 16, height = 16;
