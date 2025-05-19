@@ -46,16 +46,16 @@ namespace {
 		float x = texture_coord.x;
 		float y = texture_coord.y;
 		if (index == 0) {
-			return vec2((x - 1) / textures_columns, y / texture_rows);
+			return vec2((x - 1)/textures_columns, y/texture_rows);
 		}
 		else if (index == 1) {
-			return vec2(x / textures_columns, y / texture_rows);
+			return vec2(x/textures_columns, y/texture_rows);
 		}
 		else if (index == 2) {
-			return vec2(x / textures_columns, (y - 1) / texture_rows);
+			return vec2(x/textures_columns, (y - 1)/texture_rows);
 		}
 		else if (index == 3) {
-			return vec2((x - 1) / textures_columns, (y - 1) / texture_rows);
+			return vec2((x - 1)/textures_columns, (y - 1)/texture_rows);
 		}
 		return vec2(-1, -1); //invalid index
 	}

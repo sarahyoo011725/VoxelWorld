@@ -29,7 +29,6 @@ Chunk::Chunk(vec3 spawn_coord) {
 						type = stone;
 					}
 				}
-			
 				blocks[x][y][z].type = type;
 			}
 		}

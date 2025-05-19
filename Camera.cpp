@@ -83,12 +83,10 @@ void Camera::process_mouse_inputs() {
 	yaw += x_offset;
 	pitch += y_offset;
 
-	/*
 	if (pitch > 89.0f)
 		pitch = 89.0f;
 	if (pitch < -89.0f) 
 		pitch = -89.0f;
-	*/
 
 	vec3 new_direction;
 	new_direction.x = cos(radians(yaw)) * cos(radians(pitch));
