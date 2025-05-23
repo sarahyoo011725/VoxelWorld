@@ -50,7 +50,7 @@ void Camera::update() {
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) {
 		is_running = !is_running;
 	}
-	speed = (is_running) ? 20.0f : 5.0f;
+	speed = (is_running) ? run_speed : 5.0f;
 	//TODO: check ground
 	process_mouse_inputs();
 }

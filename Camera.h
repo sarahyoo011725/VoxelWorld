@@ -23,7 +23,7 @@ private:
 	float near_plane = 1.0f;
 	float far_plane = 100.0f;
 	const float mouse_sensitivity = 0.1f;
-	float speed = 5.0f;
+	float speed = 5.0f, run_speed = 50;
 	bool is_running = false;
 	void process_mouse_inputs();
 public:
