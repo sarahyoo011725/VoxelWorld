@@ -12,7 +12,7 @@ using namespace glm;
 class Terrain
 {
 public:
-	int render_dist = 1;
+	int render_dist = 9;
 	vec3 *player_pos;
 	unordered_map<ivec2, Chunk> chunks;
 	Terrain(vec3 &cam_pos);
@@ -20,3 +20,4 @@ public:
 	void create_chunk(ivec2 chunk_coord);
 };
 
+//TODO: remove chunk walls

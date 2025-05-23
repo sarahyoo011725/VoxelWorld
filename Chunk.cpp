@@ -56,7 +56,9 @@ int** Chunk::get_heightmap() {
 
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
-			int height_val = abs(static_cast<int> (get_noise(x, z) * 20)) + 4;
+			int x_pos = position.x + x;
+			int z_pos = position.z + z;
+			int height_val = abs(static_cast<int> (get_noise(x_pos, z_pos) * 15)) + 3;
 			if (height_val > height) height_val = height;
 			map[x][z] = height_val;
 		}

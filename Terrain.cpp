@@ -18,7 +18,7 @@ void Terrain::update() {
 			if (chunks.find(chunk_coord) != chunks.end()) { //chunk found
 				Chunk c = chunks.at(chunk_coord);
 				if (c.active) {
-					c.render();
+					c.render(); //no need to remove chunks since we draw only active chunk lol
 				}
 			}
 			else { 
