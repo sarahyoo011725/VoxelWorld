@@ -5,9 +5,9 @@ layout (location = 1) in vec2 texture_coord;
 
 uniform mat4 cam_matrix;
 
-out vec2 m_texture_coord;
+out vec2 tex_coord;
 
 void main() {
 	gl_Position = cam_matrix * vec4(pos, 1.0);
-	m_texture_coord = texture_coord;
+	tex_coord = texture_coord;
 }	

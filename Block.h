@@ -8,11 +8,16 @@
 using namespace std;
 using namespace glm;
 
-enum block_type {
+enum block_type{
 	none,
 	dirt,
 	grass,
-	stone
+	stone,
+	sand,
+	trunk,
+	leaf,
+	water,
+	glass
 };
 
 enum block_face {
@@ -85,6 +90,46 @@ namespace {
 			{Top,	 vec2(2, 16)},
 			{Bottom, vec2(2, 16)},
 		}},
+		{sand, {
+			{Front,  vec2(3, 15)},
+			{Back,   vec2(3, 15)},
+			{Left,   vec2(3, 15)},
+			{Right,	 vec2(3, 15)},
+			{Top,	 vec2(3, 15)},
+			{Bottom, vec2(3, 15)},
+		}},
+		{trunk, {
+			{Front,  vec2(5, 15)},
+			{Back,   vec2(5, 15)},
+			{Left,   vec2(5, 15)},
+			{Right,	 vec2(5, 15)},
+			{Top,	 vec2(6, 15)},
+			{Bottom, vec2(6, 15)},
+		}},
+		{leaf, {
+			{Front,  vec2(5, 13)},
+			{Back,   vec2(5, 13)},
+			{Left,   vec2(5, 13)},
+			{Right,	 vec2(5, 13)},
+			{Top,	 vec2(5, 13)},
+			{Bottom, vec2(5, 13)},
+		}},
+		{water, {
+			{Front,  vec2(16, 3)},
+			{Back,   vec2(16, 3)},
+			{Left,   vec2(16, 3)},
+			{Right,	 vec2(16, 3)},
+			{Top,	 vec2(16, 3)},
+			{Bottom, vec2(16, 3)},
+		}},
+		{glass, {
+			{Front,  vec2(2, 13)},
+			{Back,   vec2(2, 13)},
+			{Left,   vec2(2, 13)},
+			{Right,	 vec2(2, 13)},
+			{Top,	 vec2(2, 13)},
+			{Bottom, vec2(2, 13)},
+		}}
 	};
 
 	static map<block_face, vector<vertex>> face_map = {

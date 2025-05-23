@@ -2,7 +2,7 @@
 
 Chunk::Chunk(vec3 position) {
 	width = chunk_size;
-	height = chunk_size;
+	height = 100;
 	length = chunk_size;
 	this->position = position;
 	//TODO: optimize blocks initialization
@@ -21,10 +21,12 @@ Chunk::Chunk(vec3 position) {
 			for (int y = 0; y < height_map[x][z]; ++y) {
 				block_type type = none;
 				if (y == height_map[x][z] - 1) {
-					type = grass;
+					type = glass; //test drawing with transparency ...
 				}
 				else {
 					type = dirt;
+					if (y < height_map[x][z] - 3)
+						type = sand;
 					if (y < height_map[x][z] - 5) {
 						type = stone;
 					}
@@ -58,7 +60,7 @@ int** Chunk::get_heightmap() {
 		for (int z = 0; z < length; ++z) {
 			int x_pos = position.x + x;
 			int z_pos = position.z + z;
-			int height_val = abs(static_cast<int> (get_noise(x_pos, z_pos) * 15)) + 3;
+			int height_val = abs(static_cast<int> (get_noise(x_pos, z_pos) * 20)) + 4;
 			if (height_val > height) height_val = height;
 			map[x][z] = height_val;
 		}
@@ -135,7 +137,8 @@ void Chunk::destroy() {
 }
 
 Chunk::~Chunk() {
-	/*
+	//TODO: deleting blocks array causes an issue.
+	/* 
 	for (int x = 0; x < width; ++x) {
 		for (int y = 0; y < height; ++y) {
 			delete[] blocks[x][y];
