@@ -1,10 +1,10 @@
 #include "Chunk.h"
 
-Chunk::Chunk(vec3 spawn_coord) {
-	width = 100;
-	height = 100;
-	length = 100;
-	this->spawn_coord = spawn_coord;
+Chunk::Chunk(vec3 position) {
+	width = chunk_size;
+	height = chunk_size;
+	length = chunk_size;
+	this->position = position;
 	//TODO: optimize blocks initialization
 	blocks = new Block * *[width];
 	for (int x = 0; x < width; ++x) {
@@ -78,7 +78,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 pos) {
 	//transforms vertices
 	for (int i = 0; i < verts.size(); ++i) {
 		vertex v = verts[i];
-		v.position += pos + spawn_coord;
+		v.position += pos + position;
 		v.texture = convert_to_uv(i, texture_coord);
 		vertices.push_back(v);
 	}

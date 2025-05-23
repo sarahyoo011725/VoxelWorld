@@ -14,11 +14,12 @@
 #include "Texture.h"
 #include "Shader.h"
 
-using namespace glm;
+using namespace glm; 
 
 class Chunk
 {
 private: 
+	//TODO: shared VAO, VBO, Texture
 	vector<vertex> vertices;
 	vector<GLuint> indices;
 	VAO vao = VAO();
@@ -30,12 +31,11 @@ private:
 	void add_face(block_face face, block_type type, vec3 pos);
 	void create_chunk();
 public:
-	const int size = 16;
-	int width = 16, length = 16, height = 16;
+	bool active = true;
+	int width, length, height;
 	Block*** blocks;
-	GLuint shader_id = 0;
-	vec3 spawn_coord = vec3(0.0f);
-	Chunk(vec3 spawn_coord);
+	vec3 position = vec3(0.0f);
+	Chunk(vec3 position);
 	~Chunk();
 	void render();
 	void destroy();
@@ -43,6 +43,7 @@ public:
 
 namespace {
 	static FastNoiseLite m_noise;
+	static int chunk_size = 100;
 	float get_noise(int x, int z) {
 		return m_noise.GetNoise((float)x, (float)z);
 	}
