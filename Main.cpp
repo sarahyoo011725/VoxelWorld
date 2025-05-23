@@ -13,6 +13,7 @@
 #include "Camera.h"
 #include "Block.h"
 #include "Chunk.h"
+#include "Terrain.h"
 
 using namespace std;
 using namespace glm;
@@ -59,8 +60,8 @@ int main() {
 
 	Camera cam(window, width, height, vec3(0.0, 0.0, 3.0));
 	Shader shader = Shader("default.vert", "default.frag");
-	Chunk chunk = Chunk(vec3(0, 0, 0));
-	
+	Terrain terrain = Terrain(cam.position);
+
 	glEnable(GL_DEPTH_TEST);
 
 	while (!glfwWindowShouldClose(window)) {
@@ -81,14 +82,13 @@ int main() {
 		
 		//draws mesh
 		shader.activate();
-		chunk.render();
+		terrain.update();
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
 		glfwPollEvents(); //checks if any events triggered
 	}
 
 	//terminates the program, destroying everything including window
-	chunk.destroy();
 	shader.destroy();
 	glfwDestroyWindow(window);
 	glfwTerminate();

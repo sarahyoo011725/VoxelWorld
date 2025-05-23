@@ -43,7 +43,7 @@ public:
 
 namespace {
 	static FastNoiseLite m_noise;
-	static int chunk_size = 100;
+	static int chunk_size = 16;
 	float get_noise(int x, int z) {
 		return m_noise.GetNoise((float)x, (float)z);
 	}

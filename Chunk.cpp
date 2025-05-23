@@ -133,6 +133,7 @@ void Chunk::destroy() {
 }
 
 Chunk::~Chunk() {
+	/*
 	for (int x = 0; x < width; ++x) {
 		for (int y = 0; y < height; ++y) {
 			delete[] blocks[x][y];
@@ -140,4 +141,6 @@ Chunk::~Chunk() {
 		delete[] blocks[x];
 	}
 	delete[] blocks;
+	
+	*/
 }
