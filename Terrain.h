@@ -15,9 +15,8 @@ public:
 	int render_dist = 9;
 	vec3 *player_pos;
 	unordered_map<ivec2, Chunk> chunks;
+	vector<Chunk*> visible_chunks;
 	Terrain(vec3 &cam_pos);
 	void update();
 	void create_chunk(ivec2 chunk_coord);
 };
-
-//TODO: remove chunk walls

@@ -14,18 +14,25 @@ void Terrain::update() {
 
 	for (int x = origin.x - render_dist; x <= origin.x + render_dist; ++x) {
 		for (int z = origin.y - render_dist; z <= origin.y + render_dist; ++z) {
-			ivec2 chunk_coord = { x, z };
-			if (chunks.find(chunk_coord) != chunks.end()) { //chunk found
-				Chunk c = chunks.at(chunk_coord);
-				if (c.active) {
-					c.render(); //no need to remove chunks since we draw only active chunk lol
-				}
+			ivec2 coord = { x, z };
+			if (chunks.find(coord) != chunks.end()) { 
+				visible_chunks.push_back(&chunks.at(coord));
 			}
-			else { 
-				create_chunk(chunk_coord);
+			else {
+				create_chunk(coord);
 			}
 		}
 	}
+
+	for (Chunk* c : visible_chunks) {
+		c->draw_opaque_blocks();
+	}
+	//TODO: sort transparent geometries and draw them in order from furthest to closest to player
+	for (Chunk* c : visible_chunks) {
+		c->draw_transparent_blocks();
+	}
+
+	visible_chunks.clear();
 }
 
 void Terrain::create_chunk(ivec2 chunk_coord) {
