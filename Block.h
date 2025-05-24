@@ -47,7 +47,7 @@ namespace {
 	const static int texture_rows = 16;
 	const static int textures_columns = 16;
 
-	static bool is_transparent_block(block_type type) {
+	static bool is_transparent(block_type type) {
 		switch (type) {
 			case water:
 			case glass:

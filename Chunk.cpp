@@ -18,18 +18,22 @@ Chunk::Chunk(vec3 position) {
 	height_map = get_heightmap();
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
-			for (int y = 0; y < height_map[x][z]; ++y) {
+			for (int y = 0; y < height; ++y) {
 				block_type type = none;
-				if (y == height_map[x][z] - 1) {
-					type = water; //test drawing with transparency ...
+				int h = height_map[x][z];
+				if (y == h) {
+					type = grass;
 				}
-				else {
+				if (y < h) {
 					type = dirt;
-					if (y < height_map[x][z] - 3)
+					if (y < h - 3)
 						type = sand;
-					if (y < height_map[x][z] - 5) {
+					if (y < h - 5) {
 						type = stone;
 					}
+				}
+				if (y > h && y <= water_level) {
+					type = water;
 				}
 				blocks[x][y][z].type = type;
 			}
@@ -37,6 +41,7 @@ Chunk::Chunk(vec3 position) {
 	}
 
 	create_chunk();
+
 	vbo = VBO(vertices, sizeof(vertex) * vertices.size());
 	ebo = EBO(indices, sizeof(GLuint) * indices.size());
 	vao.bind();
@@ -88,7 +93,7 @@ void Chunk::render() {
 void Chunk::add_face(block_face face, block_type type, vec3 pos) {
 	vector<vertex> verts = face_map[face];
 	vec2 texture_coord = texture_map[type][face];
-	bool transparency = is_transparent_block(type); //checks if the texture is translucent or transparent.
+	bool transparency = is_transparent(type); //checks if the texture is translucent or transparent.
 	//transforms vertices
 	for (int i = 0; i < verts.size(); ++i) {
 		vertex v = verts[i];
@@ -132,22 +137,29 @@ void Chunk::create_chunk() {
 				}
 				vec3 pos = vec3(x, y, z);
 				block_type type = blocks[x][y][z].type;
-				if (x == 0 || x > 0 && blocks[x - 1][y][z].type == none) {
+				bool am_i_transparent = is_transparent(blocks[x][y][z].type);
+				if (x == 0 || x > 0 && blocks[x - 1][y][z].type == none || 
+					x > 0 && is_transparent(blocks[x - 1][y][z].type) && !am_i_transparent) {
 					add_face(Left, type, pos);
 				}
-				if (y == 0 || y > 0 && blocks[x][y - 1][z].type == none) {
+				if (y == 0 || y > 0 && blocks[x][y - 1][z].type == none || 
+					y > 0 && is_transparent(blocks[x][y - 1][z].type) && !am_i_transparent) {
 					add_face(Bottom, type, pos);
 				}
-				if (z == 0 || z > 0 && blocks[x][y][z - 1].type == none) {
+				if (z == 0 || z > 0 && blocks[x][y][z - 1].type == none ||
+					z > 0 && is_transparent(blocks[x][y][z - 1].type) && !am_i_transparent) {
 					add_face(Back, type, pos);
 				}
-				if (x == width - 1 || x < width - 1 && blocks[x + 1][y][z].type == none) {
+				if (x == width - 1 || x < width - 1 && blocks[x + 1][y][z].type == none || 
+					x < width - 1 && is_transparent(blocks[x + 1][y][z].type) && !am_i_transparent) {
 					add_face(Right, type, pos);
 				}
-				if (y == height - 1 || y < height - 1 && blocks[x][y + 1][z].type == none) {
+				if (y == height - 1 || y < height - 1 && blocks[x][y + 1][z].type == none || 
+					y < height-1 && is_transparent(blocks[x][y + 1][z].type) && !am_i_transparent) {
 					add_face(Top, type, pos);
 				}
-				if (z == length - 1 || z < length - 1 && blocks[x][y][z + 1].type == none) {
+				if (z == length - 1 || z < length - 1 && blocks[x][y][z + 1].type == none || 
+					z < length - 1 && is_transparent(blocks[x][y][z + 1].type) && !am_i_transparent) {
 					add_face(Front, type, pos);
 				}
 			}
