@@ -19,13 +19,21 @@ using namespace glm;
 class Chunk
 {
 private: 
-	//TODO: shared VAO, VBO, Texture
+	//I'm not sure if this is a good way to address transparency depth issue lol
+	//for opaque geometry
 	vector<vertex> vertices;
 	vector<GLuint> indices;
 	VAO vao = VAO();
 	VBO vbo = VBO(vertices, sizeof(vertex) * vertices.size());
 	EBO ebo = EBO(indices, sizeof(GLuint) * indices.size());
-	Texture texture = Texture("texture_atlas.png");
+
+	//for transparent geometry
+	vector<vertex> transp_vertices;
+	vector<GLuint> transp_indices;
+	VAO transp_vao = VAO();
+	VBO transp_vbo = VBO(transp_vertices, sizeof(vertex) * transp_vertices.size());
+	EBO transp_ebo = EBO(transp_indices, sizeof(GLuint) * transp_indices.size());
+
 	int** height_map;
 	int** get_heightmap();
 	void add_face(block_face face, block_type type, vec3 pos);

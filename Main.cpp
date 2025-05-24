@@ -60,6 +60,7 @@ int main() {
 
 	Camera cam(window, width, height, vec3(0.0, 0.0, 3.0));
 	Shader shader = Shader("default.vert", "default.frag");
+	Texture texture = Texture("texture_atlas.png");
 	Terrain terrain = Terrain(cam.position);
 
 	glEnable(GL_DEPTH_TEST);
@@ -84,6 +85,7 @@ int main() {
 		
 		//draws mesh
 		shader.activate();
+		texture.bind();
 		terrain.update();
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
@@ -92,6 +94,7 @@ int main() {
 
 	//terminates the program, destroying everything including window
 	shader.destroy();
+	texture.destroy();
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;

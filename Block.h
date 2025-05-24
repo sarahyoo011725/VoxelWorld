@@ -47,6 +47,15 @@ namespace {
 	const static int texture_rows = 16;
 	const static int textures_columns = 16;
 
+	static bool is_transparent_block(block_type type) {
+		switch (type) {
+			case water:
+			case glass:
+				return true;
+		}
+		return false;
+	}
+
 	static vec2 convert_to_uv(int index, vec2 texture_coord) {
 		float x = texture_coord.x;
 		float y = texture_coord.y;

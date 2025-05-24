@@ -21,7 +21,7 @@ Chunk::Chunk(vec3 position) {
 			for (int y = 0; y < height_map[x][z]; ++y) {
 				block_type type = none;
 				if (y == height_map[x][z] - 1) {
-					type = glass; //test drawing with transparency ...
+					type = water; //test drawing with transparency ...
 				}
 				else {
 					type = dirt;
@@ -37,17 +37,25 @@ Chunk::Chunk(vec3 position) {
 	}
 
 	create_chunk();
-
 	vbo = VBO(vertices, sizeof(vertex) * vertices.size());
 	ebo = EBO(indices, sizeof(GLuint) * indices.size());
 	vao.bind();
 	vao.link_attrib(vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0); //vertex positions
 	vao.link_attrib(vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float))); //texture coordinates
+	
+	transp_vbo = VBO(transp_vertices, sizeof(vertex) * transp_vertices.size());
+	transp_ebo = EBO(transp_indices, sizeof(GLuint) * transp_indices.size());
+	transp_vao.bind();
+	transp_vao.link_attrib(transp_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0); //vertex positions
+	transp_vao.link_attrib(transp_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
 
 	//unbind all to prevent accidentally motifying them
 	vao.unbind();
 	vbo.unbind();
 	ebo.unbind();
+	transp_vao.unbind();
+	transp_vbo.unbind();
+	transp_ebo.unbind();
 }
 
 int** Chunk::get_heightmap() {
@@ -69,32 +77,50 @@ int** Chunk::get_heightmap() {
 }
 
 void Chunk::render() {
-	texture.bind();
 	vao.bind();
 	ebo.bind();
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+	transp_vao.bind();
+	transp_ebo.bind();
+	glDrawElements(GL_TRIANGLES, transp_indices.size(), GL_UNSIGNED_INT, 0);
 }
 
 void Chunk::add_face(block_face face, block_type type, vec3 pos) {
 	vector<vertex> verts = face_map[face];
 	vec2 texture_coord = texture_map[type][face];
-	
+	bool transparency = is_transparent_block(type); //checks if the texture is translucent or transparent.
 	//transforms vertices
 	for (int i = 0; i < verts.size(); ++i) {
 		vertex v = verts[i];
 		v.position += pos + position;
 		v.texture = convert_to_uv(i, texture_coord);
-		vertices.push_back(v);
+		if (transparency) {
+			transp_vertices.push_back(v);
+		}
+		else {
+			vertices.push_back(v);
+		}
 	}
 
 	//generates indices to draw faces with EBO
-	GLuint base_index = vertices.size() - 4; //forces base index start at 0
-	indices.push_back(base_index);
-	indices.push_back(base_index + 1);
-	indices.push_back(base_index + 2);
-	indices.push_back(base_index + 2);
-	indices.push_back(base_index + 3);
-	indices.push_back(base_index);
+	if (transparency) {
+		GLuint base_index = transp_vertices.size() - 4;
+		transp_indices.push_back(base_index);
+		transp_indices.push_back(base_index + 1);
+		transp_indices.push_back(base_index + 2);
+		transp_indices.push_back(base_index + 2);
+		transp_indices.push_back(base_index + 3);
+		transp_indices.push_back(base_index);
+	}
+	else {
+		GLuint base_index = vertices.size() - 4; //forces base index start at 0
+		indices.push_back(base_index);
+		indices.push_back(base_index + 1);
+		indices.push_back(base_index + 2);
+		indices.push_back(base_index + 2);
+		indices.push_back(base_index + 3);
+		indices.push_back(base_index);
+	}
 }
 
 void Chunk::create_chunk() {
@@ -133,7 +159,6 @@ void Chunk::destroy() {
 	vao.destroy();
 	vbo.destroy();
 	ebo.destroy();
-	texture.destroy();
 }
 
 Chunk::~Chunk() {
