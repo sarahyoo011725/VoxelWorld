@@ -65,7 +65,11 @@ int main() {
 
 	glEnable(GL_DEPTH_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND); //TODO: fix transparency issue with depth testing --> draw opaue objects first
+	glEnable(GL_BLEND); 
+	//my vertices are winded in counter wise for the front face.
+	//glCullFace is set to cull back face and glFrontFace is CCW by default. So, I tell gl that front faces are winded in counter wise.
+	glEnable(GL_CULL_FACE);
+	glFrontFace(GL_CW);
 
 	while (!glfwWindowShouldClose(window)) {
 		process_inputs(window);

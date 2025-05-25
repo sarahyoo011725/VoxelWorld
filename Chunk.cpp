@@ -146,7 +146,7 @@ void Chunk::create_chunk() {
 				bool am_i_transparent = is_transparent(blocks[x][y][z].type);
 				vec3 pos = vec3(x, y, z);
 				block_type type = blocks[x][y][z].type;
-				//TODO: I will make this look better later in some days lol
+				//TODO: I will make this look better in some days lol
 				if (x == 1 && (blocks[0][y][z].type == none || is_transparent(blocks[0][y][z].type) && !am_i_transparent) ||
 					x > 0 && (blocks[x - 1][y][z].type == none ||
 					is_transparent(blocks[x - 1][y][z].type) && !am_i_transparent)) {
