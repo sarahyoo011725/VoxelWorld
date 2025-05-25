@@ -1,9 +1,11 @@
 #include "Chunk.h"
+#include "ChunkManager.h"
 
-Chunk::Chunk(vec3 position) {
-	width = chunk_size;
+Chunk::Chunk(vec3 position) : cm(ChunkManager::get_instance()) {
+	//add 1 to width and length to store neighbor chunks' block data in their edge
+	width = chunk_size + 1;
 	height = 100;
-	length = chunk_size;
+	length = chunk_size + 1;
 	this->position = position;
 
 	//TODO: optimize blocks initialization
@@ -63,6 +65,7 @@ int** Chunk::get_heightmap() {
 	}
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
+			//a block's world coords
 			int x_pos = position.x + x;
 			int z_pos = position.z + z;
 			int height_val = abs(static_cast<int> (get_noise(x_pos, z_pos) * 20)) + 4;
@@ -83,6 +86,14 @@ void Chunk::draw_transparent_blocks() {
 	transp_vao.bind();
 	transp_ebo.bind();
 	glDrawElements(GL_TRIANGLES, transp_indices.size(), GL_UNSIGNED_INT, 0);
+}
+
+Block* Chunk::get_block(int x, int y, int z) {
+	if (x < 0 || y < 0 || z < 0 || x > width - 1 || y > height - 1 || z > length - 1) {
+		cout << "Wrong block index" << endl;
+		return nullptr;
+	}
+	return &blocks[x][y][z];
 }
 
 void Chunk::add_face(block_face face, block_type type, vec3 pos) {
@@ -133,29 +144,25 @@ void Chunk::create_chunk() {
 				}
 				int h = height_map[x][z];
 				bool am_i_transparent = is_transparent(blocks[x][y][z].type);
-				
-				//TODO: remove adjacent chunk faces or unseen face
-				/*
-				if ((x == 0 || y == 0 || z == 0 || x == width - 1 || z == length - 1) && (y < h || am_i_transparent)) {
-					continue;
-				}
-				*/
-
 				vec3 pos = vec3(x, y, z);
 				block_type type = blocks[x][y][z].type;
-				if (x == 0 ||x > 0 && (blocks[x - 1][y][z].type == none || 
+				//TODO: I will make this look better later in some days lol
+				if (x == 1 && (blocks[0][y][z].type == none || is_transparent(blocks[0][y][z].type) && !am_i_transparent) ||
+					x > 0 && (blocks[x - 1][y][z].type == none ||
 					is_transparent(blocks[x - 1][y][z].type) && !am_i_transparent)) {
 					add_face(Left, type, pos);
 				}
-				if (y == 0 || y > 0 && (blocks[x][y - 1][z].type == none || 
+				if (y > 0 && (blocks[x][y - 1][z].type == none || 
 					is_transparent(blocks[x][y - 1][z].type) && !am_i_transparent)) {
 					add_face(Bottom, type, pos);
 				}
-				if (z == 0 || z > 0 && (blocks[x][y][z - 1].type == none || 
+				if (z == 1 && (blocks[x][y][0].type == none || is_transparent(blocks[x][y][0].type) && !am_i_transparent) ||
+					z > 0 && (blocks[x][y][z - 1].type == none ||
 					is_transparent(blocks[x][y][z - 1].type) && !am_i_transparent)) {
 					add_face(Back, type, pos);
 				}
-				if (x == width - 1 || x < width - 1 && (blocks[x + 1][y][z].type == none || 
+				if (x == width - 2 && (blocks[width-1][y][z].type == none || is_transparent(blocks[width - 1][y][z].type) && !am_i_transparent) ||
+					x < width - 1 && (blocks[x + 1][y][z].type == none ||
 					is_transparent(blocks[x + 1][y][z].type) && !am_i_transparent)) {
 					add_face(Right, type, pos);
 				}
@@ -163,7 +170,8 @@ void Chunk::create_chunk() {
 					is_transparent(blocks[x][y + 1][z].type) && !am_i_transparent)) {
 					add_face(Top, type, pos);
 				}
-				if (z == length - 1 || z < length - 1 && (blocks[x][y][z + 1].type == none || 
+				if (z == length - 2 && (blocks[x][y][length-1].type == none || is_transparent(blocks[x][y][length - 1].type) && !am_i_transparent) ||
+					z < length - 1 && (blocks[x][y][z + 1].type == none ||
 					is_transparent(blocks[x][y][z + 1].type) && !am_i_transparent)) {
 					add_face(Front, type, pos);
 				}

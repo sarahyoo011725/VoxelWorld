@@ -1,12 +1,7 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
 #include <vector>
-#include <FastNoise/FastNoiseLite.h>
-
 #include "Block.h"
 #include "VAO.h"
 #include "VBO.h"
@@ -16,18 +11,12 @@
 
 using namespace glm; 
 
+class ChunkManager;
+
 class Chunk
 {
 private: 
-	int** height_map;
-	int** get_heightmap();
-	void add_face(block_face face, block_type type, vec3 pos);
-	void create_chunk();
-public:
-	int width, length, height;
-	Block*** blocks;
-	vec3 position = vec3(0.0f);
-
+	ChunkManager &cm;
 	//for opaque geometry
 	vector<vertex> opaque_vertices;
 	vector<GLuint> opaque_indices;
@@ -42,18 +31,18 @@ public:
 	VBO transp_vbo = VBO(transp_vertices, sizeof(vertex) * transp_vertices.size());
 	EBO transp_ebo = EBO(transp_indices, sizeof(GLuint) * transp_indices.size());
 
+	Block*** blocks;
+	int** height_map;
+	int** get_heightmap();
+	void add_face(block_face face, block_type type, vec3 pos);
+	void create_chunk();
+public:
+	int width, length, height;
+	vec3 position = vec3(0.0f);
 	Chunk(vec3 position);
 	~Chunk();
 	void draw_opaque_blocks();
 	void draw_transparent_blocks();
+	Block* get_block(int x, int y, int z);
 	void destroy();
 };
-
-namespace {
-	static FastNoiseLite m_noise;
-	const static int chunk_size = 16;
-	const static int water_level = 10;
-	float get_noise(int x, int z) {
-		return m_noise.GetNoise((float)x, (float)z);
-	}
-}

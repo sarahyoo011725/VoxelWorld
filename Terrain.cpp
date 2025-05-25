@@ -1,6 +1,6 @@
 #include "Terrain.h"
 
-Terrain::Terrain(vec3 &cam_pos) {
+Terrain::Terrain(vec3 &cam_pos) : cm(ChunkManager::get_instance()) {
 	player_pos = &cam_pos;
 }
 
@@ -15,11 +15,12 @@ void Terrain::update() {
 	for (int x = origin.x - render_dist; x <= origin.x + render_dist; ++x) {
 		for (int z = origin.y - render_dist; z <= origin.y + render_dist; ++z) {
 			ivec2 coord = { x, z };
-			if (chunks.find(coord) != chunks.end()) { 
-				visible_chunks.push_back(&chunks.at(coord));
+			Chunk* chunk = cm.get_chunk(coord);
+			if (chunk != nullptr) { 
+				visible_chunks.push_back(chunk);
 			}
 			else {
-				create_chunk(coord);
+				cm.create_chunk(coord);
 			}
 		}
 	}
@@ -33,10 +34,4 @@ void Terrain::update() {
 	}
 
 	visible_chunks.clear();
-}
-
-void Terrain::create_chunk(ivec2 chunk_coord) {
-	vec3 world_pos = { chunk_coord.x * chunk_size, 0, chunk_coord.y * chunk_size };
-	Chunk new_chunk = Chunk(world_pos);
-	chunks.insert({ chunk_coord, new_chunk });
 }
