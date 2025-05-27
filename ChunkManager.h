@@ -18,6 +18,7 @@ There are two types of coords this engine: world and chunk coord.
 ** chunk coord == world_coord / chunk_size
 - chunk pos is a vec3 made from ivec2 chunk origin, with only y being 0 by default, for every chunks newly created.	
   Hence, ivec2(chunk_pos.x, chunk_pos.z) is the unique id of a chunk.
+- local coord is the index of a block in a chunk.
 */
 
 class ChunkManager
