@@ -1,34 +1,37 @@
 #include "ChunkManager.h"
 
-bool ChunkManager::chunk_exists(ivec2 chunk_coord) {
-	return chunks.find(chunk_coord) != chunks.end();
+bool ChunkManager::chunk_exists(ivec2 chunk_origin) {
+	return chunks.find(chunk_origin) != chunks.end();
 }
 
-Chunk* ChunkManager::get_chunk(ivec2 chunk_coord) {
-	if (chunk_exists(chunk_coord)) {
-		return &chunks.at(chunk_coord);
+Chunk* ChunkManager::get_chunk(ivec2 chunk_origin) {
+	if (chunk_exists(chunk_origin)) {
+		return &chunks.at(chunk_origin);
 	}
 	return nullptr;
 }
 
-Block* ChunkManager::get_block_worldspace(vec3 world_coord) {
-	ivec2 chunk_coord = {
-		static_cast<int> (world_coord.x / chunk_size),
-		static_cast<int> (world_coord.z / chunk_size)
-	};
-	Chunk* chunk = get_chunk(chunk_coord);
-	if (chunk == nullptr) {
-		cout << "Chunk has not been created." << endl;
-		return nullptr;
-	}
-	int local_x = world_coord.x - chunk_coord.x;
-	int local_y = world_coord.y;
-	int local_z = world_coord.z - chunk_coord.y;
-	return chunk->get_block(local_x, local_y, local_z);
+void ChunkManager::set_block_worldspace(vec3 world_coord, block_type type) {
+	ivec2 chunk_origin = get_chunk_origin(world_coord);
+	Chunk* chunk = get_chunk(chunk_origin);
+	if (chunk == nullptr) return;
+
+	ivec3 local_coord = world_to_local_coord(world_coord);
+	chunk->set_block(local_coord, type);	
 }
 
-void ChunkManager::create_chunk(ivec2 chunk_coord) {
-	vec3 world_coord = vec3(chunk_coord.x * chunk_size, 0, chunk_coord.y * chunk_size);
+Block* ChunkManager::get_block_worldspace(vec3 world_coord) {
+	ivec2 chunk_origin = get_chunk_origin(world_coord);
+	Chunk* chunk = get_chunk(chunk_origin);
+	if (chunk == nullptr) {
+		return nullptr;
+	}
+	ivec3 local_coord = world_to_local_coord(world_coord);
+	return chunk->get_block(local_coord);
+}
+
+void ChunkManager::create_chunk(ivec2 chunk_origin) {
+	vec3 world_coord = vec3(chunk_origin.x * chunk_size, 0, chunk_origin.y * chunk_size);
 	Chunk new_chunk = Chunk(world_coord);
-	chunks.insert({ chunk_coord, new_chunk });
+	chunks.insert({ chunk_origin, new_chunk });
 }

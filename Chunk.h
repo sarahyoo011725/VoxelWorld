@@ -9,14 +9,14 @@
 #include "Texture.h"
 #include "Shader.h"
 
-using namespace glm; 
+using namespace glm;
 
 class ChunkManager;
-
 class Chunk
 {
 private: 
 	ChunkManager &cm;
+
 	//for opaque geometry
 	vector<vertex> opaque_vertices;
 	vector<GLuint> opaque_indices;
@@ -32,17 +32,20 @@ private:
 	EBO transp_ebo = EBO(transp_indices, sizeof(GLuint) * transp_indices.size());
 
 	Block*** blocks;
-	int** height_map;
 	int** get_heightmap();
 	void add_face(block_face face, block_type type, vec3 pos);
-	void create_chunk();
 public:
+	bool has_built = false;
+	int** height_map;
 	int width, length, height;
 	vec3 position = vec3(0.0f);
 	Chunk(vec3 position);
 	~Chunk();
+	void build_chunk();
+	void bind_buffers();
 	void draw_opaque_blocks();
 	void draw_transparent_blocks();
-	Block* get_block(int x, int y, int z);
+	Block* get_block(ivec3 local_coord);
+	void set_block(ivec3 local_coord, block_type type);
 	void destroy();
 };
