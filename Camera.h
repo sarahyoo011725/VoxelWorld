@@ -33,6 +33,6 @@ public:
 	//bool window_refocused = false; //TODO: prevent cam view jump on window re-focus
 	Camera(GLFWwindow *window, int window_width, int window_height, vec3 position);
 	void update();
-	void update_matrix(int shader_id);
+	void update_uniforms(int shader_id);
 };
 

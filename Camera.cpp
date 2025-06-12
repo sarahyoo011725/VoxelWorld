@@ -55,11 +55,15 @@ void Camera::update() {
 	process_mouse_inputs();
 }
 
-void Camera::update_matrix(int shader_id ) {
+void Camera::update_uniforms(int shader_id) {
+	//sends view matrix uniform to shader
 	mat4 view = lookAt(position, position + direction, up);
 	mat4 projection = perspective(radians(fov_degrees), (float)window_width/window_height, near_plane, far_plane);
 	GLuint location = glGetUniformLocation(shader_id, "cam_matrix");
 	glUniformMatrix4fv(location, 1, false, value_ptr(projection * view));
+	//sends cam pos uniform to shader
+	GLuint cam_pos_loc = glGetUniformLocation(shader_id, "cam_pos");
+	glUniform3f(cam_pos_loc, position.x, position.y, position.z);
 }
 
 void Camera::process_mouse_inputs() {

@@ -63,6 +63,16 @@ int main() {
 	Texture texture = Texture("texture_atlas.png");
 	Terrain terrain = Terrain(cam.position);
 
+	//global light setting
+	//light uniform can only be set once because it is constant and global
+	const vec3 light_pos = vec3(0.0, 20.0, 0.0);
+	const vec4 light_color = vec4(1.0, 1.0, 1.0, 1.0);
+	GLuint light_pos_loc = glGetUniformLocation(shader.id, "light_pos");
+	GLuint light_color_loc = glGetUniformLocation(shader.id, "light_color");
+	glUniform3f(light_pos_loc, light_pos.x, light_pos.y, light_pos.z);
+	glUniform4f(light_color_loc, light_color.x, light_color.y, light_color.z, light_color.a);
+
+	//enables several settings
 	glEnable(GL_DEPTH_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND); 
@@ -76,7 +86,7 @@ int main() {
 		if (isWindowActive) {
 			cam.update();
 		}
-		cam.update_matrix(shader.id);
+		cam.update_uniforms(shader.id);
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -88,8 +98,6 @@ int main() {
 		}
 		
 		//draws mesh
-		shader.activate();
-		texture.bind();
 		terrain.update();
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen

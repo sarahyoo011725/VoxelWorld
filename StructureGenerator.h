@@ -20,7 +20,6 @@ public:
 };
 
 namespace {
-	static vec2 grass_text_coord = vec2(8, 14);
 	//add front and back of faces to make grass visible in either side (prevent disappearing due to back-face culling)
 	//TODO: fix grass mesh issue when back face cull mode is on
 	static vector<vector<vertex>> grass_face_vertices = {
