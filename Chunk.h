@@ -35,11 +35,14 @@ private:
 	int** get_heightmap();
 	void add_face(block_face face, block_type type, vec3 pos);
 public:
+	bool should_rebuild = false;
 	bool has_built = false;
 	int** height_map;
 	int width, length, height;
-	vec3 position = vec3(0.0f);
-	Chunk(vec3 position);
+	vec3 world_position = vec3(0.0f);
+	ivec2 id = ivec2(0);
+
+	Chunk(ivec2 chunk_origin);
 	~Chunk();
 	void build_chunk();
 	void bind_buffers();

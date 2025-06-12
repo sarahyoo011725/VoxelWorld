@@ -2,12 +2,13 @@
 #include "ChunkManager.h"
 #include "StructureGenerator.h"
 
-Chunk::Chunk(vec3 position) : cm(ChunkManager::get_instance()) {
+Chunk::Chunk(ivec2 chunk_origin) : cm(ChunkManager::get_instance()) {
 	//add 1 to width and length to store neighbor chunks' block data in their edge
+	id = chunk_origin;
+	world_position = vec3(chunk_origin.x * chunk_size, 0, chunk_origin.y * chunk_size);
 	width = chunk_size + 1;
 	height = 100;
 	length = chunk_size + 1;
-	this->position = position;
 
 	//TODO: optimize blocks initialization
 	blocks = new Block * *[width];
@@ -59,8 +60,6 @@ void Chunk::bind_buffers() {
 	transp_vao.bind();
 	transp_vao.link_attrib(transp_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 	transp_vao.link_attrib(transp_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
-
-	has_built = true;
 }
 
 int** Chunk::get_heightmap() {
@@ -70,9 +69,9 @@ int** Chunk::get_heightmap() {
 	}
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
-			//a block's world coords
-			int x_pos = position.x + x;
-			int z_pos = position.z + z;
+			//get a block's world coords
+			int x_pos = world_position.x + x;
+			int z_pos = world_position.z + z;
 			int height_val = abs(static_cast<int> (get_noise(x_pos, z_pos) * 20)) + 4;
 			if (height_val > height) height_val = height;
 			map[x][z] = height_val;
@@ -123,7 +122,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 pos) {
 	//transforms vertices
 	for (int i = 0; i < verts.size(); ++i) {
 		vertex v = verts[i];
-		v.position += pos + position;
+		v.position += pos + world_position;
 		v.texture = convert_to_uv(i, texture_coord);
 		if (transparency) {
 			transp_vertices.push_back(v);
@@ -177,7 +176,7 @@ void Chunk::build_chunk() {
 					z > 0 && (blocks[x][y][z - 1].type == none || has_transparency(blocks[x][y][z - 1].type) && !am_i_transparent)) {
 					add_face(Back, type, pos);
 				}
-				if (x == width - 2 && (blocks[width-1][y][z].type == none || has_transparency(blocks[width - 1][y][z].type) && !am_i_transparent) ||
+				if (x == width - 2 && (blocks[width- 1][y][z].type == none || has_transparency(blocks[width - 1][y][z].type) && !am_i_transparent) ||
 					x < width - 1 && (blocks[x + 1][y][z].type == none || has_transparency(blocks[x + 1][y][z].type) && !am_i_transparent)) {
 					add_face(Right, type, pos);
 				}
@@ -185,13 +184,14 @@ void Chunk::build_chunk() {
 						has_transparency(blocks[x][y + 1][z].type) && !am_i_transparent)) {
 					add_face(Top, type, pos);
 				}
-				if (z == length - 2 && (blocks[x][y][length-1].type == none || has_transparency(blocks[x][y][length - 1].type) && !am_i_transparent) ||
+				if (z == length - 2 && (blocks[x][y][length - 1].type == none || has_transparency(blocks[x][y][length - 1].type) && !am_i_transparent) ||
 					z < length - 1 && (blocks[x][y][z + 1].type == none || has_transparency(blocks[x][y][z + 1].type) && !am_i_transparent)) {
 					add_face(Front, type, pos);
 				}
 			}
 		}
 	}
+	has_built = true;
 }
 
 void Chunk::destroy() {

@@ -20,6 +20,7 @@ class VBO
 public:
 	GLuint id;
 	VBO(vector<vertex> vertices, GLsizeiptr size); 
+	void set_vertices(vector<vertex> vertices, GLsizeiptr size);
 	void bind();
 	void unbind();
 	void destroy();

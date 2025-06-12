@@ -11,6 +11,7 @@ class EBO
 public:
 	GLuint id;
 	EBO(vector<GLuint> indices, GLsizeiptr size);
+	void set_indices(vector<GLuint> indices, GLsizeiptr size);
 	void bind();
 	void unbind();
 	void destroy();

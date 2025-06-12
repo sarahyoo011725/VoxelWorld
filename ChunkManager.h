@@ -21,6 +21,11 @@ There are two types of coords this engine: world and chunk coord.
 - local coord is the index of a block in a chunk.
 */
 
+struct block_data {
+	ivec3 local_coord;
+	block_type type;
+};
+
 class ChunkManager
 {
 private:
@@ -33,12 +38,13 @@ public:
 		static ChunkManager instance;
 		return instance;
 	}
+	unordered_map<ivec2, vector<block_data>> unloaded_blocks;
 	unordered_map<ivec2, Chunk> chunks;
 	void set_block_worldspace(vec3 world_coord, block_type type);
 	Block* get_block_worldspace(vec3 world_coord);
-	Chunk* get_chunk(ivec2 chunk_coord);
-	bool chunk_exists(ivec2 chunk_coord);
-	void create_chunk(ivec2 chunk_coord);
+	Chunk* get_chunk(ivec2 chunk_origin);
+	bool chunk_exists(ivec2 chunk_origin);
+	Chunk* create_chunk(ivec2 chunk_origin);
 };
 
 namespace {
@@ -51,40 +57,33 @@ namespace {
 	}
 	ivec2 get_chunk_origin(vec3 world_coord) {
 		ivec2 chunk_origin = {
-			static_cast<int> (floor(world_coord.x / chunk_size)),
-			static_cast<int> (floor(world_coord.z / chunk_size))
+			floor(world_coord.x / chunk_size),
+			floor(world_coord.z / chunk_size)
 		};
 		return chunk_origin;
 	}
 	ivec3 world_to_chunk_coord(vec3 world_coord) {
 		return {
-			static_cast<int> (floor(world_coord.x / chunk_size)),
-			static_cast<int> (floor(world_coord.y / chunk_size)),
-			static_cast<int> (floor(world_coord.z / chunk_size))
+			floor(world_coord.x / chunk_size),
+			floor(world_coord.y / chunk_size),
+			floor(world_coord.z / chunk_size)
 		};
 	}
 	vec3 chunk_to_world_coord(ivec3 chunk_coord) {
 		return chunk_coord * chunk_size;
 	}
-	ivec3 chunk_to_local_coord(ivec3 chunk_coord, vec3 chunk_pos) {
-		return {
-			chunk_coord.x - chunk_pos.x,
-			chunk_coord.y - chunk_pos.y,
-			chunk_coord.z - chunk_pos.z
-		};
-	}
-	vec3 local_to_chunk_coord(ivec3 block_index, vec3 chunk_pos) {
+	vec3 local_to_world_coord(ivec3 block_index, vec3 chunk_pos) {
 		return (vec3)block_index + chunk_pos;
 	}
-	
 	//return range: from 0 to 15 (which is chunk_size - 1)
 	ivec3 world_to_local_coord(vec3 world_coord) {
-		int wx = floor(world_coord.x);
-		int wz = floor(world_coord.z);
-		ivec3 local_coord = ivec3(wx % chunk_size, world_coord.y, wz % chunk_size);
-		 //cout << "lx: " << local_coord.x << ", lz: " << local_coord.z << endl;
-		if (local_coord.x < 0) local_coord.x += chunk_size;
-		if (local_coord.z < 0) local_coord.z += chunk_size;
+		ivec2 chunk_origin = get_chunk_origin(world_coord);
+		ivec3 local_coord  = {
+			static_cast<int> (floor(world_coord.x - chunk_origin.x * 16 )), 
+			floor(world_coord.y),
+			static_cast<int> (floor(world_coord.z - chunk_origin.y * 16 ))
+		};
+		//cout << local_coord.x << " ";
 		return local_coord;
 	}
 }

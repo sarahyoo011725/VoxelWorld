@@ -6,6 +6,7 @@
 using namespace std;
 using namespace glm;
 
+
 class Terrain
 {
 private:
@@ -15,7 +16,7 @@ private:
 public:
 	int render_dist = 9;
 	vec3* player_pos;
-	ivec2 origin = ivec2(0); //player's pos converted into chunk coord. it is the origin point of render range.
+	ivec2 origin = ivec2(0); //player's pos converted into chunk coord. it is the origin of player's render range.
 	vector<Chunk*> visible_chunks;
 	Terrain(vec3& cam_pos);
 	void update();

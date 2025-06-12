@@ -3,15 +3,17 @@
 
 void StructureGenerator::spawn_tree(vec3 world_coord) {
 	//checks if there are any trees 1 block away.
-	ivec2 offsets[] = { {0, 0}, {-1, 0}, {-1, -1}, {-1, 1}, {1, 0}, {1, -1}, {1, 1}, {0, -1}, {0, 1} };
-	for (ivec2 off : offsets) {
-		int wx = world_coord.x + off.x;
-		int wz = world_coord.z + off.y;
-		Block* block = cm.get_block_worldspace(vec3(wx, world_coord.y, wz));
-		if (block != nullptr && block->type == trunk) {
-			return;
-		} 
+	for (int dx = -1; dx <= 1; ++dx) {
+		for (int dz = -1; dz <= 1; ++dz) {
+			int wx = world_coord.x + dx;
+			int wz = world_coord.z + dz;
+			Block* block = cm.get_block_worldspace(vec3(wx, world_coord.y, wz));
+			if (block == nullptr || block != nullptr && block->type == trunk) {
+				return;
+			} 
+		}
 	}
+
 	//make a stem of height 5
 	for (int h = 0; h < 5; ++h) {
 		cm.set_block_worldspace(vec3(world_coord.x, world_coord.y + h, world_coord.z), trunk);
