@@ -30,7 +30,7 @@ Chunk::Chunk(ivec2 chunk_origin) : cm(ChunkManager::get_instance()) {
 					type = water;
 				}
 				if (y == h) {
-					type = grass;
+					type = dirt_grass;
 				}
 				if (y < h) {
 					type = dirt;
@@ -114,7 +114,50 @@ void Chunk::set_block(ivec3 local_coord, block_type type) {
 	blocks[x][y][z].type = type;
 }
 
+void Chunk::add_structure_vertices(vector<vertex> vertices_to_add, bool has_transparency) {
+	if (has_transparency) {
+		for (int i = 1; i <= vertices_to_add.size(); ++i) {
+			transp_vertices.push_back(vertices_to_add[i - 1]);
+			if (i > 1 && i % 4 == 0) {
+				add_face_indices(has_transparency);
+			}
+		}
+	}
+	else {
+		for (int i = 1; i <= vertices_to_add.size(); ++i) {
+			opaque_vertices.push_back(vertices_to_add[i - 1]);
+			if (i > 1 && i % 4 == 0) {
+				add_face_indices(has_transparency);
+			}
+		}
+	}
+	should_rebuild = true;
+}
+
+void Chunk::add_face_indices(bool has_transparency) {
+	if (has_transparency) {
+		GLuint base_index = transp_vertices.size() - 4; //ensures base_index to start at 0
+		//indices are added in: 0 -> 1 -> 2  (one triangle) --> 2 -> 3 -> 0 (another triangle)
+		//a face (square) is made of 2 triangles, which is made of 6 indices in total.
+		transp_indices.push_back(base_index);
+		transp_indices.push_back(base_index + 1);
+		transp_indices.push_back(base_index + 2);
+		transp_indices.push_back(base_index + 2);
+		transp_indices.push_back(base_index + 3);
+		transp_indices.push_back(base_index);
+	} else {
+		GLuint base_index = opaque_vertices.size() - 4;
+		opaque_indices.push_back(base_index);
+		opaque_indices.push_back(base_index + 1);
+		opaque_indices.push_back(base_index + 2);
+		opaque_indices.push_back(base_index + 2);
+		opaque_indices.push_back(base_index + 3);
+		opaque_indices.push_back(base_index);
+	}
+}
+
 void Chunk::add_face(block_face face, block_type type, vec3 pos) {
+	if (texture_map.find(type) == texture_map.end()) return; //a type is not in texure map if it is a structure that is not cube i.e. grass
 	vector<vertex> verts = face_map[face];
 	vec2 texture_coord = texture_map[type][face];
 	bool transparency = has_transparency(type);
@@ -131,26 +174,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 pos) {
 			opaque_vertices.push_back(v);
 		}
 	}
-
-	//generates indices to draw faces with EBO
-	if (transparency) {
-		GLuint base_index = transp_vertices.size() - 4; //ensures base_index to start at 0
-		transp_indices.push_back(base_index);
-		transp_indices.push_back(base_index + 1);
-		transp_indices.push_back(base_index + 2);
-		transp_indices.push_back(base_index + 2);
-		transp_indices.push_back(base_index + 3);
-		transp_indices.push_back(base_index);
-	}
-	else {
-		GLuint base_index = opaque_vertices.size() - 4;
-		opaque_indices.push_back(base_index);
-		opaque_indices.push_back(base_index + 1);
-		opaque_indices.push_back(base_index + 2);
-		opaque_indices.push_back(base_index + 2);
-		opaque_indices.push_back(base_index + 3);
-		opaque_indices.push_back(base_index);
-	}
+	add_face_indices(transparency);
 }
 
 void Chunk::build_chunk() {

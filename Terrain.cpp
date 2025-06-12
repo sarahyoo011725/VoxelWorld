@@ -59,10 +59,18 @@ void Terrain::spawn_structures(Chunk* chunk) {
 			int wx = chunk->world_position.x + x;
 			int wz = chunk->world_position.z + z;
 			int h = chunk->height_map[x][z];
-			//ensure to spawn tree on ground
-			int r = rand() % 50;
-			if (h <= water_level || r != 0) continue;
-			sg.spawn_tree(vec3(wx, h + 1, wz));
+
+			//do not spawn anything in water
+			if (h <= water_level) continue;
+
+			int n_tree = rand() % 60;
+			int n_grass = rand() % 10;
+			if (n_tree == 0) {
+				sg.spawn_tree(vec3(wx, h + 1, wz));
+			}
+			if (n_grass == 0) {
+				sg.spawn_grass(vec3(wx, h + 1, wz));
+			}
 		}
 	}
 }

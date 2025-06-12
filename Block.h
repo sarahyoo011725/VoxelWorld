@@ -24,6 +24,13 @@ public:
 };
 
 namespace {
+	/*
+	* converts texture coord from texture_map into uv texture coord (scale it to between 0.0 and 1.0)
+	* uv column & row range: 0 ~ 1.
+	* index: index of a vertex from a face vertices. 
+	* face left-top index: 0 / face right-top index: 1 / face right-bottom index: 2 / face left_bottom index = 3 (clockwise order)
+	* *** the unit for block data modifcation is face, which is a 2d square.
+	*/
 	static vec2 convert_to_uv(int index, vec2 texture_coord) {
 		float x = texture_coord.x;
 		float y = texture_coord.y;

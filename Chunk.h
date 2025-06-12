@@ -34,6 +34,7 @@ private:
 	Block*** blocks;
 	int** get_heightmap();
 	void add_face(block_face face, block_type type, vec3 pos);
+	void add_face_indices(bool has_transparency);
 public:
 	bool should_rebuild = false;
 	bool has_built = false;
@@ -50,5 +51,6 @@ public:
 	void draw_transparent_blocks();
 	Block* get_block(ivec3 local_coord);
 	void set_block(ivec3 local_coord, block_type type);
+	void add_structure_vertices(vector<vertex> vertices_to_add, bool has_transparency);
 	void destroy();
 };

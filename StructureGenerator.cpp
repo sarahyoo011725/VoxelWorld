@@ -1,6 +1,26 @@
 #include "StructureGenerator.h"
 #include "Chunk.h"
 
+void StructureGenerator::spawn_grass(vec3 world_coord) {
+	//draw grass
+	ivec2 chunk_id = get_chunk_origin(world_coord);
+	Chunk* chunk = cm.get_chunk(chunk_id);
+	if (chunk != nullptr) {
+		ivec3 local_coord = world_to_local_coord(world_coord);
+		if (chunk->get_block(local_coord)->type == grass) return;
+		vector<vertex> transformed_vertices;
+		for (vector<vertex> face : grass_face_vertices) {
+			for (int i = 0; i < face.size(); ++i) {
+				vec3 position = face[i].position + world_coord;
+				vec2 uv_coord = convert_to_uv(i, grass_text_coord);
+				transformed_vertices.push_back({ position, uv_coord });
+			}
+		}
+		chunk->add_structure_vertices(transformed_vertices, true); //grass has transparency
+		chunk->set_block(local_coord, grass);
+	}
+}
+
 void StructureGenerator::spawn_tree(vec3 world_coord) {
 	//checks if there are any trees 1 block away.
 	for (int dx = -1; dx <= 1; ++dx) {
