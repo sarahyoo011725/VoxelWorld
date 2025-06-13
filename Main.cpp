@@ -58,7 +58,7 @@ int main() {
 		return -1;
 	}
 
-	Camera cam(window, width, height, vec3(0.0, 0.0, 3.0));
+	Camera cam(window, width, height, vec3(0.0, 100.0, 0.0));
 	Shader shader = Shader("default.vert", "default.frag");
 	Texture texture = Texture("texture_atlas.png");
 	Terrain terrain = Terrain(cam.position);

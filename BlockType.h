@@ -45,6 +45,13 @@ namespace {
 		return false;
 	}
 
+	static bool is_solid(block_type type) {
+		if (type == water || type == grass || type == none) {
+			return false;
+		}
+		return true;
+	}
+
 	static map<block_type, map<block_face, vec2>> texture_map = {
 		{dirt, {{Front,vec2(3,16)},{Back,vec2(3,16)},{Left,vec2(3,16)},{Right,vec2(3,16)},{Top,vec2(3,16)},{Bottom,vec2(3,16)}}},
 		{dirt_grass, {{Front,vec2(4, 16)},{Back,vec2(4, 16)},{Left,vec2(4, 16)},{Right,vec2(4, 16)},{Top,vec2(1, 16)},{Bottom,vec2(3, 16)}}},

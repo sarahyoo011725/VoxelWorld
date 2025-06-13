@@ -1,6 +1,6 @@
 #include "Camera.h"
 
-Camera::Camera(GLFWwindow *window, int window_width, int window_height, vec3 position) {
+Camera::Camera(GLFWwindow *window, int window_width, int window_height, vec3 position) : cm(ChunkManager::get_instance()) {
 	this->window = window;
 	this->window_width = window_width;
 	this->window_height = window_height;
@@ -13,32 +13,53 @@ Camera::Camera(GLFWwindow *window, int window_width, int window_height, vec3 pos
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
+void Camera::update_matrix(int shader_id) {
+	mat4 view = lookAt(position, position + direction, up);
+	mat4 projection = perspective(radians(fov_degrees), (float)window_width / window_height, near_plane, far_plane);
+	GLuint location = glGetUniformLocation(shader_id, "cam_matrix");
+	glUniformMatrix4fv(location, 1, false, value_ptr(projection * view));
+}
+
+bool Camera::is_ground() {
+	vec3 below_pos = position;
+	below_pos.y -= player_size.y + 0.1f;
+	Block* block = cm.get_block_worldspace(below_pos);
+	return block != nullptr && is_solid(block->type);
+}
+
 //updates anything required periodically
 void Camera::update() {
 	float frame = (float)glfwGetTime();
 	dt = frame - last_frame;
 	last_frame = frame;
-	
+
+	update_mouse();
+	update_movement(dt);
+}
+
+void Camera::update_movement(float dt) {
 	vec3 right = normalize(cross(direction, vec3(0.0, 1.0, 0.0)));
 	up = normalize(cross(right, direction));
+	vec3 input_dir = vec3(0.0);
 
 	if (glfwGetKey(window, GLFW_KEY_W)) {
-		position += speed * direction * dt;
+		input_dir += direction;
 	}
 	if (glfwGetKey(window, GLFW_KEY_S)) {
-		position -= speed * direction * dt;
+		input_dir -= direction;
 	}
-	if (glfwGetKey(window, GLFW_KEY_A)) { 
-		position -= right * speed * dt;
+	if (glfwGetKey(window, GLFW_KEY_A)) {
+		input_dir -= right;
 	}
 	if (glfwGetKey(window, GLFW_KEY_D)) {
-		position += right * speed * dt;
+		input_dir += right;
 	}
+	
 	if (glfwGetKey(window, GLFW_KEY_SPACE)) {
-		position += up * speed * dt;
+		input_dir += up;
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
-		position -= up * speed * dt;
+		input_dir -= up;
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT_ALT)) {
 		fov_degrees -= 23.0f * dt;
@@ -50,19 +71,44 @@ void Camera::update() {
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) {
 		is_running = !is_running;
 	}
-	speed = (is_running) ? run_speed : 5.0f;
-	//TODO: check ground
-	process_mouse_inputs();
+	if (glfwGetKey(window, GLFW_KEY_2)) {
+		enable_physics = !enable_physics;
+	}
+
+	if (is_running) {
+		speed = (enable_physics) ? run_speed : run_speed_fly;
+	}
+	else {
+		speed = default_speed;
+	}
+
+	if (length(input_dir) > 0.0) {
+		input_dir = normalize(input_dir);
+	}
+
+	velocity.x = input_dir.x * speed;
+	velocity.z = input_dir.z * speed;
+	if (!enable_physics) velocity.y = input_dir.y * speed;
+
+	//note: velocity += acceleration * dt, position += velocity * dt, 
+	//multiply dt to ensure player moves the same distance per second. (makes the movement frame-rate independent)
+
+	if (enable_physics) {
+		if (is_ground()) {
+			velocity.y = 0.0f;
+
+			if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+				velocity.y = jump_force;
+			}
+		}
+		else {
+			velocity.y += gravity * dt;
+		}
+	}
+	position += velocity * dt;
 }
 
-void Camera::update_matrix(int shader_id ) {
-	mat4 view = lookAt(position, position + direction, up);
-	mat4 projection = perspective(radians(fov_degrees), (float)window_width/window_height, near_plane, far_plane);
-	GLuint location = glGetUniformLocation(shader_id, "cam_matrix");
-	glUniformMatrix4fv(location, 1, false, value_ptr(projection * view));
-}
-
-void Camera::process_mouse_inputs() {
+void Camera::update_mouse() {
 	glfwGetCursorPos(window, &mouse_xpos, &mouse_ypos);
 	//prevents sudden view jump when window re-focued
 	/*
