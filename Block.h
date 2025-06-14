@@ -2,9 +2,10 @@
 
 #include <glad/glad.h>
 #include <map>
-#include <glm/glm.hpp>
 #include <vector>
+#include <glm/glm.hpp>
 #include "BlockType.h"
+#include "GameObject.h"
 
 using namespace std;
 using namespace glm;
@@ -14,16 +15,49 @@ struct vertex {
 	vec2 texture;
 };
 
-class Block
+class Block: public GameObject
 {
 public:
-	Block();
-	~Block();
+	Block() {
+		velocity = vec3(0);
+		size = vec3(1, 1, 1);
+	};
 	bool active = true;
 	block_type type = none;
 };
 
 namespace {
+	static bool has_transparency(block_type type) {
+		switch (type) {
+		case water:
+		case glass:
+		case leaf_transp:
+		case grass:
+			return true;
+		}
+		return false;
+	}
+
+	static bool has_transparency(Block* block) {
+		if (block == nullptr) return false;
+		return has_transparency(block->type);
+	}
+
+	static bool is_solid(block_type type) {
+		switch (type) {
+		case none:
+		case water:
+		case grass:
+			return false;
+		}
+		return true;
+	}
+
+	static bool is_solid(Block* block) {
+		if (block == nullptr) return false;
+		return is_solid(block->type);
+	}
+
 	/*
 	* converts texture coord from texture_map into uv texture coord (scale it to between 0.0 and 1.0)
 	* uv column & row range: 0 ~ 1.
