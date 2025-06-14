@@ -1,6 +1,4 @@
-#ifndef SHADER_CLASS_H
-#define SHADER_CLASS_H
-
+#pragma once
 #include <glad/glad.h>
 #include <fstream>
 #include <sstream>
@@ -21,5 +19,3 @@ public:
 	void activate();
 	void destroy();
 };
-
-#endif

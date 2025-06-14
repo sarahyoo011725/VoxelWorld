@@ -4,6 +4,11 @@ bool ChunkManager::chunk_exists(ivec2 chunk_origin) {
 	return chunks.find(chunk_origin) != chunks.end();
 }
 
+Chunk* ChunkManager::get_chunk(vec3 world_coord) {
+	ivec2 chunk_origin = get_chunk_origin(world_coord);
+	return get_chunk(chunk_origin);
+}
+
 Chunk* ChunkManager::get_chunk(ivec2 chunk_origin) {
 	auto e = chunks.find(chunk_origin);
 	if (e != chunks.end()) {

@@ -1,5 +1,4 @@
 #pragma once
-
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
@@ -15,8 +14,8 @@ using namespace glm;
 There are two types of coords this engine: world and chunk coord.
 - world coord is a coordinate (or position) in the world space and is equal, absolute to all objects in the game world.
 - chunk coord is a coordinate (or position) in a chunk space that is relative to a single chunk. Hence, the coord is incorrect to other chunks.
-** chunk coord == world_coord / chunk_size
-- chunk pos is a vec3 made from ivec2 chunk origin, with only y being 0 by default, for every chunks newly created.	
+** chunk coord = world_coord / chunk_size
+- chunk pos is a vec3 of ivec2 chunk origin, with only y being 0 by default, for every chunks newly created.	
   Hence, ivec2(chunk_pos.x, chunk_pos.z) is the unique id of a chunk.
 - local coord is the index of a block in a chunk.
 */
@@ -42,6 +41,7 @@ public:
 	unordered_map<ivec2, Chunk> chunks;
 	void set_block_worldspace(vec3 world_coord, block_type type);
 	Block* get_block_worldspace(vec3 world_coord);
+	Chunk* get_chunk(vec3 world_coord);
 	Chunk* get_chunk(ivec2 chunk_origin);
 	bool chunk_exists(ivec2 chunk_origin);
 	Chunk* create_chunk(ivec2 chunk_origin);
@@ -83,7 +83,6 @@ namespace {
 			floor(world_coord.y),
 			static_cast<int> (floor(world_coord.z - chunk_origin.y * 16 ))
 		};
-		//cout << local_coord.x << " ";
 		return local_coord;
 	}
 }

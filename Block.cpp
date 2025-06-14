@@ -2,6 +2,7 @@
 
 Block::Block()
 {
+	s
 }
 
 Block::~Block()

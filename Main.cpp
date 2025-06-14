@@ -58,7 +58,7 @@ int main() {
 		return -1;
 	}
 
-	Camera cam(window, width, height, vec3(0.0, 100.0, 0.0));
+	Camera cam(window, width, height, vec3(0.0, 70.0, 0.0));
 	Shader shader = Shader("default.vert", "default.frag");
 	Texture texture = Texture("texture_atlas.png");
 	Terrain terrain = Terrain(cam.position);
@@ -68,8 +68,8 @@ int main() {
 	glEnable(GL_BLEND); 
 	//my vertices are winded in counter wise for the front face.
 	//glCullFace is set to cull back face and glFrontFace is CCW by default. So, I tell gl that front faces are winded in counter wise.
-	glEnable(GL_CULL_FACE);
-	glFrontFace(GL_CW);
+	//glEnable(GL_CULL_FACE);
+	//glFrontFace(GL_CW);
 
 	while (!glfwWindowShouldClose(window)) {
 		process_inputs(window);

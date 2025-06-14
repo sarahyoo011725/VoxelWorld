@@ -1,5 +1,4 @@
 #pragma once
-
 #include <glm/glm.hpp>
 #include <map>
 
@@ -33,24 +32,6 @@ enum block_face {
 namespace {
 	const static int texture_rows = 16;
 	const static int textures_columns = 16;
-
-	static bool has_transparency(block_type type) {
-		switch (type) {
-		case water:
-		case glass:
-		case leaf_transp:
-		case grass:
-			return true;
-		}
-		return false;
-	}
-
-	static bool is_solid(block_type type) {
-		if (type == water || type == grass || type == none) {
-			return false;
-		}
-		return true;
-	}
 
 	static map<block_type, map<block_face, vec2>> texture_map = {
 		{dirt, {{Front,vec2(3,16)},{Back,vec2(3,16)},{Left,vec2(3,16)},{Right,vec2(3,16)},{Top,vec2(3,16)},{Bottom,vec2(3,16)}}},

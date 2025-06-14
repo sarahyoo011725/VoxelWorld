@@ -1,5 +1,4 @@
 #pragma once
-
 #include "ChunkManager.h"
 #include "StructureGenerator.h"
 
