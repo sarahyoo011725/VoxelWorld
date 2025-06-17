@@ -20,15 +20,15 @@ private:
 	vector<vertex> opaque_vertices;
 	vector<GLuint> opaque_indices;
 	VAO opaque_vao = VAO();
-	VBO opaque_vbo = VBO(opaque_vertices, sizeof(vertex) * opaque_vertices.size());
-	EBO opaque_ebo = EBO(opaque_indices, sizeof(GLuint) * opaque_indices.size());
+	VBO opaque_vbo = VBO(nullptr, sizeof(vertex) * 0, GL_STATIC_DRAW);
+	EBO opaque_ebo = EBO(nullptr, sizeof(GLuint) * 0, GL_STATIC_DRAW);
 
 	//for transparent geometry
 	vector<vertex> transp_vertices;
 	vector<GLuint> transp_indices; 
 	VAO transp_vao = VAO();
-	VBO transp_vbo = VBO(transp_vertices, sizeof(vertex) * transp_vertices.size());
-	EBO transp_ebo = EBO(transp_indices, sizeof(GLuint) * transp_indices.size());
+	VBO transp_vbo = VBO(nullptr, sizeof(vertex) * 0, GL_STATIC_DRAW);
+	EBO transp_ebo = EBO(nullptr, sizeof(GLuint) * 0, GL_STATIC_DRAW);
 
 	Block*** blocks;
 	int** get_heightmap();

@@ -19,8 +19,8 @@ class VBO
 {
 public:
 	GLuint id;
-	VBO(vector<vertex> vertices, GLsizeiptr size); 
-	void set_vertices(vector<vertex> vertices, GLsizeiptr size);
+	VBO(const void* vertices, GLsizeiptr size, GLenum draw_type);
+	void reset_vertices(const void* vertices, GLsizeiptr size, GLenum draw_type);
 	void bind();
 	void unbind();
 	void destroy();
