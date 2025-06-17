@@ -13,10 +13,9 @@ using namespace glm;
 /*
 There are two types of coords this engine: world and chunk coord.
 - world coord is a coordinate (or position) in the world space and is equal, absolute to all objects in the game world.
-- chunk coord is a coordinate (or position) in a chunk space that is relative to a single chunk. Hence, the coord is incorrect to other chunks.
-** chunk coord = world_coord / chunk_size
-- chunk pos is a vec3 of ivec2 chunk origin, with only y being 0 by default, for every chunks newly created.	
-  Hence, ivec2(chunk_pos.x, chunk_pos.z) is the unique id of a chunk.
+- chunk coord is a coordinate (or position) in a chunk space that is relative to a single chunk. Hence, the coord is invalid in other chunks.
+	--> chunk coord = world_coord / chunk_size
+- chunk origin is a vec3 of ivec2 chunk origin, with only y being 0 by default --> so, chunk_origin = vec3(chunk_id.x, 0, chunk_id.y);
 - local coord is the index of a block in a chunk.
 */
 
@@ -39,12 +38,13 @@ public:
 	}
 	unordered_map<ivec2, vector<block_data>> unloaded_blocks;
 	unordered_map<ivec2, Chunk> chunks;
-	void set_block_worldspace(vec3 world_coord, block_type type);
+	bool set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_type type);
+	bool set_block_worldspace(vec3 world_coord, block_type type);
 	Block* get_block_worldspace(vec3 world_coord);
 	Chunk* get_chunk(vec3 world_coord);
-	Chunk* get_chunk(ivec2 chunk_origin);
-	bool chunk_exists(ivec2 chunk_origin);
-	Chunk* create_chunk(ivec2 chunk_origin);
+	Chunk* get_chunk(ivec2 chunk_id);
+	bool chunk_exists(ivec2 chunk_id);
+	Chunk* create_chunk(ivec2 chunk_id);
 };
 
 namespace {

@@ -1,7 +1,7 @@
 #include "ChunkManager.h"
 
-bool ChunkManager::chunk_exists(ivec2 chunk_origin) {
-	return chunks.find(chunk_origin) != chunks.end();
+bool ChunkManager::chunk_exists(ivec2 chunk_id) {
+	return chunks.find(chunk_id) != chunks.end();
 }
 
 Chunk* ChunkManager::get_chunk(vec3 world_coord) {
@@ -9,38 +9,46 @@ Chunk* ChunkManager::get_chunk(vec3 world_coord) {
 	return get_chunk(chunk_origin);
 }
 
-Chunk* ChunkManager::get_chunk(ivec2 chunk_origin) {
-	auto e = chunks.find(chunk_origin);
+Chunk* ChunkManager::get_chunk(ivec2 chunk_id) {
+	auto e = chunks.find(chunk_id);
 	if (e != chunks.end()) {
 		return &e->second;
 	}
 	return nullptr;
 }
 
-void ChunkManager::set_block_worldspace(vec3 world_coord, block_type type) {
-	ivec2 chunk_origin = get_chunk_origin(world_coord);
+bool ChunkManager::set_block_worldspace(vec3 world_coord, block_type type) {
+	ivec2 chunk_id = get_chunk_origin(world_coord);
 	ivec3 local_coord = world_to_local_coord(world_coord);
-	Chunk* chunk = get_chunk(chunk_origin);
-	
+	return set_block_manual(chunk_id, local_coord, type);
+}
+
+bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_type type) {
+	Chunk* chunk = get_chunk(chunk_id);
+
 	if (chunk == nullptr) {
 		//draw the block later once the chunk is created
-		unloaded_blocks[chunk_origin].push_back({ local_coord, type });
+		unloaded_blocks[chunk_id].push_back({ local_coord, type });
 	}
 	else {
-		chunk->set_block(local_coord, type);	
+		Block* block = chunk->get_block(local_coord);
+		if (block == nullptr || block->type == type) {
+			return false;
+		}
+		chunk->set_block(local_coord, type);
 		chunk->should_rebuild = true;
 	}
 
 	//TODO: fix structure generation across chunks edge issue
 	if (local_coord.x == 0 || local_coord.x == 1 || local_coord.x == 15 || local_coord.x == 16 ||
-			local_coord.z == 0 || local_coord.z == 1 || local_coord.z == 15 || local_coord.z == 16) {
+		local_coord.z == 0 || local_coord.z == 1 || local_coord.z == 15 || local_coord.z == 16) {
 		ivec2 offset = ivec2(0.0);
 		offset.x = (local_coord.x == 0 || local_coord.x == 1) ? -1 : (local_coord.x == 15 || local_coord.x == 16) ? 1 : 0;
 		offset.y = (local_coord.z == 0 || local_coord.z == 1) ? -1 : (local_coord.z == 15 || local_coord.z == 16) ? 1 : 0;
 
 		//if (offset.x != 0 && offset.y != 0) return;
 
-		ivec2 adj_id = chunk_origin + offset;
+		ivec2 adj_id = chunk_id + offset;
 
 		ivec3 adj_local_coord;
 		adj_local_coord.x = (local_coord.x == 0) ? 15 : (local_coord.x == 1) ? 16 : (local_coord.x == 15) ? 0 : (local_coord.x == 16) ? 1 : local_coord.x;
@@ -56,8 +64,9 @@ void ChunkManager::set_block_worldspace(vec3 world_coord, block_type type) {
 			unloaded_blocks[adj_id].push_back({ adj_local_coord, type });
 		}
 	}
-	
+	return true;
 }
+
 
 Block* ChunkManager::get_block_worldspace(vec3 world_coord) {
 	ivec2 chunk_origin = get_chunk_origin(world_coord);
@@ -69,8 +78,8 @@ Block* ChunkManager::get_block_worldspace(vec3 world_coord) {
 	return chunk->get_block(local_coord);
 }
 
-Chunk* ChunkManager::create_chunk(ivec2 chunk_origin) {
-	Chunk new_chunk = Chunk(chunk_origin);
-	auto inserted = chunks.insert({chunk_origin, new_chunk});
+Chunk* ChunkManager::create_chunk(ivec2 chunk_id) {
+	Chunk new_chunk = Chunk(chunk_id);
+	auto inserted = chunks.insert({chunk_id, new_chunk});
 	return &(inserted.first->second);
 }

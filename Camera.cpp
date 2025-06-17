@@ -12,13 +12,51 @@ Camera::Camera(GLFWwindow *window, int window_width, int window_height, vec3 pos
 	mouse_xpos = last_xpos;
 	mouse_ypos = last_ypos;
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+	hud_vao.bind();
+	hud_vao.link_attrib(hud_vbo, 0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
 }
 
 void Camera::update_matrix(int shader_id) {
-	mat4 view = lookAt(position, position + direction, up);
-	mat4 projection = perspective(radians(fov_degrees), (float)window_width / window_height, near_plane, far_plane);
+	view = lookAt(position, position + direction, up);
+	projection = perspective(radians(fov_degrees), (float)window_width / window_height, near_plane, far_plane);
 	GLuint location = glGetUniformLocation(shader_id, "cam_matrix");
 	glUniformMatrix4fv(location, 1, false, value_ptr(projection * view));
+}
+
+void Camera::draw_huds() {
+	hud_vao.bind();
+	glDrawArrays(GL_LINES, 0, 4);
+}
+
+void Camera::handle_block_interactions() {
+	ivec2 chunk_id = get_chunk_origin(ray);
+	ivec3 local_coord = world_to_local_coord(ray);
+
+	Chunk* chunk = cm.get_chunk(chunk_id);
+	Block* block = nullptr;
+	if (chunk != nullptr) {
+		block = chunk->get_block(local_coord);
+	}
+
+	if (block == nullptr) return;
+
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+		if (block != nullptr && block->type == none) {
+			bool success = cm.set_block_manual(chunk_id, local_coord, dirt); //TOOD: selection of block type, inventory 
+			if (success) {
+				cout << "set block at (" << ray.x << ", " << ray.y << ", " << ray.z << ")" << endl;
+			}
+		}
+	}
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+		if (block != nullptr && block->type != none) {
+			bool success = cm.set_block_manual(chunk_id, local_coord, none);
+			if (success) {
+				cout << "destroy block at (" << ray.x << ", " << ray.y << ", " << ray.z << ")" << endl;
+			}
+		}
+	}
 }
 
 //updates anything required periodically
@@ -29,6 +67,7 @@ void Camera::update() {
 
 	update_mouse();
 	update_movement(dt);
+	handle_block_interactions();
 }
 
 void Camera::update_movement(float dt) {
@@ -36,36 +75,36 @@ void Camera::update_movement(float dt) {
 	up = normalize(cross(right, direction));
 	vec3 input_dir = vec3(0.0);
 
-	if (glfwGetKey(window, GLFW_KEY_W)) {
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 		input_dir += direction;
 	}
-	if (glfwGetKey(window, GLFW_KEY_S)) {
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
 		input_dir -= direction;
 	}
-	if (glfwGetKey(window, GLFW_KEY_A)) {
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 		input_dir -= right;
 	}
-	if (glfwGetKey(window, GLFW_KEY_D)) {
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		input_dir += right;
 	}
 	
-	if (glfwGetKey(window, GLFW_KEY_SPACE)) {
+	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 		input_dir += up;
 	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
 		input_dir -= up;
 	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_ALT)) {
+	if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
 		fov_degrees -= 23.0f * dt;
 		if (fov_degrees < 10.f)
 			fov_degrees = 10.0f;
 	} else {
 		fov_degrees = 45.0f;
 	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL)) {
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 		is_running = !is_running;
 	}
-	if (glfwGetKey(window, GLFW_KEY_2)) {
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
 		enable_physics = !enable_physics;
 	}
 
@@ -90,7 +129,7 @@ void Camera::update_movement(float dt) {
 	if (enable_physics) {
 		velocity.y += gravity * dt;
 	
-		if (on_ground && glfwGetKey(window, GLFW_KEY_SPACE)) {
+		if (on_ground && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 			velocity.y = jump_force;
 		}
 	}
@@ -101,6 +140,27 @@ void Camera::update_movement(float dt) {
 	collision(0, velocity.y, 0);
 	position.z += velocity.z * dt;
 	collision(0, 0, velocity.z);
+}
+
+
+/* coordinates are converted in the order below:
+* viewport space (2d screen) -> normalized device space (opengl coord system) -> homogenenous clip state -> eye space(origin is cam) -> world space
+*/
+void Camera::raycast() {
+	//converts 2d viewport coord into normalized device coord (opengl coord system where top-left: (0, 0) and bottom-right: (1, 1))
+	vec2 device_coords;
+	device_coords.x = (2.0f * mouse_xpos) / window_width - 1.0f;
+	device_coords.y = 1.0f - (2.0f * mouse_ypos) / window_height;
+	//ray homogeneous clip
+	vec4 clip_coords = vec4(device_coords.x, device_coords.y, -1.0f, 1.0f);
+	//convert ray clip into 4d eye (camera) coord
+	vec4 eye_coords = inverse(projection) * clip_coords;
+	//unprojects only the x and y aixes. sets z and w to mean forwards and not a point
+	eye_coords.z = -1.0f;
+	eye_coords.w = 0.0f;
+	//converts eye coord into 4d world coord
+	vec3 world_coords = inverse(view) * eye_coords;
+	ray = position + normalize(world_coords) * ray_length; //line vector equation in 3d: origin + t * direction vector
 }
 
 bool Camera::is_ground() {

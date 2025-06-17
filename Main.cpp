@@ -59,9 +59,11 @@ int main() {
 	}
 
 	Camera cam(window, width, height, vec3(0.0, 70.0, 0.0));
-	Shader shader = Shader("default.vert", "default.frag");
-	Texture texture = Texture("texture_atlas.png");
 	Terrain terrain = Terrain(cam.position);
+	Shader world_shader = Shader("default.vert", "default.frag");
+	Shader hud_shader = Shader("hud.vert", "hud.frag");
+	Texture texture = Texture("texture_atlas.png");
+	texture.bind();
 
 	glEnable(GL_DEPTH_TEST);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -73,10 +75,7 @@ int main() {
 
 	while (!glfwWindowShouldClose(window)) {
 		process_inputs(window);
-		if (isWindowActive) {
-			cam.update();
-		}
-		cam.update_matrix(shader.id);
+
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -86,18 +85,26 @@ int main() {
 		else {
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
+
+		world_shader.activate();
+		//must called after shader activated
+		terrain.update(); 
+		if (isWindowActive) {
+			cam.update();
+		}
+		cam.update_matrix(world_shader.id);
+		cam.raycast();
 		
-		//draws mesh
-		shader.activate();
-		texture.bind();
-		terrain.update();
+		hud_shader.activate();
+		cam.draw_huds();
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
 		glfwPollEvents(); //checks if any events triggered
 	}
 
 	//terminates the program, destroying everything including window
-	shader.destroy();
+	world_shader.destroy();
+	hud_shader.destroy();
 	texture.destroy();
 	glfwDestroyWindow(window);
 	glfwTerminate();

@@ -1,6 +1,5 @@
 #pragma once
 #include <glad/glad.h>
-#include <vector>
 
 using namespace std;
 
@@ -8,8 +7,8 @@ class EBO
 {
 public:
 	GLuint id;
-	EBO(vector<GLuint> indices, GLsizeiptr size);
-	void set_indices(vector<GLuint> indices, GLsizeiptr size);
+	EBO(const void* indices, GLsizeiptr size, GLenum draw_type);
+	void reset_indices(const void* indices, GLsizeiptr size, GLenum draw_type);
 	void bind();
 	void unbind();
 	void destroy();

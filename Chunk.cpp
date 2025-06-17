@@ -46,21 +46,21 @@ Chunk::Chunk(ivec2 chunk_origin) : cm(ChunkManager::get_instance()) {
 			}
 		}
 	}
-}
-
-//This must be called after build_chunk()
-void Chunk::bind_buffers() {
-	opaque_vbo = VBO(opaque_vertices, sizeof(vertex) * opaque_vertices.size());
-	opaque_ebo = EBO(opaque_indices, sizeof(GLuint) * opaque_indices.size());
 	opaque_vao.bind();
 	opaque_vao.link_attrib(opaque_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0); //vertex positions coords
 	opaque_vao.link_attrib(opaque_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float))); //vertex texture coords
 
-	transp_vbo = VBO(transp_vertices, sizeof(vertex) * transp_vertices.size());
-	transp_ebo = EBO(transp_indices, sizeof(GLuint) * transp_indices.size());
 	transp_vao.bind();
 	transp_vao.link_attrib(transp_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 	transp_vao.link_attrib(transp_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
+}
+
+//This must be called after build_chunk()
+void Chunk::bind_buffers() {
+	opaque_vbo.reset_vertices(opaque_vertices.data(), sizeof(vertex) * opaque_vertices.size(), GL_STATIC_DRAW);
+	opaque_ebo.reset_indices(opaque_indices.data(), sizeof(GLuint) * opaque_indices.size(), GL_STATIC_DRAW);
+	transp_vbo.reset_vertices(transp_vertices.data(), sizeof(vertex) * transp_vertices.size(), GL_STATIC_DRAW);
+	transp_ebo.reset_indices(transp_indices.data(), sizeof(GLuint) * transp_indices.size(), GL_STATIC_DRAW);
 }
 
 int** Chunk::get_heightmap() {

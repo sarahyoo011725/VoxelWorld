@@ -3,14 +3,15 @@
 
 #include "VBO.h"
 
-VBO::VBO(vector<vertex> vertices, GLsizeiptr size) {
+VBO::VBO(const void* vertices, GLsizeiptr size, GLenum draw_type) {
 	glGenBuffers(1, &id);
 	glBindBuffer(GL_ARRAY_BUFFER, id);
-	set_vertices(vertices, size);
+	glBufferData(GL_ARRAY_BUFFER, size, vertices, draw_type);
 }
 
-void VBO::set_vertices(vector<vertex> vertices, GLsizeiptr size) {
-	glBufferData(GL_ARRAY_BUFFER, size, vertices.data(), GL_STATIC_DRAW);
+void VBO::reset_vertices(const void* vertices, GLsizeiptr size, GLenum draw_type) {
+	bind();
+	glBufferData(GL_ARRAY_BUFFER, size, vertices, draw_type);
 }
 
 void VBO::bind() {
