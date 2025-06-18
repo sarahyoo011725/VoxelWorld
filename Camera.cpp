@@ -32,6 +32,26 @@ void Camera::update() {
 	block_interaction();
 }
 
+void Camera::update_other_inputs() {
+	if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
+		fov_degrees -= 23.0f * dt;
+		if (fov_degrees < 10.f)
+			fov_degrees = 10.0f;
+	}
+	else {
+		fov_degrees = 45.0f;
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+		is_running = !is_running;
+	}
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+		enable_physics = !enable_physics;
+	}
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+		enable_outline = !enable_outline;
+	}
+}
+
 bool Camera::is_ground() {
 	vec3 below_pos = position;
 	below_pos.y -= size.y + 0.1f;
@@ -62,6 +82,7 @@ void Camera::draw_HUDs() {
 }
 
 void Camera::draw_outlines() {
+	if (!enable_outline) return;
 	//outlines are must be drawn after activating the shader
 	outline_shader.activate();
 	outline_vao.bind();
@@ -112,23 +133,6 @@ void Camera::block_interaction() {
 				cout << "destroy block at (" << ray.x << ", " << ray.y << ", " << ray.z << ")" << endl;
 			}
 		}
-	}
-}
-
-void Camera::update_other_inputs() {
-	if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
-		fov_degrees -= 23.0f * dt;
-		if (fov_degrees < 10.f)
-			fov_degrees = 10.0f;
-	}
-	else {
-		fov_degrees = 45.0f;
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-		is_running = !is_running;
-	}
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-		enable_physics = !enable_physics;
 	}
 }
 
