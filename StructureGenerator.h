@@ -1,13 +1,14 @@
 #pragma once
 #include "ChunkManager.h"
 #include "BlockType.h"
+#include "Geometries.h"
 
 class Chunk;
 
 class StructureGenerator {
 private:
-	ChunkManager& cm;
-	StructureGenerator() : cm(ChunkManager::get_instance()) {};
+	ChunkManager& chunk_manager;
+	StructureGenerator() : chunk_manager(ChunkManager::get_instance()) {};
 	StructureGenerator(const StructureGenerator&) = delete;
 	StructureGenerator& operator=(const StructureGenerator&) = delete;
 public:
@@ -20,7 +21,6 @@ public:
 };
 
 namespace {
-	static vec2 grass_text_coord = vec2(8, 14);
 	//add front and back of faces to make grass visible in either side (prevent disappearing due to back-face culling)
 	//TODO: fix grass mesh issue when back face cull mode is on
 	static vector<vector<vertex>> grass_face_vertices = {
@@ -51,6 +51,6 @@ namespace {
 			{vec3(-0.5, 0.5, 0.5),		vec2(1.0, 1.0)},
 			{vec3(-0.5, -0.5, 0.5),		vec2(1.0, 0.0)},
 			{vec3(0.5, -0.5, -0.5),		vec2(0.0, 0.0)},
-		}
+		},
 	};
 }

@@ -60,9 +60,6 @@
     <ClCompile Include="StructureGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Geometries.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="VAO.h">
@@ -115,16 +112,16 @@
     <None Include="default.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="lines.vert">
+    <None Include="outline.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="lines.frag">
+    <None Include="outline.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="2d_components.vert">
+    <None Include="2d_component.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="2d_components.frag">
+    <None Include="2d_component.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
   </ItemGroup>

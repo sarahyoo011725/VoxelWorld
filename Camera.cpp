@@ -13,46 +13,77 @@ Camera::Camera(GLFWwindow *window, int window_width, int window_height, vec3 pos
 	mouse_ypos = last_ypos;
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	lines_vao.bind();
-	lines_vao.link_attrib(lines_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void*)0);
-	huds_vao.bind();
-	huds_vao.link_attrib(huds_vbo, 0, 2, GL_FLOAT, GL_FALSE, sizeof(vec2), (void*)0);
+	outline_vao.bind();
+	outline_vao.link_attrib(outline_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void*)0);
+	HUD_vao.bind();
+	HUD_vao.link_attrib(HUD_vbo, 0, 2, GL_FLOAT, GL_FALSE, sizeof(vec2), (void*)0);
+}
+
+//updates anything required periodically
+void Camera::update() {
+	float frame = (float)glfwGetTime();
+	dt = frame - last_frame;
+	last_frame = frame;
+
+	update_other_inputs();
+	update_mouse();
+	update_movement(dt);
+	raycast();
+	block_interaction();
+}
+
+bool Camera::is_ground() {
+	vec3 below_pos = position;
+	below_pos.y -= size.y + 0.1f;
+	Block* block = cm.get_block_worldspace(below_pos);
+	return block != nullptr &&is_solid(block->type);
+}
+
+void Camera::raycast() {
+	//normally, the conversion from 2d screen into 3d world space would like this:
+	//viewport space (2d screen) -> normalized device space (opengl coord system) -> homogenenous clip state -> eye space(origin is cam) -> world space
+	//but it's so simple that I can just cast a ray with direction (or forward) vector
+	ray = position + direction * ray_length;
 }
 
 void Camera::update_matrix(int shader_id) {
 	view = lookAt(position, position + direction, up);
 	projection = perspective(radians(fov_degrees), (float)window_width / window_height, near_plane, far_plane);
-	GLuint location = glGetUniformLocation(shader_id, "cam_matrix");
-	glUniformMatrix4fv(location, 1, false, value_ptr(projection * view));
-
-	raycast();
+	glUniformMatrix4fv(glGetUniformLocation(shader_id, "cam_matrix"), 1, GL_FALSE, value_ptr(projection * view));
 }
 
-void Camera::draw_huds(int shader_id) {
+void Camera::draw_HUDs() {
+	HUD_shader.activate();
+	HUD_vao.bind();
+	glUniform4fv(glGetUniformLocation(HUD_shader.id, "color"), 1, value_ptr(crosshair_color));
 	//draw crosshair
-	huds_vao.bind();
 	glLineWidth(1.0);
 	glDrawArrays(GL_LINES, 0, 4);
 }
 
-void Camera::draw_lines(int shader_id) {
+void Camera::draw_outlines() {
+	//outlines are must be drawn after activating the shader
+	outline_shader.activate();
+	outline_vao.bind();
+	update_matrix(outline_shader.id);  //must be sendt to the shader
+	outline_hovered_cube();
+}
+
+void Camera::outline_hovered_cube() {
 	if (hovered_block == nullptr) return;
-
-	update_matrix(shader_id);
-
+	//sends cube model and outline color to the outline shader
 	mat4 cube_model = translate(mat4(1.0), hovered_block->position);
-	glUniformMatrix4fv(glGetUniformLocation(shader_id, "cube_model"), 1, GL_FALSE, value_ptr(cube_model));
-	glUniform4fv(glGetUniformLocation(shader_id, "color"), 1, value_ptr(hovered_block_outline_color));
+	glUniformMatrix4fv(glGetUniformLocation(outline_shader.id, "cube_model"), 1, GL_FALSE, value_ptr(cube_model));
+	glUniform4fv(glGetUniformLocation(outline_shader.id, "color"), 1, value_ptr(hovered_block_outline_color));
 
 	//draw cube outline
 	glDisable(GL_DEPTH_TEST); //keeps the cube outline visible
-	lines_vao.bind();
 	glLineWidth(outline_thickness);
-	glDrawArrays(GL_LINES, 0, 24); //first: index where verticies are inserted, counts: # of vertices to draw the line(s)
+	glDrawArrays(GL_LINES, 0, cube_edges.size()); //first: index where verticies are inserted, counts: # of vertices to draw the line(s)
 	glEnable(GL_DEPTH_TEST);
 }
 
-void Camera::handle_block_interactions() {
+void Camera::block_interaction() {
 	ivec2 chunk_id = get_chunk_origin(ray);
 	ivec3 local_coord = world_to_local_coord(ray);
 
@@ -84,15 +115,54 @@ void Camera::handle_block_interactions() {
 	}
 }
 
-//updates anything required periodically
-void Camera::update() {
-	float frame = (float)glfwGetTime();
-	dt = frame - last_frame;
-	last_frame = frame;
+void Camera::update_other_inputs() {
+	if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
+		fov_degrees -= 23.0f * dt;
+		if (fov_degrees < 10.f)
+			fov_degrees = 10.0f;
+	}
+	else {
+		fov_degrees = 45.0f;
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+		is_running = !is_running;
+	}
+	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+		enable_physics = !enable_physics;
+	}
+}
 
-	update_mouse();
-	update_movement(dt);
-	handle_block_interactions();
+void Camera::update_mouse() {
+	glfwGetCursorPos(window, &mouse_xpos, &mouse_ypos);
+	//prevents sudden view jump when window re-focued
+	/*
+	if (window_refocused) {
+		mouse_xpos = last_xpos;
+		mouse_ypos = last_ypos;
+		window_refocused = false;
+	}
+	*/
+	float x_offset = last_xpos - mouse_xpos;
+	float y_offset = mouse_ypos - last_ypos;
+	last_xpos = mouse_xpos;
+	last_ypos = mouse_ypos;
+
+	x_offset *= mouse_sensitivity;
+	y_offset *= mouse_sensitivity;
+
+	yaw += x_offset;
+	pitch += y_offset;
+
+	if (pitch > 89.0f)
+		pitch = 89.0f;
+	if (pitch < -89.0f)
+		pitch = -89.0f;
+
+	vec3 new_direction;
+	new_direction.x = cos(radians(yaw)) * cos(radians(pitch));
+	new_direction.y = sin(radians(pitch));
+	new_direction.z = sin(radians(yaw)) * cos(radians(pitch));
+	direction = normalize(new_direction);
 }
 
 void Camera::update_movement(float dt) {
@@ -119,18 +189,9 @@ void Camera::update_movement(float dt) {
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
 		input_dir -= up;
 	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
-		fov_degrees -= 23.0f * dt;
-		if (fov_degrees < 10.f)
-			fov_degrees = 10.0f;
-	} else {
-		fov_degrees = 45.0f;
-	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
-		is_running = !is_running;
-	}
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
-		enable_physics = !enable_physics;
+
+	if (length(input_dir) > 0.0) {
+		input_dir = normalize(input_dir);
 	}
 
 	if (is_running) {
@@ -138,10 +199,6 @@ void Camera::update_movement(float dt) {
 	}
 	else {
 		speed = default_speed;
-	}
-
-	if (length(input_dir) > 0.0) {
-		input_dir = normalize(input_dir);
 	}
 
 	velocity.x = input_dir.x * speed;
@@ -165,21 +222,6 @@ void Camera::update_movement(float dt) {
 	collision(0, velocity.y, 0);
 	position.z += velocity.z * dt;
 	collision(0, 0, velocity.z);
-}
-
-
-void Camera::raycast() {
-	//normally, the conversion from 2d screen into 3d world space would like this:
-	//viewport space (2d screen) -> normalized device space (opengl coord system) -> homogenenous clip state -> eye space(origin is cam) -> world space
-	//but it's so simple that I can just cast a ray with direction (or forward) vector
-	ray = position + direction * ray_length;
-}
-
-bool Camera::is_ground() {
-	vec3 below_pos = position;
-	below_pos.y -= size.y + 0.1f;
-	Block* block = cm.get_block_worldspace(below_pos);
-	return block != nullptr && is_solid(block->type);
 }
 
 //handles player's collision with blocks (aabb collision logic)
@@ -209,8 +251,8 @@ void Camera::collision(float vx, float vy, float vz) {
 
 
 	//checks if any solid blocks are touching player's bottom feet
-	if (is_solid(cm.get_block_worldspace(vec3(x1, y1, z1))) || is_solid(cm.get_block_worldspace(vec3(x2, y1, z1))) ||
-		is_solid(cm.get_block_worldspace(vec3(x1, y1, z2))) || is_solid(cm.get_block_worldspace(vec3(x2, y1, z2)))) {
+	if (is_solid(cm.get_block_worldspace(vec3(x1, y1, z1))) ||is_solid(cm.get_block_worldspace(vec3(x2, y1, z1))) ||
+		is_solid(cm.get_block_worldspace(vec3(x1, y1, z2))) ||is_solid(cm.get_block_worldspace(vec3(x2, y1, z2)))) {
 		if (vy < 0) { //the player is falling down
 			position.y = (y1 + 1) * block_size + p_bottom; //locates the player on top of the blocks
 			velocity.y = 0;
@@ -219,8 +261,8 @@ void Camera::collision(float vx, float vy, float vz) {
 	}
 
 	//checks if any solid blocks are touching the player's top head
-	if (is_solid(cm.get_block_worldspace(vec3(x1, y2, z1))) || is_solid(cm.get_block_worldspace(vec3(x2, y2, z1))) ||
-		is_solid(cm.get_block_worldspace(vec3(x1, y2, z2))) || is_solid(cm.get_block_worldspace(vec3(x2, y2, z2)))) {
+	if (is_solid(cm.get_block_worldspace(vec3(x1, y2, z1))) ||is_solid(cm.get_block_worldspace(vec3(x2, y2, z1))) ||
+		is_solid(cm.get_block_worldspace(vec3(x1, y2, z2))) ||is_solid(cm.get_block_worldspace(vec3(x2, y2, z2)))) {
 		if (vy > 0) { //the player is jumping
 			position.y = y2 * block_size - p_top - 0.01; //locates the plyaer just below the blocks
 			velocity.y = 0;
@@ -239,72 +281,39 @@ void Camera::collision(float vx, float vy, float vz) {
 	float y5 = round(y3 + (y4 - y3) / 2); //previous y position (the middle height between y3 and y4)
 
 	//checks if any solid blocks are touching the player's left side at any vertical level
-	if (is_solid(cm.get_block_worldspace(vec3(x1, y3, z3))) || is_solid(cm.get_block_worldspace(vec3(x1, y3, z4))) || //left-bottom-back || left-bottom-front
-		is_solid(cm.get_block_worldspace(vec3(x1, y4, z3))) || is_solid(cm.get_block_worldspace(vec3(x1, y4, z4))) || //left-top-back || left-top-front
-		is_solid(cm.get_block_worldspace(vec3(x1, y5, z3))) || is_solid(cm.get_block_worldspace(vec3(x1, y5, z4)))) { //left-middle-back || left-middle-front
+	if (is_solid(cm.get_block_worldspace(vec3(x1, y3, z3))) ||is_solid(cm.get_block_worldspace(vec3(x1, y3, z4))) || //left-bottom-back || left-bottom-front
+		is_solid(cm.get_block_worldspace(vec3(x1, y4, z3))) ||is_solid(cm.get_block_worldspace(vec3(x1, y4, z4))) || //left-top-back || left-top-front
+		is_solid(cm.get_block_worldspace(vec3(x1, y5, z3))) ||is_solid(cm.get_block_worldspace(vec3(x1, y5, z4)))) { //left-middle-back || left-middle-front
 		if (vx < 0) { //the player is moving to the left
 			position.x = (x1 + 1) * block_size + p_width; //locates the player just right to the blocks
 			velocity.x = 0;
 		}
 	}
 	//checks if any solid bloccks are touchign the player's right side at any vertical level
-	if (is_solid(cm.get_block_worldspace(vec3(x2, y3, z3))) || is_solid(cm.get_block_worldspace(vec3(x2, y3, z4))) || //right-bottom-back || right-bottom-front
-		is_solid(cm.get_block_worldspace(vec3(x2, y4, z3))) || is_solid(cm.get_block_worldspace(vec3(x2, y4, z4))) || //right-top-back || right-top-front
-		is_solid(cm.get_block_worldspace(vec3(x2, y5, z3))) || is_solid(cm.get_block_worldspace(vec3(x2, y5, z4)))) { //right-middle-back || right-middle-front
+	if (is_solid(cm.get_block_worldspace(vec3(x2, y3, z3))) ||is_solid(cm.get_block_worldspace(vec3(x2, y3, z4))) || //right-bottom-back || right-bottom-front
+		is_solid(cm.get_block_worldspace(vec3(x2, y4, z3))) ||is_solid(cm.get_block_worldspace(vec3(x2, y4, z4))) || //right-top-back || right-top-front
+		is_solid(cm.get_block_worldspace(vec3(x2, y5, z3))) ||is_solid(cm.get_block_worldspace(vec3(x2, y5, z4)))) { //right-middle-back || right-middle-front
 		if (vx > 0) { //the player is moving to the right
 			position.x = x2 * block_size - p_width - 0.01; //locates the player just left to the blocks
 			velocity.x = 0;
 		}
 	}
 	//checks if any blocks are touching the player's back side at any vertical level
-	if (is_solid(cm.get_block_worldspace(vec3(x3, y3, z1))) || is_solid(cm.get_block_worldspace(vec3(x4, y3, z1))) || //left-bottom-back || rigth-bottom-back
-		is_solid(cm.get_block_worldspace(vec3(x4, y4, z1))) || is_solid(cm.get_block_worldspace(vec3(x3, y4, z1))) || //right-top-back || left-bottom-back
-		is_solid(cm.get_block_worldspace(vec3(x3, y5, z1))) || is_solid(cm.get_block_worldspace(vec3(x4, y5, z1)))) { //left-middle-back || rigth-middle-back
+	if (is_solid(cm.get_block_worldspace(vec3(x3, y3, z1))) ||is_solid(cm.get_block_worldspace(vec3(x4, y3, z1))) || //left-bottom-back || rigth-bottom-back
+		is_solid(cm.get_block_worldspace(vec3(x4, y4, z1))) ||is_solid(cm.get_block_worldspace(vec3(x3, y4, z1))) || //right-top-back || left-bottom-back
+		is_solid(cm.get_block_worldspace(vec3(x3, y5, z1))) ||is_solid(cm.get_block_worldspace(vec3(x4, y5, z1)))) { //left-middle-back || rigth-middle-back
 		if (vz < 0) { //the player is moving backward
 			position.z = (z1 + 1) * block_size + p_depth; //locates the player just in front of the blocks
 			velocity.z = 0;
 		}
 	}
 	//checks if any blocks are touchig the player's front side at any vertical level
-	if (is_solid(cm.get_block_worldspace(vec3(x3, y3, z2))) || is_solid(cm.get_block_worldspace(vec3(x4, y3, z2))) || //left-bottom-front || left-bottom-front
-		is_solid(cm.get_block_worldspace(vec3(x4, y4, z2))) || is_solid(cm.get_block_worldspace(vec3(x3, y4, z2))) || //right-top-front || left-top-front
-		is_solid(cm.get_block_worldspace(vec3(x3, y5, z2))) || is_solid(cm.get_block_worldspace(vec3(x4, y5, z2)))) { //left-middle-front || right-middle-front
+	if (is_solid(cm.get_block_worldspace(vec3(x3, y3, z2))) ||is_solid(cm.get_block_worldspace(vec3(x4, y3, z2))) || //left-bottom-front || left-bottom-front
+		is_solid(cm.get_block_worldspace(vec3(x4, y4, z2))) ||is_solid(cm.get_block_worldspace(vec3(x3, y4, z2))) || //right-top-front || left-top-front
+		is_solid(cm.get_block_worldspace(vec3(x3, y5, z2))) ||is_solid(cm.get_block_worldspace(vec3(x4, y5, z2)))) { //left-middle-front || right-middle-front
 		if (vz > 0) { //the player is moving forward
 			position.z = z2 * block_size - p_depth - 0.01; //locates the player just behind the blocks
 			velocity.z = 0;
 		}
 	}
-}
-
-void Camera::update_mouse() {
-	glfwGetCursorPos(window, &mouse_xpos, &mouse_ypos);
-	//prevents sudden view jump when window re-focued
-	/*
-	if (window_refocused) {
-		mouse_xpos = last_xpos;
-		mouse_ypos = last_ypos;
-		window_refocused = false;
-	}
-	*/
-	float x_offset = last_xpos - mouse_xpos;
-	float y_offset = mouse_ypos - last_ypos;
-	last_xpos = mouse_xpos;
-	last_ypos = mouse_ypos;
-	
-	x_offset *= mouse_sensitivity;
-	y_offset *= mouse_sensitivity;
-
-	yaw += x_offset;
-	pitch += y_offset;
-
-	if (pitch > 89.0f)
-		pitch = 89.0f;
-	if (pitch < -89.0f) 
-		pitch = -89.0f;
-
-	vec3 new_direction;
-	new_direction.x = cos(radians(yaw)) * cos(radians(pitch));
-	new_direction.y = sin(radians(pitch));
-	new_direction.z = sin(radians(yaw)) * cos(radians(pitch));
-	direction = normalize(new_direction);
 }

@@ -16,26 +16,46 @@ using namespace glm;
 
 class Camera: public GameObject
 {
+public:
+	//bool window_refocused = false; //TODO: prevent cam view jump on window re-focus
+	Camera(GLFWwindow* window, int window_width, int window_height, vec3 position);
+	void update();
+	void update_matrix(int world_shader_id);
+	void draw_outlines();
+	void draw_HUDs();
+
 private:
+	void update_movement(float dt);
+	void update_mouse();
+	void update_other_inputs();
+	bool is_ground();
+	void collision(float dx, float dy, float dz);
+	void raycast();
+	void block_interaction();
+	void outline_hovered_cube();
+
+	const float mouse_sensitivity = 0.1f;
+	const float default_speed = 5.0f;
+	const float run_speed = 10.0f;
+	const float run_speed_fly = 50.0f;
+	const float jump_force = 8.0f;
+	const float gravity = -30.0f;
+	const float ray_length = 3.0f; //TODO: dynamic max ray length
+	const float outline_thickness = 2.0f;
+	
 	ChunkManager& cm;
 
 	vec4 crosshair_color = vec4(1.0); //white
 	vec4 hovered_block_outline_color = vec4(0.0, 1.0, 1.0, 1.0); //cyan
 
 	//TODO:set vao for visualizing crosshair, raycast, hitbox etc.
-	VAO lines_vao = VAO(); //draws objects with lines, such as hitbox
-	VBO lines_vbo = VBO(geometry::cube_edges.data(), sizeof(vec3) * geometry::cube_edges.size(), GL_STATIC_DRAW);
-	VAO huds_vao = VAO();  //draws 2d components, like crosshair and inventory box
-	VBO huds_vbo = VBO(geometry::crosshair_vertices.data(), sizeof(vec2) * geometry::crosshair_vertices.size(), GL_STATIC_DRAW);
+	Shader outline_shader = Shader("outline.vert", "outline.frag");
+	Shader HUD_shader = Shader("2d_component.vert", "2d_component.frag");
 
-	const float mouse_sensitivity = 0.1f;
-	const float default_speed = 5.0f;
-	const float run_speed = 10.0f;
-	const float run_speed_fly = 50.0f;
-	const float jump_force = 8.0f; 
-	const float gravity = -30.0f;
-	const float ray_length = 3.0f; //TODO: dynamic max ray length
-	const float outline_thickness = 2.0f;
+	VAO outline_vao = VAO(); //draws objects with lines, such as hitbox
+	VBO outline_vbo = VBO(cube_edges.data(), sizeof(vec3) *cube_edges.size(), GL_STATIC_DRAW);
+	VAO HUD_vao = VAO();  //draws 2d components, like crosshair and inventory box
+	VBO HUD_vbo = VBO(crosshair_vertices.data(), sizeof(vec2) *crosshair_vertices.size(), GL_STATIC_DRAW);
 
 	Block* hovered_block = nullptr;
 	
@@ -61,18 +81,4 @@ private:
 	bool is_running = false;
 	bool is_jumping = false;
 	bool on_ground = false;
-
-	void update_movement(float dt);
-	void update_mouse();
-	bool is_ground();
-	void collision(float dx, float dy, float dz);
-	void handle_block_interactions();
-public:
-	//bool window_refocused = false; //TODO: prevent cam view jump on window re-focus
-	Camera(GLFWwindow *window, int window_width, int window_height, vec3 position);
-	void update();
-	void update_matrix(int shader_id);
-	void draw_lines(int shader_id);
-	void draw_huds(int shader_id);
-	void raycast();
 };

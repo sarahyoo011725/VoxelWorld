@@ -61,8 +61,6 @@ int main() {
 	Camera cam(window, width, height, vec3(0.0, 70.0, 0.0));
 	Terrain terrain = Terrain(cam.position);
 	Shader world_shader = Shader("default.vert", "default.frag");
-	Shader lines_shader = Shader("lines.vert", "lines.frag");
-	Shader huds_shader = Shader("2d_components.vert", "2d_components.frag");
 	Texture texture = Texture("texture_atlas.png");
 	texture.bind();
 
@@ -71,8 +69,8 @@ int main() {
 	glEnable(GL_BLEND); 
 	//my vertices are winded in counter wise for the front face.
 	//glCullFace is set to cull back face and glFrontFace is CCW by default. So, I tell gl that front faces are winded in counter wise.
-	//glEnable(GL_CULL_FACE);
-	//glFrontFace(GL_CW);
+	glEnable(GL_CULL_FACE);
+	glFrontFace(GL_CW);
 
 	while (!glfwWindowShouldClose(window)) {
 		process_inputs(window);
@@ -94,11 +92,9 @@ int main() {
 		}
 		cam.update_matrix(world_shader.id);
 		
-		lines_shader.activate();
-		cam.draw_lines(lines_shader.id);
+		cam.draw_outlines();
 
-		huds_shader.activate();
-		cam.draw_huds(huds_shader.id);
+		cam.draw_HUDs();
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
 		glfwPollEvents(); //checks if any events triggered
@@ -106,8 +102,6 @@ int main() {
 
 	//terminates the program, destroying everything including window
 	world_shader.destroy();
-	lines_shader.destroy();
-	huds_shader.destroy();
 	texture.destroy();
 	glfwDestroyWindow(window);
 	glfwTerminate();

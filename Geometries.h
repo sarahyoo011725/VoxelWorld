@@ -5,7 +5,7 @@
 using namespace std;
 using namespace glm;
 
-namespace geometry {
+namespace {
 	const static vector<vec2> crosshair_vertices = {
 		//horizontal line
 		vec2(-0.02f, 0.0f),

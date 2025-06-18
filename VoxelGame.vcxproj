@@ -167,7 +167,6 @@
     <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="ChunkManager.cpp" />
     <ClCompile Include="EBO.cpp" />
-    <ClCompile Include="Geometries.cpp" />
     <ClCompile Include="glad.c" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Shader.cpp" />
@@ -195,12 +194,12 @@
     <ClInclude Include="VBO.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="2d_components.frag" />
-    <None Include="2d_components.vert" />
+    <None Include="2d_component.frag" />
+    <None Include="2d_component.vert" />
     <None Include="default.frag" />
     <None Include="default.vert" />
-    <None Include="lines.frag" />
-    <None Include="lines.vert" />
+    <None Include="outline.frag" />
+    <None Include="outline.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="dirt.jpg" />
