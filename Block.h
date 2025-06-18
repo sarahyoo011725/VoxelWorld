@@ -22,7 +22,6 @@ public:
 		velocity = vec3(0);
 		size = vec3(1, 1, 1);
 	};
-	bool active = true;
 	block_type type = none;
 };
 

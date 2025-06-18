@@ -21,6 +21,7 @@ public:
 	GLuint id;
 	VBO(const void* vertices, GLsizeiptr size, GLenum draw_type);
 	void reset_vertices(const void* vertices, GLsizeiptr size, GLenum draw_type);
+	void sub_vertices(const void* vertices, GLsizeiptr size, GLsizeiptr offset);
 	void bind();
 	void unbind();
 	void destroy();

@@ -13,8 +13,10 @@ Camera::Camera(GLFWwindow *window, int window_width, int window_height, vec3 pos
 	mouse_ypos = last_ypos;
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	hud_vao.bind();
-	hud_vao.link_attrib(hud_vbo, 0, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), (void*)0);
+	lines_vao.bind();
+	lines_vao.link_attrib(lines_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void*)0);
+	huds_vao.bind();
+	huds_vao.link_attrib(huds_vbo, 0, 2, GL_FLOAT, GL_FALSE, sizeof(vec2), (void*)0);
 }
 
 void Camera::update_matrix(int shader_id) {
@@ -22,11 +24,32 @@ void Camera::update_matrix(int shader_id) {
 	projection = perspective(radians(fov_degrees), (float)window_width / window_height, near_plane, far_plane);
 	GLuint location = glGetUniformLocation(shader_id, "cam_matrix");
 	glUniformMatrix4fv(location, 1, false, value_ptr(projection * view));
+
+	raycast();
 }
 
-void Camera::draw_huds() {
-	hud_vao.bind();
+void Camera::draw_huds(int shader_id) {
+	//draw crosshair
+	huds_vao.bind();
+	glLineWidth(1.0);
 	glDrawArrays(GL_LINES, 0, 4);
+}
+
+void Camera::draw_lines(int shader_id) {
+	if (hovered_block == nullptr) return;
+
+	update_matrix(shader_id);
+
+	mat4 cube_model = translate(mat4(1.0), hovered_block->position);
+	glUniformMatrix4fv(glGetUniformLocation(shader_id, "cube_model"), 1, GL_FALSE, value_ptr(cube_model));
+	glUniform4fv(glGetUniformLocation(shader_id, "color"), 1, value_ptr(hovered_block_outline_color));
+
+	//draw cube outline
+	glDisable(GL_DEPTH_TEST); //keeps the cube outline visible
+	lines_vao.bind();
+	glLineWidth(outline_thickness);
+	glDrawArrays(GL_LINES, 0, 24); //first: index where verticies are inserted, counts: # of vertices to draw the line(s)
+	glEnable(GL_DEPTH_TEST);
 }
 
 void Camera::handle_block_interactions() {
@@ -40,6 +63,8 @@ void Camera::handle_block_interactions() {
 	}
 
 	if (block == nullptr) return;
+
+	hovered_block = block;
 
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 		if (block != nullptr && block->type == none) {
@@ -143,24 +168,11 @@ void Camera::update_movement(float dt) {
 }
 
 
-/* coordinates are converted in the order below:
-* viewport space (2d screen) -> normalized device space (opengl coord system) -> homogenenous clip state -> eye space(origin is cam) -> world space
-*/
 void Camera::raycast() {
-	//converts 2d viewport coord into normalized device coord (opengl coord system where top-left: (0, 0) and bottom-right: (1, 1))
-	vec2 device_coords;
-	device_coords.x = (2.0f * mouse_xpos) / window_width - 1.0f;
-	device_coords.y = 1.0f - (2.0f * mouse_ypos) / window_height;
-	//ray homogeneous clip
-	vec4 clip_coords = vec4(device_coords.x, device_coords.y, -1.0f, 1.0f);
-	//convert ray clip into 4d eye (camera) coord
-	vec4 eye_coords = inverse(projection) * clip_coords;
-	//unprojects only the x and y aixes. sets z and w to mean forwards and not a point
-	eye_coords.z = -1.0f;
-	eye_coords.w = 0.0f;
-	//converts eye coord into 4d world coord
-	vec3 world_coords = inverse(view) * eye_coords;
-	ray = position + normalize(world_coords) * ray_length; //line vector equation in 3d: origin + t * direction vector
+	//normally, the conversion from 2d screen into 3d world space would like this:
+	//viewport space (2d screen) -> normalized device space (opengl coord system) -> homogenenous clip state -> eye space(origin is cam) -> world space
+	//but it's so simple that I can just cast a ray with direction (or forward) vector
+	ray = position + direction * ray_length;
 }
 
 bool Camera::is_ground() {

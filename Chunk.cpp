@@ -2,12 +2,12 @@
 #include "ChunkManager.h"
 #include "StructureGenerator.h"
 
-Chunk::Chunk(ivec2 chunk_origin) : cm(ChunkManager::get_instance()) {
+Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()) {
 	//add 1 to width and length to store neighbor chunks' block data in their edge
-	id = chunk_origin;
-	world_position = vec3(chunk_origin.x * chunk_size, 0, chunk_origin.y * chunk_size);
+	id = chunk_id;
+	world_position = vec3(chunk_id.x * chunk_size, 0, chunk_id.y * chunk_size);
 	width = chunk_size + 1;
-	height = 100;
+	height = 100 + 1;
 	length = chunk_size + 1;
 
 	//TODO: optimize blocks initialization
@@ -74,7 +74,7 @@ int** Chunk::get_heightmap() {
 			int x_pos = world_position.x + x;
 			int z_pos = world_position.z + z;
 			int height_val = abs(static_cast<int> (get_noise(x_pos, z_pos) * 20)) + 4;
-			if (height_val > height) height_val = height;
+			if (height_val > height + 1) height_val = height;
 			map[x][z] = height_val;
 		}
 	}
@@ -110,6 +110,7 @@ void Chunk::set_block(ivec3 local_coord, block_type type) {
 	int y = local_coord.y;
 	int z = local_coord.z;
 	if (x < 0 || x > width - 1 || y < 0 || y > height - 1 || z < 0 || z > length - 1) {
+		cout << "local coord out of bound" << endl;
 		return;
 	}
 	blocks[x][y][z].type = type;
@@ -182,7 +183,7 @@ void Chunk::build_chunk() {
 	for (int x = 0; x < width ; ++x) {
 		for (int z = 0; z < length; ++z) {
 			for (int y = 0; y < height; ++y) {
-				if (blocks[x][y][z].active == false || blocks[x][y][z].type == none) {
+				if (blocks[x][y][z].type == none) {
 					continue;
 				}
 				int h = height_map[x][z];
@@ -190,27 +191,39 @@ void Chunk::build_chunk() {
 				vec3 pos = vec3(x, y, z);
 				block_type type = blocks[x][y][z].type;
 				//TODO: I will make this look better in some days lol
-				if (x == 1 && (blocks[0][y][z].type == none || has_transparency(&blocks[0][y][z]) && !am_i_transparent) ||
-					x > 0 && (blocks[x - 1][y][z].type == none || has_transparency(&blocks[x - 1][y][z]) && !am_i_transparent)) {
+				if (
+					(x == 1 && (blocks[0][y][z].type == none || has_transparency(blocks[0][y][z].type) && !am_i_transparent))||
+					(x > 0 && (blocks[x - 1][y][z].type == none || has_transparency(blocks[x - 1][y][z].type) && !am_i_transparent))
+				) {
 					add_face(Left, type, pos);
 				}
-				if (y > 0 && (blocks[x][y - 1][z].type == none || has_transparency(&blocks[x][y - 1][z]) && !am_i_transparent)) {
+				if (
+					(y > 0 && (blocks[x][y - 1][z].type == none || has_transparency(blocks[x][y - 1][z].type) && !am_i_transparent))
+				) {
 					add_face(Bottom, type, pos);
 				}
-				if (z == 1 && (blocks[x][y][0].type == none || has_transparency(&blocks[x][y][0]) && !am_i_transparent) ||
-					z > 0 && (blocks[x][y][z - 1].type == none || has_transparency(&blocks[x][y][z - 1]) && !am_i_transparent)) {
+				if (
+					(z == 1 && (blocks[x][y][0].type == none || has_transparency(blocks[x][y][0].type) && !am_i_transparent)) ||
+					(z > 0 && (blocks[x][y][z - 1].type == none || has_transparency(blocks[x][y][z - 1].type) && !am_i_transparent))
+				) {
 					add_face(Back, type, pos);
 				}
-				if (x == width - 2 && (blocks[width- 1][y][z].type == none || has_transparency(&blocks[width - 1][y][z]) && !am_i_transparent) ||
-					x < width - 1 && (blocks[x + 1][y][z].type == none || has_transparency(&blocks[x + 1][y][z]) && !am_i_transparent)) {
+				if (
+					(x == width - 2 && (blocks[width - 1][y][z].type == none || has_transparency(blocks[width - 1][y][z].type) && !am_i_transparent)) ||
+					(x < width - 1 && (blocks[x + 1][y][z].type == none || has_transparency(blocks[x + 1][y][z].type) && !am_i_transparent))
+				) {
 					add_face(Right, type, pos);
 				}
-				if (y == height - 1 || y < height - 1 && (blocks[x][y + 1][z].type == none || 
-						has_transparency(&blocks[x][y + 1][z]) && !am_i_transparent)) {
+				if (
+					(y == height - 2 && (blocks[x][height - 1][z].type == none || has_transparency(blocks[x][height - 1][z].type) && !am_i_transparent)) ||
+					(y < height - 1 && (blocks[x][y + 1][z].type == none || has_transparency(blocks[x][y + 1][z].type) && !am_i_transparent))
+				) {
 					add_face(Top, type, pos);
 				}
-				if (z == length - 2 && (blocks[x][y][length - 1].type == none || has_transparency(&blocks[x][y][length - 1]) && !am_i_transparent) ||
-					z < length - 1 && (blocks[x][y][z + 1].type == none || has_transparency(&blocks[x][y][z + 1]) && !am_i_transparent)) {
+				if (
+					(z == length - 2 && (blocks[x][y][length - 1].type == none || has_transparency(blocks[x][y][length - 1].type) && !am_i_transparent)) ||
+					(z < length - 1 && (blocks[x][y][z + 1].type == none || has_transparency(blocks[x][y][z + 1].type) && !am_i_transparent))
+				) {
 					add_face(Front, type, pos);
 				}
 			}
@@ -238,6 +251,5 @@ Chunk::~Chunk() {
 		delete[] blocks[x];
 	}
 	delete[] blocks;
-	
 	*/
 }

@@ -61,7 +61,8 @@ int main() {
 	Camera cam(window, width, height, vec3(0.0, 70.0, 0.0));
 	Terrain terrain = Terrain(cam.position);
 	Shader world_shader = Shader("default.vert", "default.frag");
-	Shader hud_shader = Shader("hud.vert", "hud.frag");
+	Shader lines_shader = Shader("lines.vert", "lines.frag");
+	Shader huds_shader = Shader("2d_components.vert", "2d_components.frag");
 	Texture texture = Texture("texture_atlas.png");
 	texture.bind();
 
@@ -87,16 +88,17 @@ int main() {
 		}
 
 		world_shader.activate();
-		//must called after shader activated
-		terrain.update(); 
+		terrain.update(); //must called after world shader is activated
 		if (isWindowActive) {
 			cam.update();
 		}
 		cam.update_matrix(world_shader.id);
-		cam.raycast();
 		
-		hud_shader.activate();
-		cam.draw_huds();
+		lines_shader.activate();
+		cam.draw_lines(lines_shader.id);
+
+		huds_shader.activate();
+		cam.draw_huds(huds_shader.id);
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
 		glfwPollEvents(); //checks if any events triggered
@@ -104,7 +106,8 @@ int main() {
 
 	//terminates the program, destroying everything including window
 	world_shader.destroy();
-	hud_shader.destroy();
+	lines_shader.destroy();
+	huds_shader.destroy();
 	texture.destroy();
 	glfwDestroyWindow(window);
 	glfwTerminate();

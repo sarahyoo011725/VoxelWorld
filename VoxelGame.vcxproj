@@ -167,8 +167,9 @@
     <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="ChunkManager.cpp" />
     <ClCompile Include="EBO.cpp" />
+    <ClCompile Include="Geometries.cpp" />
     <ClCompile Include="glad.c" />
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Main.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="stb.cpp" />
     <ClCompile Include="StructureGenerator.cpp" />
@@ -185,6 +186,7 @@
     <ClInclude Include="ChunkManager.h" />
     <ClInclude Include="EBO.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="Geometries.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="StructureGenerator.h" />
     <ClInclude Include="Terrain.h" />
@@ -193,10 +195,12 @@
     <ClInclude Include="VBO.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="2d_components.frag" />
+    <None Include="2d_components.vert" />
     <None Include="default.frag" />
     <None Include="default.vert" />
-    <None Include="hud.frag" />
-    <None Include="hud.vert" />
+    <None Include="lines.frag" />
+    <None Include="lines.vert" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="dirt.jpg" />

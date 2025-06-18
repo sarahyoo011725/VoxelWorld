@@ -10,6 +10,7 @@
 #include "VBO.h"
 #include "EBO.h"
 #include "Shader.h"
+#include "Geometries.h"
 
 using namespace glm;
 
@@ -17,18 +18,15 @@ class Camera: public GameObject
 {
 private:
 	ChunkManager& cm;
-	vector<GLfloat> crosshair_vertices = {
-		//horizontal line
-		-0.02f, 0.0f,
-		0.02f, 0.0f,
-		//vertical line
-		0.0f, -0.03f,
-		0.0f,  0.03f,
-	};
+
+	vec4 crosshair_color = vec4(1.0); //white
+	vec4 hovered_block_outline_color = vec4(0.0, 1.0, 1.0, 1.0); //cyan
 
 	//TODO:set vao for visualizing crosshair, raycast, hitbox etc.
-	VAO hud_vao = VAO();
-	VBO hud_vbo = VBO(crosshair_vertices.data(), sizeof(GLfloat) * crosshair_vertices.size(), GL_STATIC_DRAW);
+	VAO lines_vao = VAO(); //draws objects with lines, such as hitbox
+	VBO lines_vbo = VBO(geometry::cube_edges.data(), sizeof(vec3) * geometry::cube_edges.size(), GL_STATIC_DRAW);
+	VAO huds_vao = VAO();  //draws 2d components, like crosshair and inventory box
+	VBO huds_vbo = VBO(geometry::crosshair_vertices.data(), sizeof(vec2) * geometry::crosshair_vertices.size(), GL_STATIC_DRAW);
 
 	const float mouse_sensitivity = 0.1f;
 	const float default_speed = 5.0f;
@@ -36,9 +34,12 @@ private:
 	const float run_speed_fly = 50.0f;
 	const float jump_force = 8.0f; 
 	const float gravity = -30.0f;
-	const float ray_length = 1.0f;
+	const float ray_length = 3.0f; //TODO: dynamic max ray length
+	const float outline_thickness = 2.0f;
+
+	Block* hovered_block = nullptr;
 	
-	vec3 direction = vec3(0.0);
+	vec3 direction = vec3(0.0); //this is a forward vector
 	vec3 up = vec3(0.0, 1.0, 0.0);
 	mat4 view = mat4(0.0);
 	mat4 projection = mat4(0.0);
@@ -71,6 +72,7 @@ public:
 	Camera(GLFWwindow *window, int window_width, int window_height, vec3 position);
 	void update();
 	void update_matrix(int shader_id);
-	void draw_huds();
+	void draw_lines(int shader_id);
+	void draw_huds(int shader_id);
 	void raycast();
 };

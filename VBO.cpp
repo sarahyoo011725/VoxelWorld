@@ -14,6 +14,11 @@ void VBO::reset_vertices(const void* vertices, GLsizeiptr size, GLenum draw_type
 	glBufferData(GL_ARRAY_BUFFER, size, vertices, draw_type);
 }
 
+void VBO::sub_vertices(const void* vertices, GLsizeiptr size, GLsizeiptr offset) {
+	bind();
+	glBufferSubData(GL_ARRAY_BUFFER, offset, size, vertices);
+}
+
 void VBO::bind() {
 	glBindBuffer(GL_ARRAY_BUFFER, id);
 }

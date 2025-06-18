@@ -24,7 +24,7 @@
     <ClCompile Include="glad.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="Main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VAO.cpp">
@@ -60,7 +60,7 @@
     <ClCompile Include="StructureGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Collision.cpp">
+    <ClCompile Include="Geometries.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -104,7 +104,7 @@
     <ClInclude Include="GameObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Collision.h">
+    <ClInclude Include="Geometries.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -113,6 +113,18 @@
       <Filter>Resource Files\Shaders</Filter>
     </None>
     <None Include="default.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="lines.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="lines.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="2d_components.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="2d_components.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
   </ItemGroup>
