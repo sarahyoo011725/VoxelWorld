@@ -40,7 +40,7 @@ private:
 	const float run_speed_fly = 50.0f;
 	const float jump_force = 8.0f;
 	const float gravity = -30.0f;
-	const float ray_length = 3.0f; //TODO: dynamic max ray length
+	const float ray_length = 3.0f; //TODO: dynamic ray length
 	const float outline_thickness = 2.0f;
 	
 	ChunkManager& cm;

@@ -19,6 +19,9 @@
     <Filter Include="Resource Files\Textures">
       <UniqueIdentifier>{568691aa-a9a0-4c7d-be71-929e39dee6af}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Musics">
+      <UniqueIdentifier>{f5cd21d2-6cec-48ef-b24b-057417a51e67}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -58,6 +61,21 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="StructureGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundDevice.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MusicBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundEffectsPlayer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SoundEffectsLibrary.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GameObject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -104,6 +122,21 @@
     <ClInclude Include="Geometries.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SoundDevice.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OpenALErrorCheck.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MusicBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundEffectsPlayer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SoundEffectsLibrary.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="default.frag">
@@ -124,6 +157,17 @@
     <None Include="2d_component.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
+    <None Include="README.md" />
+    <None Include="vcpkg.json" />
+    <None Include="vcpkg-configuration.json" />
+    <None Include=".gitattributes" />
+    <None Include=".gitignore" />
+    <None Include="2d_visuals.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="2d_visuals.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="dirt.jpg">
@@ -132,5 +176,10 @@
     <Image Include="texture_atlas.png">
       <Filter>Resource Files\Textures</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Media Include="minecraft.wav">
+      <Filter>Resource Files\Musics</Filter>
+    </Media>
   </ItemGroup>
 </Project>

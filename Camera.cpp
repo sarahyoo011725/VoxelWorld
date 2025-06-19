@@ -122,7 +122,7 @@ void Camera::block_interaction() {
 		if (block != nullptr && block->type == none) {
 			bool success = cm.set_block_manual(chunk_id, local_coord, dirt); //TOOD: selection of block type, inventory 
 			if (success) {
-				cout << "set block at (" << ray.x << ", " << ray.y << ", " << ray.z << ")" << endl;
+				//cout << "set block at (" << ray.x << ", " << ray.y << ", " << ray.z << ")" << endl;
 			}
 		}
 	}
@@ -130,7 +130,7 @@ void Camera::block_interaction() {
 		if (block != nullptr && block->type != none) {
 			bool success = cm.set_block_manual(chunk_id, local_coord, none);
 			if (success) {
-				cout << "destroy block at (" << ray.x << ", " << ray.y << ", " << ray.z << ")" << endl;
+				//cout << "destroy block at (" << ray.x << ", " << ray.y << ", " << ray.z << ")" << endl;
 			}
 		}
 	}

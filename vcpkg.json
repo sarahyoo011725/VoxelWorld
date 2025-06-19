@@ -1,0 +1,12 @@
+{
+  "dependencies": [
+    "glad",
+    "glfw3",
+    "glm",
+    "libnoise",
+    "libsndfile",
+    "openal-soft",
+    "opengl",
+    "audiofile"
+  ]
+}
