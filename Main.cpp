@@ -14,9 +14,7 @@
 #include "Block.h"
 #include "Chunk.h"
 #include "Terrain.h"
-#include "SoundDevice.h"
-#include "MusicBuffer.h"
-#include "SoundEffectsLibrary.h"
+#include "AudioManager.h"
 
 using namespace std;
 using namespace glm;
@@ -61,9 +59,6 @@ int main() {
 		return -1;
 	}
 
-	SoundDevice *device = LISTENER->get_instance();
-	MusicBuffer music("minecraft.wav");
-
 	Camera cam(window, width, height, vec3(0.0, 70.0, 0.0));
 	Terrain terrain = Terrain(cam.position);
 	Shader world_shader = Shader("default.vert", "default.frag");
@@ -78,11 +73,12 @@ int main() {
 	glEnable(GL_CULL_FACE);
 	glFrontFace(GL_CW);
 
-	music.play();
+	music::minecraft.play();
 
 	while (!glfwWindowShouldClose(window)) {
-		if (music.is_playing()) {
-			music.update_buffer_stream();
+		//plays main music
+		if (music::minecraft.is_playing()) {
+			music::minecraft.update_buffer_stream();
 		}
 		process_inputs(window);
 

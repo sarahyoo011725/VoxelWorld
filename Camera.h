@@ -11,6 +11,7 @@
 #include "EBO.h"
 #include "Shader.h"
 #include "Geometries.h"
+#include "AudioManager.h"
 
 using namespace glm;
 

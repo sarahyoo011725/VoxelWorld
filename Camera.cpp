@@ -118,22 +118,17 @@ void Camera::block_interaction() {
 
 	hovered_block = block;
 
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-		if (block != nullptr && block->type == none) {
-			bool success = cm.set_block_manual(chunk_id, local_coord, dirt); //TOOD: selection of block type, inventory 
-			if (success) {
-				//cout << "set block at (" << ray.x << ", " << ray.y << ", " << ray.z << ")" << endl;
-			}
-		}
+if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+	if (block != nullptr && block->type == none) {
+		cm.set_block_manual(chunk_id, local_coord, dirt); //TOOD: selection of block type, inventory 
+		audio::play_create_block(dirt);
 	}
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-		if (block != nullptr && block->type != none) {
-			bool success = cm.set_block_manual(chunk_id, local_coord, none);
-			if (success) {
-				//cout << "destroy block at (" << ray.x << ", " << ray.y << ", " << ray.z << ")" << endl;
-			}
-		}
+}
+if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+	if (block != nullptr && block->type != none) {
+		cm.set_block_manual(chunk_id, local_coord, none);
 	}
+}
 }
 
 void Camera::update_mouse() {
@@ -186,7 +181,7 @@ void Camera::update_movement(float dt) {
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		input_dir += right;
 	}
-	
+
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 		input_dir += up;
 	}
@@ -214,9 +209,23 @@ void Camera::update_movement(float dt) {
 
 	if (enable_physics) {
 		velocity.y += gravity * dt;
-	
-		if (on_ground && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-			velocity.y = jump_force;
+
+		//TODO: walking sound effect
+		if (on_ground) {
+			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+				velocity.y = jump_force;
+			}
+			if (!audio::effect2.is_playing() && velocity.x != 0 && velocity.z != 0) {
+				audio::play_walk_on_block(dirt); //TODO: detect what type of block the player is walking on
+			}
+			if (audio::effect2.is_playing() && velocity.x == 0 && velocity.z == 0) {
+				audio::effect2.stop();
+			}
+		}
+		else {
+			if (audio::effect2.is_playing()) {
+				audio::effect2.stop();
+			}
 		}
 	}
 

@@ -166,6 +166,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AudioManager.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="ChunkManager.cpp" />
@@ -186,6 +187,7 @@
     <ClCompile Include="VBO.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AudioManager.h" />
     <ClInclude Include="Block.h" />
     <ClInclude Include="BlockType.h" />
     <ClInclude Include="Camera.h" />
@@ -226,6 +228,11 @@
     <Image Include="texture_atlas.png" />
   </ItemGroup>
   <ItemGroup>
+    <Media Include="..\..\..\Downloads\grass_walking.wav" />
+    <Media Include="..\..\..\Downloads\grass_dig1.wav" />
+    <Media Include="..\..\..\Downloads\grass_dig2.wav" />
+    <Media Include="..\..\..\Downloads\grass_dig3.wav" />
+    <Media Include="..\..\..\Downloads\grass_dig4.wav" />
     <Media Include="minecraft.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

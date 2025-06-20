@@ -22,6 +22,9 @@
     <Filter Include="Resource Files\Musics">
       <UniqueIdentifier>{f5cd21d2-6cec-48ef-b24b-057417a51e67}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\SoundEffects">
+      <UniqueIdentifier>{04d1badb-cdf3-475d-9aba-f0ec36f4578e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="glad.c">
@@ -76,6 +79,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GameObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AudioManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -137,6 +143,9 @@
     <ClInclude Include="SoundEffectsLibrary.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AudioManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="default.frag">
@@ -180,6 +189,21 @@
   <ItemGroup>
     <Media Include="minecraft.wav">
       <Filter>Resource Files\Musics</Filter>
+    </Media>
+    <Media Include="..\..\..\Downloads\grass_dig3.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="..\..\..\Downloads\grass_dig1.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="..\..\..\Downloads\grass_dig4.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="..\..\..\Downloads\grass_dig2.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="..\..\..\Downloads\grass_walking.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
     </Media>
   </ItemGroup>
 </Project>
