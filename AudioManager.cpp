@@ -1,7 +1,6 @@
 #include "AudioManager.h"
 
 void audio::play_block_sound_effect(block_type type) {
-	if (type == none) return;
 	ALuint sound = -1;
 	switch (type) {
 	case grass:
@@ -34,7 +33,6 @@ void audio::play_block_sound_effect(block_type type) {
 }
 
 void audio::play_block_walked(block_type type) {
-	if (type == none) return;
 	ALuint sound = -1;
 	switch (type) {
 	case dirt_grass:

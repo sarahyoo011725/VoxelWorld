@@ -113,26 +113,24 @@ void Camera::block_interaction() {
 	if (chunk != nullptr) {
 		block = chunk->get_block(local_coord);
 	}
+	
+	hovered_block = block;
 
 	if (block == nullptr) return;
 
-	hovered_block = block;
-
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-		if (block != nullptr && block->type == none) {
+		if (block->type == none) {
 			if (holding_block_type != none) {
-				cm.set_block_manual(chunk_id, local_coord, holding_block_type); //TOOD: selection of block type, inventory 
 				audio::play_block_sound_effect(holding_block_type);
+				cm.set_block_manual(chunk_id, local_coord, holding_block_type); //TOOD: selection of block type, inventory 
 			}
 		}
 	}
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-		if (block != nullptr && block->type != none) {
-			if (hovered_block->type != none) {
-				audio::play_block_sound_effect(hovered_block->type);
-				holding_block_type = hovered_block->type;
-				cm.set_block_manual(chunk_id, local_coord, none);
-			}
+		if (block->type != none) {
+			audio::play_block_sound_effect(block->type);
+			holding_block_type = hovered_block->type;
+			cm.set_block_manual(chunk_id, local_coord, none);
 		}
 	}
 }
