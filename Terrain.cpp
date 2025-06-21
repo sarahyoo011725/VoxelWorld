@@ -18,7 +18,6 @@ void Terrain::update() {
 			Chunk* chunk = cm.get_chunk(chunk_id);
 			if (!chunk) {
 				chunk = cm.create_chunk(chunk_id);	
-				spawn_structures(chunk);
 				
 				auto unloaded_c = cm.unloaded_blocks.find(chunk_id);
 				if (unloaded_c != cm.unloaded_blocks.end()) {
@@ -35,12 +34,11 @@ void Terrain::update() {
 	//TODO: fix mesh crossing chunk
 	for (Chunk* c : visible_chunks) {
 		if (!c->has_built) {
+			spawn_structures(c);
 			c->build_chunk();
-			c->update_buffers_data();
 		}
 		else if (c->should_rebuild) {
 			c->rebuild_chunk();
-			c->update_buffers_data();
 		}
 	}
 

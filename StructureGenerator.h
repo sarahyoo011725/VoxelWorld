@@ -16,6 +16,7 @@ public:
 		static StructureGenerator instance;
 		return instance;
 	}
+	void spawn_nonblock_structure(block_type type, vec3 world_coord);
 	void spawn_tree(vec3 world_vec3);
 	void spawn_grass(vec3 world_vec3);
 };

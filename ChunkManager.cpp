@@ -4,13 +4,19 @@ bool ChunkManager::chunk_exists(ivec2 chunk_id) {
 	return chunks.find(chunk_id) != chunks.end();
 }
 
+Chunk* ChunkManager::create_chunk(ivec2 chunk_id) {
+	Chunk new_chunk = Chunk(chunk_id);
+	auto inserted = chunks.insert({ chunk_id, new_chunk });
+	return &(inserted.first->second);
+}
+
 Chunk* ChunkManager::get_chunk(vec3 world_coord) {
 	ivec2 chunk_origin = get_chunk_origin(world_coord);
 	return get_chunk(chunk_origin);
 }
 
 Chunk* ChunkManager::get_chunk(ivec2 chunk_id) {
-	auto e = chunks.find(chunk_id);
+	const auto &e = chunks.find(chunk_id);
 	if (e != chunks.end()) {
 		return &e->second;
 	}
@@ -36,7 +42,9 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 			return false;
 		}
 		chunk->set_block(local_coord, type);
-		chunk->should_rebuild = true;
+		if (chunk->has_built) {
+			chunk->should_rebuild = true;
+		}
 	}
 
 	//TODO: fix structure generation across chunks edge issue
@@ -77,10 +85,4 @@ Block* ChunkManager::get_block_worldspace(vec3 world_coord) {
 	}
 	ivec3 local_coord = world_to_local_coord(world_coord);
 	return chunk->get_block(local_coord);
-}
-
-Chunk* ChunkManager::create_chunk(ivec2 chunk_id) {
-	Chunk new_chunk = Chunk(chunk_id);
-	auto inserted = chunks.insert({chunk_id, new_chunk});
-	return &(inserted.first->second);
 }

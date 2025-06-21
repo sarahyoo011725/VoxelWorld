@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "ChunkManager.h"
+#include "StructureGenerator.h"
 #include "GameObject.h"
 #include "VAO.h"
 #include "VBO.h"
@@ -66,6 +67,7 @@ private:
 	bool on_ground = false;
 
 	ChunkManager& cm;
+	StructureGenerator& sg;
 
 	vec4 crosshair_color = vec4(1.0); //white
 	vec4 hovered_block_outline_color = vec4(0.0, 1.0, 1.0, 1.0); //cyan

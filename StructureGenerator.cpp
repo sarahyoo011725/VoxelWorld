@@ -1,6 +1,14 @@
 #include "StructureGenerator.h"
 #include "Chunk.h"
 
+void StructureGenerator::spawn_nonblock_structure(block_type type, vec3 world_coord) {
+	switch (type) {
+	case grass:
+		spawn_grass(world_coord);
+		return;
+	}
+}
+
 void StructureGenerator::spawn_grass(vec3 world_coord) {
 	//draw grass
 	ivec2 chunk_id = get_chunk_origin(world_coord);
@@ -18,7 +26,7 @@ void StructureGenerator::spawn_grass(vec3 world_coord) {
 				transformed_vertices.push_back({ position, uv_coord });
 			}
 		}
-		chunk->add_structure_vertices(transformed_vertices, true); //grass has transparency
+		chunk->add_nonblock_structure_vertices(local_coord, transformed_vertices); //grass has transparency
 		chunk->set_block(local_coord, grass);
 	}
 }

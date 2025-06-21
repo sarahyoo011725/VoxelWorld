@@ -1,6 +1,6 @@
 ﻿#include "Camera.h"
 
-Camera::Camera(GLFWwindow *window, int window_width, int window_height, vec3 position) : cm(ChunkManager::get_instance()) {
+Camera::Camera(GLFWwindow *window, int window_width, int window_height, vec3 position) : cm(ChunkManager::get_instance()), sg(StructureGenerator::get_instance()) {
 	size = vec3(1, 2, 1);
 	this->position = position;
 	this->window = window;
@@ -121,15 +121,24 @@ void Camera::block_interaction() {
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 		if (block->type == none) {
 			if (holding_block_type != none) {
+				if (is_nonblock(holding_block_type)) {
+					sg.spawn_nonblock_structure(holding_block_type, block->position);
+					chunk->should_rebuild = true;
+				}
+				else {
+					cm.set_block_manual(chunk_id, local_coord, holding_block_type); //TOOD: selection of block type, inventory 
+				}
 				audio::play_block_sound_effect(holding_block_type);
-				cm.set_block_manual(chunk_id, local_coord, holding_block_type); //TOOD: selection of block type, inventory 
 			}
 		}
 	}
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 		if (block->type != none) {
-			audio::play_block_sound_effect(block->type);
 			holding_block_type = hovered_block->type;
+			if (is_nonblock(block->type)) {
+				chunk->remove_structure(local_coord); 
+			}
+			audio::play_block_sound_effect(block->type);
 			cm.set_block_manual(chunk_id, local_coord, none);
 		}
 	}

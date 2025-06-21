@@ -110,30 +110,31 @@ void Chunk::set_block(ivec3 local_coord, block_type type) {
 	int y = local_coord.y;
 	int z = local_coord.z;
 	if (x < 0 || x > width - 1 || y < 0 || y > height - 1 || z < 0 || z > length - 1) {
-		cout << "local coord out of bound" << endl;
 		return;
 	}
 	blocks[x][y][z].type = type;
 }
 
-void Chunk::add_structure_vertices(vector<vertex> vertices_to_add, bool has_transparency) {
-	if (has_transparency) {
-		for (int i = 1; i <= vertices_to_add.size(); ++i) {
-			transp_vertices.push_back(vertices_to_add[i - 1]);
+void Chunk::add_nonblock_structure_vertices(ivec3 local_coord, vector<vertex> vertices) {
+	const auto& structure = nonblock_structure_vertices.find(local_coord);
+	if (structure == nonblock_structure_vertices.end()) {
+		nonblock_structure_vertices.insert({ local_coord, vertices });
+	}
+}
+
+void Chunk::remove_structure(ivec3 local_coord) {
+	nonblock_structure_vertices.erase(local_coord);
+}
+
+void Chunk::update_nonblock_structure_vertices_and_indices() {
+	for (const auto &e : nonblock_structure_vertices) {
+		for (int i = 1; i <= e.second.size(); ++i) {
+			transp_vertices.push_back(e.second[i - 1]);
 			if (i > 1 && i % 4 == 0) {
-				add_face_indices(has_transparency);
+				add_face_indices(true);
 			}
 		}
 	}
-	else {
-		for (int i = 1; i <= vertices_to_add.size(); ++i) {
-			opaque_vertices.push_back(vertices_to_add[i - 1]);
-			if (i > 1 && i % 4 == 0) {
-				add_face_indices(has_transparency);
-			}
-		}
-	}
-	should_rebuild = true;
 }
 
 void Chunk::add_face_indices(bool has_transparency) {
@@ -239,16 +240,10 @@ void Chunk::build_chunk() {
 			}
 		}
 	}
-	has_built = true;
-}
 
-void Chunk::destroy() {
-	opaque_vao.destroy();
-	opaque_vbo.destroy();
-	opaque_ebo.destroy();
-	transp_vao.destroy();
-	transp_vbo.destroy();
-	transp_ebo.destroy();
+	update_nonblock_structure_vertices_and_indices(); //must be called after spawn_structures() is called in Terrain
+	update_buffers_data();
+	has_built = true;
 }
 
 Chunk::~Chunk() {

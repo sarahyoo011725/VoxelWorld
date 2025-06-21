@@ -1,4 +1,7 @@
 #pragma once
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
 #include <glad/glad.h>
 #include <vector>
 #include "Block.h"
@@ -7,6 +10,7 @@
 #include "EBO.h"
 #include "Texture.h"
 #include "Shader.h"
+#include "unordered_map"
 
 using namespace glm;
 
@@ -24,6 +28,7 @@ private:
 	EBO opaque_ebo = EBO(nullptr, sizeof(GLuint) * 0, GL_STATIC_DRAW);
 
 	//for transparent geometry
+	unordered_map<ivec3, vector<vertex>> nonblock_structure_vertices; //all nonblock structure texture like grass has transparency
 	vector<vertex> transp_vertices;
 	vector<GLuint> transp_indices; 
 	VAO transp_vao = VAO();
@@ -34,6 +39,8 @@ private:
 	int** get_heightmap();
 	void add_face(block_face face, block_type type, vec3 pos);
 	void add_face_indices(bool has_transparency);
+	void update_nonblock_structure_vertices_and_indices();
+	void update_buffers_data();
 public:
 	bool should_rebuild = false;
 	bool has_built = false;
@@ -46,11 +53,10 @@ public:
 	~Chunk();
 	void build_chunk();
 	void rebuild_chunk();
-	void update_buffers_data();
 	void draw_opaque_blocks();
 	void draw_transparent_blocks();
 	Block* get_block(ivec3 local_coord);
 	void set_block(ivec3 local_coord, block_type type);
-	void add_structure_vertices(vector<vertex> vertices_to_add, bool has_transparency);
-	void destroy();
+	void add_nonblock_structure_vertices(ivec3 local_coord, vector<vertex> vertices);
+	void remove_structure(ivec3 local_coord);
 };

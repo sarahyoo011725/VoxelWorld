@@ -26,7 +26,7 @@ public:
 };
 
 namespace {
-	static bool has_transparency(block_type type) {
+	bool has_transparency(block_type type) {
 		switch (type) {
 		case water:
 		case glass:
@@ -37,12 +37,12 @@ namespace {
 		return false;
 	}
 
-	static bool has_transparency(Block* block) {
+	bool has_transparency(Block* block) {
 		if (block == nullptr) return false;
 		return has_transparency(block->type);
 	}
 
-	static bool is_solid(block_type type) {
+	bool is_solid(block_type type) {
 		switch (type) {
 		case none:
 		case water:
@@ -52,9 +52,17 @@ namespace {
 		return true;
 	}
 
-	static bool is_solid(Block* block) {
+	bool is_solid(Block* block) {
 		if (block == nullptr) return false;
 		return is_solid(block->type);
+	}
+
+	bool is_nonblock(block_type type) {
+		switch (type) {
+		case grass:
+			return true;
+		}
+		return false;
 	}
 
 	/*
