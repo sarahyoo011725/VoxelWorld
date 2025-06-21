@@ -55,14 +55,6 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()) {
 	transp_vao.link_attrib(transp_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
 }
 
-//This must be called after build_chunk()
-void Chunk::bind_buffers() {
-	opaque_vbo.reset_vertices(opaque_vertices.data(), sizeof(vertex) * opaque_vertices.size(), GL_STATIC_DRAW);
-	opaque_ebo.reset_indices(opaque_indices.data(), sizeof(GLuint) * opaque_indices.size(), GL_STATIC_DRAW);
-	transp_vbo.reset_vertices(transp_vertices.data(), sizeof(vertex) * transp_vertices.size(), GL_STATIC_DRAW);
-	transp_ebo.reset_indices(transp_indices.data(), sizeof(GLuint) * transp_indices.size(), GL_STATIC_DRAW);
-}
-
 int** Chunk::get_heightmap() {
 	int** map = new int *[width];
 	for (int x = 0; x < width; ++x) {
@@ -79,6 +71,14 @@ int** Chunk::get_heightmap() {
 		}
 	}
 	return map;
+}
+
+//This must be called after build_chunk() or rebuild_chunk()
+void Chunk::update_buffers_data() {
+	opaque_vbo.reset_vertices(opaque_vertices.data(), sizeof(vertex) * opaque_vertices.size(), GL_STATIC_DRAW);
+	opaque_ebo.reset_indices(opaque_indices.data(), sizeof(GLuint) * opaque_indices.size(), GL_STATIC_DRAW);
+	transp_vbo.reset_vertices(transp_vertices.data(), sizeof(vertex) * transp_vertices.size(), GL_STATIC_DRAW);
+	transp_ebo.reset_indices(transp_indices.data(), sizeof(GLuint) * transp_indices.size(), GL_STATIC_DRAW);
 }
 
 void Chunk::draw_opaque_blocks() {
@@ -177,6 +177,16 @@ void Chunk::add_face(block_face face, block_type type, vec3 pos) {
 		}
 	}
 	add_face_indices(transparency);
+}
+
+void Chunk::rebuild_chunk() {
+	transp_vertices.clear();
+	transp_indices.clear();
+	opaque_vertices.clear();
+	opaque_indices.clear();
+
+	build_chunk();
+	should_rebuild = false;
 }
 
 void Chunk::build_chunk() {

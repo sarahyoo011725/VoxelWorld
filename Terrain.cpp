@@ -34,10 +34,14 @@ void Terrain::update() {
 
 	//TODO: fix mesh crossing chunk
 	for (Chunk* c : visible_chunks) {
-		if (c->has_built && !c->should_rebuild) continue;
-		c->build_chunk();
-		c->bind_buffers();
-		c->should_rebuild = false;
+		if (!c->has_built) {
+			c->build_chunk();
+			c->update_buffers_data();
+		}
+		else if (c->should_rebuild) {
+			c->rebuild_chunk();
+			c->update_buffers_data();
+		}
 	}
 
 	for (Chunk* c : visible_chunks) {

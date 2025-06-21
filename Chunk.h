@@ -45,7 +45,8 @@ public:
 	Chunk(ivec2 chunk_origin);
 	~Chunk();
 	void build_chunk();
-	void bind_buffers();
+	void rebuild_chunk();
+	void update_buffers_data();
 	void draw_opaque_blocks();
 	void draw_transparent_blocks();
 	Block* get_block(ivec3 local_coord);
