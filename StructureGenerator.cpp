@@ -7,7 +7,9 @@ void StructureGenerator::spawn_grass(vec3 world_coord) {
 	Chunk* chunk = chunk_manager.get_chunk(chunk_id);
 	if (chunk != nullptr) {
 		ivec3 local_coord = world_to_local_coord(world_coord);
-		if (chunk->get_block(local_coord)->type == grass) return;
+
+		if (chunk->get_block(local_coord)->type != none) return; //spawn grass only if there is no structure
+
 		vector<vertex> transformed_vertices;
 		for (vector<vertex> face : grass_face_vertices) {
 			for (int i = 0; i < face.size(); ++i) {
