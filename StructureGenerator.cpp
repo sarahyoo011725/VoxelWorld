@@ -28,7 +28,7 @@ void StructureGenerator::spawn_tree(vec3 world_coord) {
 			int wx = world_coord.x + dx;
 			int wz = world_coord.z + dz;
 			Block* block = chunk_manager.get_block_worldspace(vec3(wx, world_coord.y, wz));
-			if (block == nullptr || block != nullptr && block->type == trunk) {
+			if (block == nullptr || block != nullptr && block->type == wood) {
 				return;
 			} 
 		}
@@ -36,7 +36,7 @@ void StructureGenerator::spawn_tree(vec3 world_coord) {
 
 	//make a stem of height 5
 	for (int h = 0; h < 5; ++h) {
-		chunk_manager.set_block_worldspace(vec3(world_coord.x, world_coord.y + h, world_coord.z), trunk);
+		chunk_manager.set_block_worldspace(vec3(world_coord.x, world_coord.y + h, world_coord.z), wood);
 	}
 
 	//add leaves

@@ -199,10 +199,22 @@
     <Media Include="blind_spots.wav">
       <Filter>Resource Files\Musics</Filter>
     </Media>
-    <Media Include="break_grass.wav">
+    <Media Include="place_and_break_grass.wav">
       <Filter>Resource Files\SoundEffects</Filter>
     </Media>
-    <Media Include="place_grass.wav">
+    <Media Include="place_and_break_sand.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="place_and_break_stone.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="place_and_break_wood.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="place_water.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="place_and_break_dirt.wav">
       <Filter>Resource Files\SoundEffects</Filter>
     </Media>
     <Media Include="walk_grass.wav">

@@ -1,25 +1,48 @@
 #include "AudioManager.h"
 
-void audio::play_block_placed(block_type type) {
-	auto sound_effect = sound_effect::block_place_sound_effects.find(type);
-	if (sound_effect != sound_effect::block_place_sound_effects.end()) {
-		audio::effect_player1.play(sound_effect->second);
+void audio::play_block_sound_effect(block_type type) {
+	if (type == none) return;
+	ALuint sound = -1;
+	switch (type) {
+	case grass:
+	case leaf_transp:
+	case leaf_yellow:
+	case leaf_red:
+	case dirt_grass:
+		sound = sound_effect::grass;
+		break;
+	case dirt:
+		sound = sound_effect::dirt;
+		break;
+	case wood:
+		sound = sound_effect::wood;
+		break;
+	case stone:
+		sound = sound_effect::stone;
+		break;
+	case sand:
+		sound = sound_effect::sand;
+		break;
+	case water:
+		sound = sound_effect::water;
+		break;
 	}
-}
 
-void audio::play_block_broken(block_type type) {
-	auto sound_effect = sound_effect::block_break_sound_effects.find(type);
-	if (sound_effect != sound_effect::block_break_sound_effects.end()) {
-		audio::effect_player1.play(sound_effect->second);
+	if (sound != -1) {
+		audio::effect_player1.play(sound);
 	}
 }
 
 void audio::play_block_walked(block_type type) {
-	auto sound_effect = sound_effect::block_walk_sound_effects.find(type);
-	if (sound_effect != sound_effect::block_walk_sound_effects.end()) {
-		if (!effect_player2.is_playing()) {
-			audio::effect_player2.play(sound_effect->second);
-		}
+	if (type == none) return;
+	ALuint sound = -1;
+	switch (type) {
+	case dirt_grass:
+		sound = sound_effect::walk_grass;
+		break;
+	}
+	if (sound != -1) {
+		audio::effect_player2.play(sound);
 	}
 }
 

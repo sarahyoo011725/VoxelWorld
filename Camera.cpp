@@ -122,14 +122,14 @@ void Camera::block_interaction() {
 		if (block != nullptr && block->type == none) {
 			if (holding_block_type != none) {
 				cm.set_block_manual(chunk_id, local_coord, holding_block_type); //TOOD: selection of block type, inventory 
-				audio::play_block_placed(holding_block_type);
+				audio::play_block_sound_effect(holding_block_type);
 			}
 		}
 	}
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 		if (block != nullptr && block->type != none) {
 			if (hovered_block->type != none) {
-				audio::play_block_broken(hovered_block->type);
+				audio::play_block_sound_effect(hovered_block->type);
 				holding_block_type = hovered_block->type;
 				cm.set_block_manual(chunk_id, local_coord, none);
 			}
@@ -222,7 +222,7 @@ void Camera::update_movement(float dt) {
 				velocity.y = jump_force;
 			}
 			if (velocity.x != 0 && velocity.z != 0) {
-				audio::play_block_walked(dirt); //TODO: detect what type of block the player is walking on
+				audio::play_block_walked(dirt_grass); //TODO: detect what type of block the player is walking on
 			} else {
 				audio::effect_player2.stop();
 			}

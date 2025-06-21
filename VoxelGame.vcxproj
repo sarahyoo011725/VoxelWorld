@@ -229,9 +229,13 @@
   <ItemGroup>
     <Media Include="aria_math.wav" />
     <Media Include="blind_spots.wav" />
-    <Media Include="break_grass.wav" />
     <Media Include="minecraft.wav" />
-    <Media Include="place_grass.wav" />
+    <Media Include="place_and_break_dirt.wav" />
+    <Media Include="place_and_break_grass.wav" />
+    <Media Include="place_and_break_sand.wav" />
+    <Media Include="place_and_break_stone.wav" />
+    <Media Include="place_and_break_wood.wav" />
+    <Media Include="place_water.wav" />
     <Media Include="sweden.wav" />
     <Media Include="walk_grass.wav" />
     <Media Include="wet_hands.wav" />
