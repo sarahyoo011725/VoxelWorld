@@ -45,6 +45,7 @@ private:
 	const float outline_thickness = 2.0f;
 	
 	Block* hovered_block = nullptr;
+	block_type holding_block_type = none;
 
 	GLFWwindow *window;
 	int window_width, window_height;

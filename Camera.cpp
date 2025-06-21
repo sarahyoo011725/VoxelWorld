@@ -120,14 +120,19 @@ void Camera::block_interaction() {
 
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 		if (block != nullptr && block->type == none) {
-			cm.set_block_manual(chunk_id, local_coord, dirt); //TOOD: selection of block type, inventory 
-			audio::play_block_placed(dirt_grass);
+			if (holding_block_type != none) {
+				cm.set_block_manual(chunk_id, local_coord, holding_block_type); //TOOD: selection of block type, inventory 
+				audio::play_block_placed(holding_block_type);
+			}
 		}
 	}
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 		if (block != nullptr && block->type != none) {
-			cm.set_block_manual(chunk_id, local_coord, none);
-			audio::play_block_broken(hovered_block->type);
+			if (hovered_block->type != none) {
+				audio::play_block_broken(hovered_block->type);
+				holding_block_type = hovered_block->type;
+				cm.set_block_manual(chunk_id, local_coord, none);
+			}
 		}
 	}
 }
