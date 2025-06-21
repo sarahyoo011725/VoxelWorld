@@ -64,6 +64,7 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 			unloaded_blocks[adj_id].push_back({ adj_local_coord, type });
 		}
 	}
+	
 	return true;
 }
 

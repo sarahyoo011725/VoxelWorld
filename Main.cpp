@@ -73,13 +73,10 @@ int main() {
 	glEnable(GL_CULL_FACE);
 	glFrontFace(GL_CW);
 
-	music::minecraft.play();
-
 	while (!glfwWindowShouldClose(window)) {
-		//plays main music
-		if (music::minecraft.is_playing()) {
-			music::minecraft.update_buffer_stream();
-		}
+		//plays music
+		audio::play_random_music();
+		
 		process_inputs(window);
 
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color

@@ -224,16 +224,17 @@
     <None Include="vcpkg.json" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="dirt.jpg" />
     <Image Include="texture_atlas.png" />
   </ItemGroup>
   <ItemGroup>
-    <Media Include="..\..\..\Downloads\grass_walking.wav" />
-    <Media Include="..\..\..\Downloads\grass_dig1.wav" />
-    <Media Include="..\..\..\Downloads\grass_dig2.wav" />
-    <Media Include="..\..\..\Downloads\grass_dig3.wav" />
-    <Media Include="..\..\..\Downloads\grass_dig4.wav" />
+    <Media Include="aria_math.wav" />
+    <Media Include="blind_spots.wav" />
+    <Media Include="break_grass.wav" />
     <Media Include="minecraft.wav" />
+    <Media Include="place_grass.wav" />
+    <Media Include="sweden.wav" />
+    <Media Include="walk_grass.wav" />
+    <Media Include="wet_hands.wav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -118,17 +118,18 @@ void Camera::block_interaction() {
 
 	hovered_block = block;
 
-if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-	if (block != nullptr && block->type == none) {
-		cm.set_block_manual(chunk_id, local_coord, dirt); //TOOD: selection of block type, inventory 
-		audio::play_create_block(dirt);
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+		if (block != nullptr && block->type == none) {
+			cm.set_block_manual(chunk_id, local_coord, dirt); //TOOD: selection of block type, inventory 
+			audio::play_block_placed(dirt_grass);
+		}
 	}
-}
-if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-	if (block != nullptr && block->type != none) {
-		cm.set_block_manual(chunk_id, local_coord, none);
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+		if (block != nullptr && block->type != none) {
+			cm.set_block_manual(chunk_id, local_coord, none);
+			audio::play_block_broken(hovered_block->type);
+		}
 	}
-}
 }
 
 void Camera::update_mouse() {
@@ -215,16 +216,15 @@ void Camera::update_movement(float dt) {
 			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 				velocity.y = jump_force;
 			}
-			if (!audio::effect2.is_playing() && velocity.x != 0 && velocity.z != 0) {
-				audio::play_walk_on_block(dirt); //TODO: detect what type of block the player is walking on
-			}
-			if (audio::effect2.is_playing() && velocity.x == 0 && velocity.z == 0) {
-				audio::effect2.stop();
+			if (velocity.x != 0 && velocity.z != 0) {
+				audio::play_block_walked(dirt); //TODO: detect what type of block the player is walking on
+			} else {
+				audio::effect_player2.stop();
 			}
 		}
 		else {
-			if (audio::effect2.is_playing()) {
-				audio::effect2.stop();
+			if (audio::effect_player2.is_playing()) {
+				audio::effect_player2.stop();
 			}
 		}
 	}

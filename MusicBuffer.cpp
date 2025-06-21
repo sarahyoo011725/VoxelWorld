@@ -108,7 +108,6 @@ void MusicBuffer::update_buffer_stream()
 		alSourcePlay(p_Source);
 		AL_CheckAndThrow();
 	}
-
 }
 
 ALint MusicBuffer::get_source()

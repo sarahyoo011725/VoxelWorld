@@ -1,29 +1,33 @@
 #include "AudioManager.h"
 
-void audio::play_create_block(block_type type) {
-	switch (type) {
-	case dirt:
-		int n = rand() % 4;
-		if (n == 0) {
-			effect1.play(sound_effect::grass_dig1);
-		}
-		else if (n == 1) {
-			effect1.play(sound_effect::grass_dig2);
-		}
-		else if (n == 2) {
-			effect1.play(sound_effect::grass_dig3);
-		}
-		else {
-			effect1.play(sound_effect::grass_dig4);
-		}
-
+void audio::play_block_placed(block_type type) {
+	auto sound_effect = sound_effect::block_place_sound_effects.find(type);
+	if (sound_effect != sound_effect::block_place_sound_effects.end()) {
+		audio::effect_player1.play(sound_effect->second);
 	}
 }
 
-void audio::play_walk_on_block(block_type type) {
-	effect2.set_looping(true);
-	switch (type) {
-	case dirt:
-		effect2.play(sound_effect::grass_walking);
+void audio::play_block_broken(block_type type) {
+	auto sound_effect = sound_effect::block_break_sound_effects.find(type);
+	if (sound_effect != sound_effect::block_break_sound_effects.end()) {
+		audio::effect_player1.play(sound_effect->second);
 	}
+}
+
+void audio::play_block_walked(block_type type) {
+	auto sound_effect = sound_effect::block_walk_sound_effects.find(type);
+	if (sound_effect != sound_effect::block_walk_sound_effects.end()) {
+		if (!effect_player2.is_playing()) {
+			audio::effect_player2.play(sound_effect->second);
+		}
+	}
+}
+
+void audio::play_random_music() {
+	if (audio::current_music == nullptr || !audio::current_music->is_playing()) {
+		int n = rand() % music::musics_list.size();
+		audio::current_music = music::musics_list[n];
+		audio::current_music->play();
+	}
+	audio::current_music->update_buffer_stream();
 }

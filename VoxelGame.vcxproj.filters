@@ -179,9 +179,6 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="dirt.jpg">
-      <Filter>Resource Files\Textures</Filter>
-    </Image>
     <Image Include="texture_atlas.png">
       <Filter>Resource Files\Textures</Filter>
     </Image>
@@ -190,19 +187,25 @@
     <Media Include="minecraft.wav">
       <Filter>Resource Files\Musics</Filter>
     </Media>
-    <Media Include="..\..\..\Downloads\grass_dig3.wav">
+    <Media Include="wet_hands.wav">
+      <Filter>Resource Files\Musics</Filter>
+    </Media>
+    <Media Include="sweden.wav">
+      <Filter>Resource Files\Musics</Filter>
+    </Media>
+    <Media Include="aria_math.wav">
+      <Filter>Resource Files\Musics</Filter>
+    </Media>
+    <Media Include="blind_spots.wav">
+      <Filter>Resource Files\Musics</Filter>
+    </Media>
+    <Media Include="break_grass.wav">
       <Filter>Resource Files\SoundEffects</Filter>
     </Media>
-    <Media Include="..\..\..\Downloads\grass_dig1.wav">
+    <Media Include="place_grass.wav">
       <Filter>Resource Files\SoundEffects</Filter>
     </Media>
-    <Media Include="..\..\..\Downloads\grass_dig4.wav">
-      <Filter>Resource Files\SoundEffects</Filter>
-    </Media>
-    <Media Include="..\..\..\Downloads\grass_dig2.wav">
-      <Filter>Resource Files\SoundEffects</Filter>
-    </Media>
-    <Media Include="..\..\..\Downloads\grass_walking.wav">
+    <Media Include="walk_grass.wav">
       <Filter>Resource Files\SoundEffects</Filter>
     </Media>
   </ItemGroup>
