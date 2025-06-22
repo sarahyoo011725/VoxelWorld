@@ -119,17 +119,20 @@ void Camera::block_interaction() {
 	if (block == nullptr) return;
 
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-		if (block->type == none || block->type == water) {
-			if (holding_block_type != none) {
-				if (is_nonblock(holding_block_type)) {
+		if (holding_block_type != none && block->type != holding_block_type && (block->type == none || block->type == water)) {
+			if (is_nonblock(holding_block_type)) {
+				if (block->type == water && !can_be_placed_underwater(holding_block_type)) {
+					return;
+				}
+				else {
 					sg.spawn_nonblock_structure(holding_block_type, block->position);
 					chunk->should_rebuild = true;
 				}
-				else {
-					cm.set_block_manual(chunk_id, local_coord, holding_block_type); //TOOD: selection of block type, inventory 
-				}
-				audio::play_block_sound_effect(holding_block_type);
 			}
+			else {
+				cm.set_block_manual(chunk_id, local_coord, holding_block_type); //TOOD: selection of block type, inventory 
+			}
+			audio::play_block_sound_effect(holding_block_type);
 		}
 	}
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {

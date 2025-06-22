@@ -65,6 +65,14 @@ namespace {
 		return false;
 	}
 
+	bool can_be_placed_underwater(block_type type) {
+		switch (type) {
+		case grass:
+			return false;
+		}
+		return true;
+	}
+
 	/*
 	* converts texture coord from texture_map into uv texture coord (scale it to between 0.0 and 1.0)
 	* uv column & row range: 0 ~ 1.
