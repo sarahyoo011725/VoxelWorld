@@ -16,7 +16,8 @@ Camera::Camera(GLFWwindow *window, int window_width, int window_height, vec3 pos
 	outline_vao.bind();
 	outline_vao.link_attrib(outline_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void*)0);
 	HUD_vao.bind();
-	HUD_vao.link_attrib(HUD_vbo, 0, 2, GL_FLOAT, GL_FALSE, sizeof(vec2), (void*)0);
+	HUD_vao.link_attrib(HUD_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (void*)0);
+	HUD_vao.link_attrib(HUD_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (void*)(3 * sizeof(GLfloat)));
 }
 
 //updates anything required periodically
@@ -55,9 +56,6 @@ void Camera::update_other_inputs() {
 	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
 		enable_outline = !enable_outline;
 	}
-	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
-		enable_outline = !enable_outline;
-	}
 	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
 		enable_music = !enable_music;
 		if (enable_music == false && audio::current_music != nullptr) {
@@ -81,9 +79,10 @@ void Camera::update_matrix(int shader_id) {
 
 void Camera::draw_HUDs() {
 	HUD_shader.activate();
-	HUD_vao.bind();
+	glUniform1i(glGetUniformLocation(HUD_shader.id, "use_texture"), GL_FALSE);
 	glUniform4fv(glGetUniformLocation(HUD_shader.id, "color"), 1, value_ptr(crosshair_color));
 	//draw crosshair
+	HUD_vao.bind();
 	glLineWidth(1.0);
 	glDrawArrays(GL_LINES, 0, 4);
 }

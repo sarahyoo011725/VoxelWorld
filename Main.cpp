@@ -1,33 +1,19 @@
 #include <iostream>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <vector>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include "Shader.h"
-#include "Texture.h"
-#include "VAO.h"
-#include "VBO.h"
-#include "EBO.h"
-#include "Camera.h"
-#include "Block.h"
-#include "Chunk.h"
-#include "Terrain.h"
+#include "StartScreen.h"
+#include "GameScreen.h"
 
 using namespace std;
 using namespace glm;
 
-const unsigned int width = 1200;
-const unsigned int height = 700;
+const static int width = 1200;
+const static int height = 700;
 
-bool wireframe = false;
-bool isWindowActive = true;
+WindowSetting window_setting;
+bool start_game = false;
 
 void resize_window(GLFWwindow *window, int width, int height);
 void process_inputs(GLFWwindow *window);
 void focus_callback(GLFWwindow* window, int focused);
-
 void on_window_focused(GLFWwindow* window);
 void unfocus_window(GLFWwindow* window);
 
@@ -42,7 +28,7 @@ int main() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); 
 	
 	//creates window
-	GLFWwindow* window = glfwCreateWindow(width, height, "VoxelGame", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(width, height, "Voxel World", NULL, NULL);
 	if (window == NULL) {
 		cout << "Failed to create a window" << endl;
 		return -1;
@@ -58,52 +44,25 @@ int main() {
 		return -1;
 	}
 
-	Camera cam(window, width, height, vec3(0.0, 70.0, 0.0));
-	Terrain terrain = Terrain(cam.position);
-	Shader world_shader = Shader("default.vert", "default.frag");
-	Texture texture = Texture("texture_atlas.png");
-	texture.bind();
-
-	glEnable(GL_DEPTH_TEST);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_BLEND); 
-	//my vertices are winded in counter wise for the front face.
-	//glCullFace is set to cull back face and glFrontFace is CCW by default. So, I tell gl that front faces are winded in counter wise.
-	glEnable(GL_CULL_FACE);
-	glFrontFace(GL_CW);
+	window_setting = { window, width, height, true };
+	StartScreen start_screen = StartScreen();
+	GameScreen game_screen = GameScreen(&window_setting);
 
 	while (!glfwWindowShouldClose(window)) {
-		
 		process_inputs(window);
 
-		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-		if (wireframe) {
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+		if (start_game) {
+			game_screen.draw();
 		}
 		else {
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			start_screen.draw(); //this is blank. but music runs, so it means start screen is drawn
 		}
-
-		world_shader.activate();
-		terrain.update(); //must called after world shader is activated
-		if (isWindowActive) {
-			cam.update();
-		}
-		cam.update_matrix(world_shader.id);
-		
-		cam.draw_outlines();
-
-		cam.draw_HUDs();
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
 		glfwPollEvents(); //checks if any events triggered
 	}
 
 	//terminates the program, destroying everything including window
-	world_shader.destroy();
-	texture.destroy();
 	glfwDestroyWindow(window);
 	glfwTerminate();
 	return 0;
@@ -115,14 +74,14 @@ void resize_window(GLFWwindow *window, int width, int height) {
 }
 
 void process_inputs(GLFWwindow *window) {
-	if (glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		unfocus_window(window);
 	}
-	if (GLFW_HOVERED && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT)) {
-		on_window_focused(window);
+	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
+		start_game = true;
 	}
-	if (glfwGetKey(window, GLFW_KEY_1)) {
-		wireframe = !wireframe;
+	if (GLFW_HOVERED && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+		on_window_focused(window);
 	}
 }
 
@@ -136,11 +95,11 @@ void focus_callback(GLFWwindow* window, int focused) {
 }
 
 void on_window_focused(GLFWwindow* window) {
-	isWindowActive = true;
+	window_setting.window_active = true;
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
 void unfocus_window(GLFWwindow* window) {
-	isWindowActive = false;
+	window_setting.window_active = false;
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 }

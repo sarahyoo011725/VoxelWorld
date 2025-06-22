@@ -13,9 +13,6 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Resource Files\Shaders">
-      <UniqueIdentifier>{077fceab-4688-4344-9cc2-44007dc4d221}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Resource Files\Textures">
       <UniqueIdentifier>{568691aa-a9a0-4c7d-be71-929e39dee6af}</UniqueIdentifier>
     </Filter>
@@ -24,6 +21,9 @@
     </Filter>
     <Filter Include="Resource Files\SoundEffects">
       <UniqueIdentifier>{04d1badb-cdf3-475d-9aba-f0ec36f4578e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders">
+      <UniqueIdentifier>{077fceab-4688-4344-9cc2-44007dc4d221}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -146,6 +146,12 @@
     <ClInclude Include="AudioManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="StartScreen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GameScreen.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="default.frag">
@@ -171,15 +177,12 @@
     <None Include="vcpkg-configuration.json" />
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
-    <None Include="2d_visuals.frag">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
-    <None Include="2d_visuals.vert">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="texture_atlas.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="menu_background.png">
       <Filter>Resource Files\Textures</Filter>
     </Image>
   </ItemGroup>
@@ -219,6 +222,9 @@
     </Media>
     <Media Include="walk_grass.wav">
       <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="moog_city2.wav">
+      <Filter>Resource Files\Musics</Filter>
     </Media>
   </ItemGroup>
 </Project>

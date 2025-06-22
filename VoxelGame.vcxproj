@@ -195,6 +195,7 @@
     <ClInclude Include="ChunkManager.h" />
     <ClInclude Include="EBO.h" />
     <ClInclude Include="GameObject.h" />
+    <ClInclude Include="GameScreen.h" />
     <ClInclude Include="Geometries.h" />
     <ClInclude Include="MusicBuffer.h" />
     <ClInclude Include="OpenALErrorCheck.h" />
@@ -202,6 +203,7 @@
     <ClInclude Include="SoundDevice.h" />
     <ClInclude Include="SoundEffectsLibrary.h" />
     <ClInclude Include="SoundEffectsPlayer.h" />
+    <ClInclude Include="StartScreen.h" />
     <ClInclude Include="StructureGenerator.h" />
     <ClInclude Include="Terrain.h" />
     <ClInclude Include="Texture.h" />
@@ -213,8 +215,6 @@
     <None Include=".gitignore" />
     <None Include="2d_component.frag" />
     <None Include="2d_component.vert" />
-    <None Include="2d_visuals.frag" />
-    <None Include="2d_visuals.vert" />
     <None Include="default.frag" />
     <None Include="default.vert" />
     <None Include="outline.frag" />
@@ -224,12 +224,14 @@
     <None Include="vcpkg.json" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="menu_background.png" />
     <Image Include="texture_atlas.png" />
   </ItemGroup>
   <ItemGroup>
     <Media Include="aria_math.wav" />
     <Media Include="blind_spots.wav" />
     <Media Include="minecraft.wav" />
+    <Media Include="moog_city2.wav" />
     <Media Include="place_and_break_dirt.wav" />
     <Media Include="place_and_break_grass.wav" />
     <Media Include="place_and_break_sand.wav" />
