@@ -119,7 +119,7 @@ void Camera::block_interaction() {
 	if (block == nullptr) return;
 
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-		if (block->type == none) {
+		if (block->type == none || block->type == water) {
 			if (holding_block_type != none) {
 				if (is_nonblock(holding_block_type)) {
 					sg.spawn_nonblock_structure(holding_block_type, block->position);
