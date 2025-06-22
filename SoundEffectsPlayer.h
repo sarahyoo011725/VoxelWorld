@@ -11,7 +11,6 @@ public:
 	void stop();
 	void pause();
 	void resume();
-
 	void set_buffer_to_play(const ALuint& buffer_to_play);
 	void set_looping(const bool& loop);
 	void set_position(const float& x, const float& y, const float& z);

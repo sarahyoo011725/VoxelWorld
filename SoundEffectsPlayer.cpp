@@ -16,12 +16,21 @@ SoundEffectsPlayer::~SoundEffectsPlayer()
 
 void SoundEffectsPlayer::play(const ALuint& buffer_to_play)
 {
+	ALint state;
+	alGetSourcei(p_Source, AL_SOURCE_STATE, &state);
+	if (state == AL_PLAYING)
+	{
+		alSourceStop(p_Source);
+		AL_CheckAndThrow();
+	}
+
 	if (buffer_to_play != p_Buffer)
 	{
 		p_Buffer = buffer_to_play;
 		alSourcei(p_Source, AL_BUFFER, (ALint)p_Buffer);
 		AL_CheckAndThrow();
 	}
+
 	alSourcePlay(p_Source);
 	AL_CheckAndThrow();
 }
