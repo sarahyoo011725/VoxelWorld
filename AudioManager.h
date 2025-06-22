@@ -21,6 +21,8 @@ namespace audio {
 }
 
 namespace music {
+	static MusicBuffer moog_city2 = MusicBuffer("moog_city2.wav");
+
 	static unordered_map<int, MusicBuffer*> musics_list = {
 		{0, new MusicBuffer("minecraft.wav")},
 		{1, new MusicBuffer("blind_spots.wav")},
