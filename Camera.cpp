@@ -25,6 +25,11 @@ void Camera::update() {
 	dt = frame - last_frame;
 	last_frame = frame;
 
+	//plays music
+	if (enable_music) {
+		audio::play_random_music();
+	}
+
 	update_other_inputs();
 	update_mouse();
 	update_movement(dt);
@@ -49,6 +54,15 @@ void Camera::update_other_inputs() {
 	}
 	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
 		enable_outline = !enable_outline;
+	}
+	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+		enable_outline = !enable_outline;
+	}
+	if (glfwGetKey(window, GLFW_KEY_4) == GLFW_PRESS) {
+		enable_music = !enable_music;
+		if (enable_music == false && audio::current_music != nullptr) {
+			audio::current_music->stop();
+		}
 	}
 }
 

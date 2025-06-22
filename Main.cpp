@@ -14,7 +14,6 @@
 #include "Block.h"
 #include "Chunk.h"
 #include "Terrain.h"
-#include "AudioManager.h"
 
 using namespace std;
 using namespace glm;
@@ -74,8 +73,6 @@ int main() {
 	glFrontFace(GL_CW);
 
 	while (!glfwWindowShouldClose(window)) {
-		//plays music
-		audio::play_random_music();
 		
 		process_inputs(window);
 
