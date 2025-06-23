@@ -6,13 +6,6 @@
 #include "AudioManager.h"
 #include <GLFW/glfw3.h>
 
-struct WindowSetting {
-	GLFWwindow* window;
-	int width;
-	int height;
-	bool window_active;
-};
-
 class GameScreen {
 private:
 	WindowSetting *window_setting;
@@ -25,7 +18,7 @@ private:
 	bool gl_setting_done = false;
 public:
 	GameScreen(WindowSetting *setting) 
-	: window_setting(setting), cam(Camera(setting->window, setting->width, setting->height, vec3(0, 60, 0))), terrain(Terrain(cam.position)) {
+	: window_setting(setting), cam(Camera(setting, vec3(0, 60, 0))), terrain(Terrain(cam.position)) {
 		texture.set_unit(shader, "texture1", 1);
 	}
 

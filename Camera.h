@@ -16,11 +16,18 @@
 
 using namespace glm;
 
+struct WindowSetting {
+	GLFWwindow* window;
+	int width;
+	int height;
+	bool window_active;
+};
+
 class Camera: public GameObject
 {
 public:
 	//bool window_refocused = false; //TODO: prevent cam view jump on window re-focus
-	Camera(GLFWwindow* window, int window_width, int window_height, vec3 position);
+	Camera(WindowSetting *setting, vec3 position);
 	void update();
 	void update_matrix(int world_shader_id);
 	void draw_outlines();
@@ -49,8 +56,7 @@ private:
 	Block* hovered_block = nullptr;
 	block_type holding_block_type = none;
 
-	GLFWwindow *window;
-	int window_width, window_height;
+	WindowSetting *window_setting;
 	double mouse_xpos, mouse_ypos;
 	double last_xpos, last_ypos;
 	float last_frame = 0.0;
@@ -63,6 +69,7 @@ private:
 	float speed = default_speed;
 	bool enable_physics = false;
 	bool enable_outline = true;
+
 	bool is_running = false;
 	bool is_jumping = false;
 	bool on_ground = false;

@@ -1,17 +1,14 @@
 ﻿#include "Camera.h"
 
-Camera::Camera(GLFWwindow *window, int window_width, int window_height, vec3 position) : cm(ChunkManager::get_instance()), sg(StructureGenerator::get_instance()) {
+Camera::Camera(WindowSetting *setting, vec3 position) : cm(ChunkManager::get_instance()), sg(StructureGenerator::get_instance()), window_setting(setting) {
 	size = vec3(1, 2, 1);
 	this->position = position;
-	this->window = window;
-	this->window_width = window_width;
-	this->window_height = window_height;
-	//sets last cursor position to be at the center of the window
-	last_xpos = window_width / 2;
-	last_ypos = window_height / 2;
+	//sets last cursor position to be at the center of the window_setting->window
+	last_xpos = window_setting->width / 2;
+	last_ypos = window_setting->height / 2;
 	mouse_xpos = last_xpos;
 	mouse_ypos = last_ypos;
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(window_setting->window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	outline_vao.bind();
 	outline_vao.link_attrib(outline_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void*)0);
@@ -34,7 +31,7 @@ void Camera::update() {
 }
 
 void Camera::update_other_inputs() {
-	if (glfwGetKey(window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
+	if (glfwGetKey(window_setting->window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
 		fov_degrees -= 23.0f * dt;
 		if (fov_degrees < 10.f)
 			fov_degrees = 10.0f;
@@ -42,13 +39,13 @@ void Camera::update_other_inputs() {
 	else {
 		fov_degrees = 45.0f;
 	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+	if (glfwGetKey(window_setting->window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 		is_running = !is_running;
 	}
-	if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+	if (glfwGetKey(window_setting->window, GLFW_KEY_2) == GLFW_PRESS) {
 		enable_physics = !enable_physics;
 	}
-	if (glfwGetKey(window, GLFW_KEY_3) == GLFW_PRESS) {
+	if (glfwGetKey(window_setting->window, GLFW_KEY_3) == GLFW_PRESS) {
 		enable_outline = !enable_outline;
 	}
 }
@@ -62,7 +59,7 @@ bool Camera::is_ground() {
 
 void Camera::update_matrix(int shader_id) {
 	view = lookAt(position, position + direction, up);
-	projection = perspective(radians(fov_degrees), (float)window_width / window_height, near_plane, far_plane);
+	projection = perspective(radians(fov_degrees), (float)window_setting->width / window_setting->height, near_plane, far_plane);
 	glUniformMatrix4fv(glGetUniformLocation(shader_id, "cam_matrix"), 1, GL_FALSE, value_ptr(projection * view));
 }
 
@@ -105,7 +102,7 @@ void Camera::block_interaction() {
 	Chunk* chunk = cm.get_chunk(hovered_block->position);
 	ivec3 local_coord = world_to_local_coord(hovered_block->position);
 
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+	if (glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 		if (holding_block_type != none && hovered_block->type != holding_block_type && (hovered_block->type == none || hovered_block->type == water)) {
 			if (is_nonblock(holding_block_type)) {
 				if (hovered_block->type == water && !can_be_placed_underwater(holding_block_type)) {
@@ -122,7 +119,7 @@ void Camera::block_interaction() {
 			audio::play_block_sound_effect(holding_block_type);
 		}
 	}
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+	if (glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 		if (hovered_block->type != none) {
 			holding_block_type = hovered_block->type;
 			if (is_nonblock(hovered_block->type)) {
@@ -135,8 +132,8 @@ void Camera::block_interaction() {
 }
 
 void Camera::update_mouse() {
-	glfwGetCursorPos(window, &mouse_xpos, &mouse_ypos);
-	//prevents sudden view jump when window re-focued
+	glfwGetCursorPos(window_setting->window, &mouse_xpos, &mouse_ypos);
+	//prevents sudden view jump when window_setting->window re-focued
 	/*
 	if (window_refocused) {
 		mouse_xpos = last_xpos;
@@ -172,23 +169,23 @@ void Camera::update_movement(float dt) {
 	up = normalize(cross(right, direction));
 	vec3 input_dir = vec3(0.0);
 
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+	if (glfwGetKey(window_setting->window, GLFW_KEY_W) == GLFW_PRESS) {
 		input_dir += direction;
 	}
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+	if (glfwGetKey(window_setting->window, GLFW_KEY_S) == GLFW_PRESS) {
 		input_dir -= direction;
 	}
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+	if (glfwGetKey(window_setting->window, GLFW_KEY_A) == GLFW_PRESS) {
 		input_dir -= right;
 	}
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+	if (glfwGetKey(window_setting->window, GLFW_KEY_D) == GLFW_PRESS) {
 		input_dir += right;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+	if (glfwGetKey(window_setting->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 		input_dir += up;
 	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+	if (glfwGetKey(window_setting->window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
 		input_dir -= up;
 	}
 
@@ -215,7 +212,7 @@ void Camera::update_movement(float dt) {
 
 		//TODO: walking sound effect
 		if (on_ground) {
-			if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+			if (glfwGetKey(window_setting->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 				velocity.y = jump_force;
 			}
 			if (velocity.x != 0 && velocity.z != 0) {

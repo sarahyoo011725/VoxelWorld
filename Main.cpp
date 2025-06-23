@@ -72,6 +72,8 @@ int main() {
 void resize_window(GLFWwindow *window, int width, int height) {
 	//tells glad how to display data and coordinates to the window
 	glViewport(0, 0, width, height);
+	window_setting.width = width;
+	window_setting.height = height;
 }
 
 void process_inputs(GLFWwindow *window) {
