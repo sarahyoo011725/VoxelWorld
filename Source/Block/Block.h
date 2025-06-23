@@ -10,22 +10,26 @@
 using namespace std;
 using namespace glm;
 
+//defines attributes of vertex
 struct vertex {
 	vec3 position;
 	vec2 texture;
 };
 
+/*
+	a game object that stores information of block's size, position, and type
+*/
 class Block: public GameObject
 {
 public:
 	Block() {
-		velocity = vec3(0);
 		size = vec3(1, 1, 1);
 	};
 	block_type type = none;
 };
 
 namespace {
+	//checks if a block type has a trasnparency
 	bool has_transparency(block_type type) {
 		switch (type) {
 		case water:
@@ -37,11 +41,13 @@ namespace {
 		return false;
 	}
 
+	//checks if a block type has a trasnparency by passing a block pointer
 	bool has_transparency(Block* block) {
 		if (block == nullptr) return false;
 		return has_transparency(block->type);
 	}
 
+	//checks if a block type is solid
 	bool is_solid(block_type type) {
 		switch (type) {
 		case none:
@@ -52,11 +58,13 @@ namespace {
 		return true;
 	}
 
+	//checks if a block type is solid by passing a block pointer
 	bool is_solid(Block* block) {
 		if (block == nullptr) return false;
 		return is_solid(block->type);
 	}
 
+	//checks if a block type is non-block geometry
 	bool is_nonblock(block_type type) {
 		switch (type) {
 		case grass:
@@ -65,6 +73,7 @@ namespace {
 		return false;
 	}
 
+	//checks if a block type can be created underwater
 	bool can_be_placed_underwater(block_type type) {
 		switch (type) {
 		case grass:
@@ -98,6 +107,7 @@ namespace {
 		return vec2(-1, -1); //invalid index
 	}
 
+	//a face map of vertices and texture coordinates for a cube
 	static map<block_face, vector<vertex>> face_map = {
 		{Front, {
 			{vec3(-0.5, 0.5, 0.5),  vec2(0.0, 1.0)},

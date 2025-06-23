@@ -1,20 +1,32 @@
 #include "ChunkManager.h"
 
+/*
+	checks if a chunk has been created with an id (= chunk_coord.x, chunk_coord.z)
+*/
 bool ChunkManager::chunk_exists(ivec2 chunk_id) {
 	return chunks.find(chunk_id) != chunks.end();
 }
 
+/*
+	creates a new chunk, providing it with an id
+*/
 Chunk* ChunkManager::create_chunk(ivec2 chunk_id) {
 	Chunk new_chunk = Chunk(chunk_id);
 	auto inserted = chunks.insert({ chunk_id, new_chunk });
 	return &(inserted.first->second);
 }
 
+/*
+	finds and returns the pointer of a chunk with a world coordinate
+*/
 Chunk* ChunkManager::get_chunk(vec3 world_coord) {
 	ivec2 chunk_origin = get_chunk_origin(world_coord);
 	return get_chunk(chunk_origin);
 }
 
+/*
+	finds and returns the pointer of a chunk with an id
+*/
 Chunk* ChunkManager::get_chunk(ivec2 chunk_id) {
 	const auto &e = chunks.find(chunk_id);
 	if (e != chunks.end()) {
@@ -23,12 +35,18 @@ Chunk* ChunkManager::get_chunk(ivec2 chunk_id) {
 	return nullptr;
 }
 
+/*
+	sets the type of a block at a world coordinate
+*/
 bool ChunkManager::set_block_worldspace(vec3 world_coord, block_type type) {
 	ivec2 chunk_id = get_chunk_origin(world_coord);
 	ivec3 local_coord = world_to_local_coord(world_coord);
 	return set_block_manual(chunk_id, local_coord, type);
 }
 
+/*
+	sets the type of a block at a local coord in a chunk of provided id
+*/
 bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_type type) {
 	Chunk* chunk = get_chunk(chunk_id);
 
@@ -76,7 +94,9 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 	return true;
 }
 
-
+/*
+	finds and returns the pointer of a block at a world coordiate
+*/
 Block* ChunkManager::get_block_worldspace(vec3 world_coord) {
 	ivec2 chunk_origin = get_chunk_origin(world_coord);
 	Chunk* chunk = get_chunk(chunk_origin);

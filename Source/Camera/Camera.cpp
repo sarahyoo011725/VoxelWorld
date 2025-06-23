@@ -1,5 +1,8 @@
 ﻿#include "Camera.h"
 
+/*
+	initializes instance variables, sets up VAOs
+*/
 Camera::Camera(WindowSetting *setting, vec3 position) : cm(ChunkManager::get_instance()), sg(StructureGenerator::get_instance()), window_setting(setting) {
 	size = vec3(1, 2, 1);
 	this->position = position;
@@ -29,7 +32,9 @@ void Camera::update() {
 	raycast();
 	block_interaction();
 }
-
+/*
+	handles user inputs and enables/disables modes
+*/
 void Camera::update_other_inputs() {
 	if (glfwGetKey(window_setting->window, GLFW_KEY_LEFT_ALT) == GLFW_PRESS) {
 		fov_degrees -= 23.0f * dt;
@@ -50,6 +55,9 @@ void Camera::update_other_inputs() {
 	}
 }
 
+/*
+	checks if the player is on ground
+*/
 bool Camera::is_ground() {
 	vec3 below_pos = position;
 	below_pos.y -= size.y + 0.1f;
@@ -57,12 +65,18 @@ bool Camera::is_ground() {
 	return block != nullptr &&is_solid(block->type);
 }
 
+/*
+	updates camera projection * view matrix and sends to the world shader
+*/
 void Camera::update_matrix(int shader_id) {
 	view = lookAt(position, position + direction, up);
 	projection = perspective(radians(fov_degrees), (float)window_setting->width / window_setting->height, near_plane, far_plane);
 	glUniformMatrix4fv(glGetUniformLocation(shader_id, "cam_matrix"), 1, GL_FALSE, value_ptr(projection * view));
 }
 
+/*
+	draws 2D HUD components like crosshair
+*/
 void Camera::draw_HUDs() {
 	HUD_shader.activate();
 	glUniform1i(glGetUniformLocation(HUD_shader.id, "use_texture"), GL_FALSE);
@@ -73,6 +87,9 @@ void Camera::draw_HUDs() {
 	glDrawArrays(GL_LINES, 0, 4);
 }
 
+/*
+	draws outlined objects
+*/
 void Camera::draw_outlines() {
 	if (!enable_outline) return;
 	//outlines are must be drawn after activating the shader
@@ -82,6 +99,9 @@ void Camera::draw_outlines() {
 	outline_hovered_cube();
 }
 
+/*
+	draws outline of a hovered block
+*/
 void Camera::outline_hovered_cube() {
 	if (hovered_block == nullptr) return;
 	//sends cube model and outline color to the outline shader
@@ -96,6 +116,9 @@ void Camera::outline_hovered_cube() {
 	glEnable(GL_DEPTH_TEST);
 }
 
+/*
+	handles placing and breaking block
+*/
 void Camera::block_interaction() {
 	if (hovered_block == nullptr) return;
 	
@@ -131,6 +154,9 @@ void Camera::block_interaction() {
 	}
 }
 
+/*
+	updates direction vector based on mouse pitch and yaw, converted from 2D mouse coordinates
+*/
 void Camera::update_mouse() {
 	glfwGetCursorPos(window_setting->window, &mouse_xpos, &mouse_ypos);
 	//prevents sudden view jump when window_setting->window re-focued
@@ -164,6 +190,9 @@ void Camera::update_mouse() {
 	direction = normalize(new_direction);
 }
 
+/*
+	handles physical movements of the player
+*/
 void Camera::update_movement(float dt) {
 	vec3 right = normalize(cross(direction, vec3(0.0, 1.0, 0.0)));
 	up = normalize(cross(right, direction));
@@ -236,6 +265,9 @@ void Camera::update_movement(float dt) {
 	collision(0, 0, velocity.z);
 }
 
+/*
+	casts a ray to detect a block, updating hovered_block_type
+*/
 void Camera::raycast() {
 	vec3 origin = position;
 	vec3 dir = direction;
@@ -316,7 +348,9 @@ void Camera::raycast() {
 
 
 
-//handles player's collision with blocks (aabb collision logic)
+/*
+	handles the player's collision with blocks (aabb collision check)
+*/
 void Camera::collision(float vx, float vy, float vz) {
 	if (!enable_physics) return;
 

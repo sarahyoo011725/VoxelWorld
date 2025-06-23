@@ -11,7 +11,8 @@ using namespace std;
 using namespace glm;
 
 /*
-There are two types of coords this engine: world and chunk coord.
+There are two types of coords this engine: world and chunk coord:
+
 - world coord is a coordinate (or position) in the world space and is equal, absolute to all objects in the game world.
 - chunk coord is a coordinate (or position) in a chunk space that is relative to a single chunk. Hence, the coord is invalid in other chunks.
 	--> chunk coord = world_coord / chunk_size
@@ -19,11 +20,15 @@ There are two types of coords this engine: world and chunk coord.
 - local coord is the index of a block in a chunk.
 */
 
+//struct block information
 struct block_data {
 	ivec3 local_coord;
 	block_type type;
 };
 
+/*
+	a singleton class that allows accessing chunks and blocks at world space
+*/
 class ChunkManager
 {
 private:
@@ -52,9 +57,12 @@ namespace {
 	const static int chunk_size = 16;
 	const static int water_level = 10;
 
+	//get height hoise value at (x, z) in world space
 	float get_noise(int x, int z) {
 		return m_noise.GetNoise((float)x, (float)z);
 	}
+
+	//formats a world space coordiate into a chunk ID
 	ivec2 get_chunk_origin(vec3 world_coord) {
 		ivec2 chunk_origin = {
 			floor(world_coord.x / chunk_size),
@@ -62,6 +70,8 @@ namespace {
 		};
 		return chunk_origin;
 	}
+
+	//converts a world space coordinate into a chunk space coordinate
 	ivec3 world_to_chunk_coord(vec3 world_coord) {
 		return {
 			floor(world_coord.x / chunk_size),
@@ -69,13 +79,21 @@ namespace {
 			floor(world_coord.z / chunk_size)
 		};
 	}
+
+	//converts a chunk space coordinate into a world space coordinate
 	vec3 chunk_to_world_coord(ivec3 chunk_coord) {
 		return chunk_coord * chunk_size;
 	}
+
+	//converts a local (block) space coordinate into a world space coordinate
 	vec3 local_to_world_coord(ivec3 block_index, vec3 chunk_pos) {
 		return (vec3)block_index + chunk_pos;
 	}
-	//return range: from 0 to 15 (which is chunk_size - 1)
+
+	/*
+		converts a world space coordinate into a local space coordinate.
+		returning range: from 0 to 15 (which is chunk_size - 1)
+	*/
 	ivec3 world_to_local_coord(vec3 world_coord) {
 		ivec2 chunk_origin = get_chunk_origin(world_coord);
 		ivec3 local_coord  = {

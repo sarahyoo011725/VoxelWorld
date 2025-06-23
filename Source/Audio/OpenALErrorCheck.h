@@ -3,6 +3,7 @@
 #include <AL/al.h>
 #include <iostream>
 
+//checks and sends error message if there is any error in using ALC
 static void ALC_CheckAndThrow(ALCdevice* device)
 {
     ALenum error = alcGetError(device);
@@ -31,7 +32,7 @@ static void ALC_CheckAndThrow(ALCdevice* device)
     }
 }
 
-
+//checks and sends error message if there is any error in using AL
 static bool AL_CheckAndThrow()
 {
     ALenum error = alGetError();

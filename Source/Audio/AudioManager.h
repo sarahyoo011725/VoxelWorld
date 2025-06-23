@@ -9,6 +9,9 @@
 
 using namespace std;
 
+/*
+ collects device and player for sound effects and musics
+*/
 namespace audio {
 	static SoundDevice* sound_device = LISTENER->get_instance();
 	static SoundEffectsPlayer effect_player1 = SoundEffectsPlayer(); //used to play sound effects for block interaction
@@ -20,6 +23,9 @@ namespace audio {
 	void play_random_music();
 }
 
+/*
+	loads and stores music files
+*/
 namespace music {
 	static MusicBuffer moog_city2 = MusicBuffer("Resources/Musics/moog_city2.wav");
 
@@ -32,6 +38,9 @@ namespace music {
 	};
 }
 
+/*
+	loads and stores sound effect files
+*/
 namespace sound_effect {
 	//make maps into function to load sound effects lazily
 	const static ALuint grass = SE_LOAD("Resources/Sound Effects/place_and_break_grass.wav");

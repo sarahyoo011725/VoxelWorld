@@ -5,6 +5,9 @@
 using namespace std;
 using namespace glm;
 
+/*
+	a class that creates and handles chunks within render distance
+*/
 class Terrain
 {
 private:

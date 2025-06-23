@@ -1,6 +1,9 @@
 #include "StructureGenerator.h"
 #include "Chunk/Chunk.h"
 
+/*
+	checks the block type and creates a non-block structure
+*/
 void StructureGenerator::spawn_nonblock_structure(block_type type, vec3 world_coord) {
 	switch (type) {
 	case grass:
@@ -9,6 +12,10 @@ void StructureGenerator::spawn_nonblock_structure(block_type type, vec3 world_co
 	}
 }
 
+/*
+	spawns grass at a world coordinate.
+	grass is non-block geometry
+*/
 void StructureGenerator::spawn_grass(vec3 world_coord) {
 	//draw grass
 	ivec2 chunk_id = get_chunk_origin(world_coord);
@@ -31,6 +38,10 @@ void StructureGenerator::spawn_grass(vec3 world_coord) {
 	}
 }
 
+/*
+	spawns a tree structure at a world coordinate.
+	a tree is made of blocks
+*/
 void StructureGenerator::spawn_tree(vec3 world_coord) {
 	//checks if there are any trees 1 block away.
 	for (int dx = -1; dx <= 1; ++dx) {

@@ -1,5 +1,8 @@
 #include "Shader.h"
 
+/*
+	reads file and retreives its data
+*/
 string read_file(const char* filename) {
 	ifstream in(filename, ios::binary);
 	if (in) {
@@ -14,6 +17,9 @@ string read_file(const char* filename) {
 	throw errno;
 }
 
+/*
+	checks error in vertex and fragment shader
+*/
 void check_errors(GLuint vertex, GLuint fragment, GLuint program) {
 	int success;
 	char infoLog[512];
@@ -34,6 +40,9 @@ void check_errors(GLuint vertex, GLuint fragment, GLuint program) {
 	}
 }
 
+/*
+	creates a shader object that couples a vertex and a fragment shader
+*/
 Shader::Shader(const char* vertex_file, const char* fragment_file) {
 	string vertex_code = read_file(vertex_file);
 	string frag_code = read_file(fragment_file);
@@ -60,10 +69,16 @@ Shader::Shader(const char* vertex_file, const char* fragment_file) {
 	glDeleteShader(fragment_shader);
 }
 
+/*
+	activates a shader
+*/
 void Shader::activate() {
 	glUseProgram(id);
 }
 
+/*
+	destroys a shader instance
+*/
 void Shader::destroy() {
 	glDeleteProgram(id);
 }

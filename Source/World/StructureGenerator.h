@@ -5,6 +5,9 @@
 
 class Chunk;
 
+/*
+	a singleton class that creates structures across chunks
+*/
 class StructureGenerator {
 private:
 	ChunkManager& chunk_manager;
@@ -22,8 +25,10 @@ public:
 };
 
 namespace {
-	//add front and back of faces to make grass visible in either side (prevent disappearing due to back-face culling)
-	//TODO: fix grass mesh issue when back face cull mode is on
+	/*
+		vertices for a grass geometry.
+		adds front and back faces to make grass visible in either side, preventing it from disappearing due to back-face culling
+	*/
 	static vector<vector<vertex>> grass_face_vertices = {
 		//face 1 front
 		{

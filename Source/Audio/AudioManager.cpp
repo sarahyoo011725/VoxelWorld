@@ -1,5 +1,8 @@
 #include "AudioManager.h"
 
+/*
+	plays a placing / breakig block sound effect based on the block type
+*/
 void audio::play_block_sound_effect(block_type type) {
 	ALuint sound = -1;
 	switch (type) {
@@ -32,6 +35,9 @@ void audio::play_block_sound_effect(block_type type) {
 	}
 }
 
+/*
+	plays a walking sound effect bassed on the block type
+*/
 void audio::play_block_walked(block_type type) {
 	ALuint sound = -1;
 	switch (type) {

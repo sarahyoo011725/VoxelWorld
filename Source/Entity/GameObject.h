@@ -4,6 +4,10 @@
 using namespace std;
 using namespace glm;
 
+/*
+	a class made to be inherited by other classes, such as Player (Camera) and Block
+	primarily used for collision check
+*/
 class GameObject
 {
 private:

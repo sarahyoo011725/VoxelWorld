@@ -15,6 +15,10 @@
 using namespace glm;
 
 class ChunkManager;
+
+/*
+	stores and manages a chunk of blocks
+*/
 class Chunk
 {
 private: 

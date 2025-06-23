@@ -2,6 +2,9 @@
 #include "World/ChunkManager.h"
 #include "World/StructureGenerator.h"
 
+/*
+	initializes blocks array, define block types based on noise height map, and links VBOs attributes to VAOs
+*/
 Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()) {
 	//add 1 to width and length to store neighbor chunks' block data in their edge
 	id = chunk_id;
@@ -55,6 +58,9 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()) {
 	transp_vao.link_attrib(transp_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
 }
 
+/*
+	generate a height map from a block's world coordinate
+*/
 int** Chunk::get_heightmap() {
 	int** map = new int *[width];
 	for (int x = 0; x < width; ++x) {
@@ -73,7 +79,10 @@ int** Chunk::get_heightmap() {
 	return map;
 }
 
-//This must be called after build_chunk() or rebuild_chunk()
+/*
+	updates vertices and indices of transparent and opaque geometries in VBOs and EBOs.
+	This must be called after build_chunk() or rebuild_chunk()
+*/
 void Chunk::update_buffers_data() {
 	opaque_vbo.reset_vertices(opaque_vertices.data(), sizeof(vertex) * opaque_vertices.size(), GL_STATIC_DRAW);
 	opaque_ebo.reset_indices(opaque_indices.data(), sizeof(GLuint) * opaque_indices.size(), GL_STATIC_DRAW);
@@ -81,18 +90,29 @@ void Chunk::update_buffers_data() {
 	transp_ebo.reset_indices(transp_indices.data(), sizeof(GLuint) * transp_indices.size(), GL_STATIC_DRAW);
 }
 
+/*
+	draws opaque objects.
+	Opaque objects must be drawn before trasparent objects 
+*/
 void Chunk::draw_opaque_blocks() {
 	opaque_vao.bind();
 	opaque_ebo.bind();
 	glDrawElements(GL_TRIANGLES, opaque_indices.size(), GL_UNSIGNED_INT, 0);
 }
 
+/*
+	draws objects with transparency.
+	Trasparet objects must be drawn after opaque objects
+*/
 void Chunk::draw_transparent_blocks() {
 	transp_vao.bind();
 	transp_ebo.bind();
 	glDrawElements(GL_TRIANGLES, transp_indices.size(), GL_UNSIGNED_INT, 0);
 }
 
+/*
+	gets block pointer with a local coordinate
+*/
 Block* Chunk::get_block(ivec3 local_coord) {
 	int x = local_coord.x;
 	int y = local_coord.y;
@@ -104,8 +124,11 @@ Block* Chunk::get_block(ivec3 local_coord) {
 	return &blocks[x][y][z];
 }
 
-//be careful not to modify block data in edge, since they are data of neighbor chunks' blocks.
-//it's always from 1 to (width or length) - 1 for x and z that are 'our' blocks.
+/*
+	sets the type of block on the provided local coordinate.
+	note that blocks in edges of blocks array are blocks of neighbor chunks.
+	it's always from 1 to (width or length) - 1 for x and z that are 'our' blocks.
+*/
 void Chunk::set_block(ivec3 local_coord, block_type type) {
 	int x = local_coord.x;
 	int y = local_coord.y;
@@ -117,6 +140,11 @@ void Chunk::set_block(ivec3 local_coord, block_type type) {
 	blocks[x][y][z].type = type;
 }
 
+/*
+	adds vertices of a non-block structure, telling to spawn the structure at the designated local coordinate.
+	non-block structures are drawn after all blocks are drawn.
+	To efficeintly add/remove non-block structures, use the local coordinate as the structure's unique ID within a chunk.
+*/
 void Chunk::add_nonblock_structure_vertices(ivec3 local_coord, vector<vertex> vertices) {
 	const auto& structure = nonblock_structure_vertices.find(local_coord);
 	if (structure == nonblock_structure_vertices.end()) {
@@ -124,10 +152,17 @@ void Chunk::add_nonblock_structure_vertices(ivec3 local_coord, vector<vertex> ve
 	}
 }
 
+/*
+	remove non-block structre at a local coordinate
+*/
 void Chunk::remove_structure(ivec3 local_coord) {
 	nonblock_structure_vertices.erase(local_coord);
 }
 
+/*
+	after adding vertices of non-block structures, update their indices.
+	All objects, including non-block structures in this game, are expected to be made of 'faces'
+*/
 void Chunk::update_nonblock_structure_vertices_and_indices() {
 	for (const auto &e : nonblock_structure_vertices) {
 		for (int i = 1; i <= e.second.size(); ++i) {
@@ -139,6 +174,10 @@ void Chunk::update_nonblock_structure_vertices_and_indices() {
 	}
 }
 
+/*
+	only used for block objects.
+	updates and adds indices for either transparent or opaque types of blocks
+*/
 void Chunk::add_face_indices(bool has_transparency) {
 	if (has_transparency) {
 		GLuint base_index = transp_vertices.size() - 4; //ensures base_index to start at 0
@@ -161,6 +200,10 @@ void Chunk::add_face_indices(bool has_transparency) {
 	}
 }
 
+/*
+	used to construct a chunk mesh and only for block type objects.
+	pushes the new vertices to opaque or transparet vertices based on the block type's transparency
+*/
 void Chunk::add_face(block_face face, block_type type, vec3 pos) {
 	if (texture_map.find(type) == texture_map.end()) return; //a type is not in texure map if it is a structure that is not cube i.e. grass
 	vector<vertex> verts = face_map[face];
@@ -182,6 +225,9 @@ void Chunk::add_face(block_face face, block_type type, vec3 pos) {
 	add_face_indices(transparency);
 }
 
+/*
+	rebuilds chunk, emptying all vertices and indices of chunk
+*/
 void Chunk::rebuild_chunk() {
 	transp_vertices.clear();
 	transp_indices.clear();
@@ -192,6 +238,11 @@ void Chunk::rebuild_chunk() {
 	should_rebuild = false;
 }
 
+/*
+	constructs a chunk mesh, adding only the visible faces.
+	once the chunk meshing is done, adds non-block structures, updating VAOs and EBOs.
+	lastly sets has_built to be true.
+*/
 void Chunk::build_chunk() {
 	for (int x = 0; x < width ; ++x) {
 		for (int z = 0; z < length; ++z) {

@@ -2,6 +2,9 @@
 #include <glad/glad.h>
 #include "VBO.h"
 
+/*
+	a class that organizes implementation of opengl VAO buffer
+*/
 class VAO
 {
 public:

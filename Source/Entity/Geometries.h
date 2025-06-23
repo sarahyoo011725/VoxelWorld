@@ -5,6 +5,7 @@
 using namespace std;
 using namespace glm;
 
+//collection of vertices of geometries
 namespace {
 	const static vector<GLfloat> crosshair_vertices = {
 		//horizontal line

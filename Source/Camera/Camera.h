@@ -16,6 +16,7 @@
 
 using namespace glm;
 
+//a struct to save window informations
 struct WindowSetting {
 	GLFWwindow* window;
 	int width;
@@ -23,6 +24,9 @@ struct WindowSetting {
 	bool window_active;
 };
 
+/*
+* Camera or Player class that handles physics, collision, block interaction, and updates view
+*/
 class Camera: public GameObject
 {
 public:
@@ -43,6 +47,7 @@ private:
 	void block_interaction();
 	void outline_hovered_cube();
 
+	//constant variables setup
 	const float mouse_sensitivity = 0.1f;
 	const float default_speed = 5.0f;
 	const float run_speed = 10.0f;
@@ -52,10 +57,12 @@ private:
 	const float outline_thickness = 2.0f;
 	const float max_ray_length = 3.0f;
 	
+	//saves the information of block interacting with
 	Chunk* current_chunk = nullptr;
 	Block* hovered_block = nullptr;
 	block_type holding_block_type = none;
 
+	//non-constant variables that are updated during game
 	WindowSetting *window_setting;
 	double mouse_xpos, mouse_ypos;
 	double last_xpos, last_ypos;
@@ -67,17 +74,27 @@ private:
 	float near_plane = 1.0f;
 	float far_plane = 100.0f;
 	float speed = default_speed;
+
+	//non-constant boolean variables that are updated on user inputs
 	bool enable_physics = false;
 	bool enable_outline = true;
-
 	bool is_running = false;
 	bool is_jumping = false;
 	bool on_ground = false;
 	bool should_outline = false;
 
+	//non-constant variables that are used to update view
+	vec3 ray = vec3(0.0);
+	vec3 direction = vec3(0.0); //this is a forward vector
+	vec3 up = vec3(0.0, 1.0, 0.0);
+	mat4 view = mat4(0.0);
+	mat4 projection = mat4(0.0);
+
+	//singleton helpers
 	ChunkManager& cm;
 	StructureGenerator& sg;
 
+	//setups for outlining interacted block and 2D HUDs
 	vec4 crosshair_color = vec4(1.0); //white
 	vec4 hovered_block_outline_color = vec4(0.0, 1.0, 1.0, 1.0); //cyan
 	Shader outline_shader = Shader("Resources/Shaders/outline.vert", "Resources/Shaders/outline.frag");
@@ -86,10 +103,4 @@ private:
 	VBO outline_vbo = VBO(cube_edges.data(), sizeof(vec3) * cube_edges.size(), GL_STATIC_DRAW);
 	VAO HUD_vao = VAO();  //draws 2d components, like crosshair and inventory box
 	VBO HUD_vbo = VBO(crosshair_vertices.data(), sizeof(GLfloat) * crosshair_vertices.size(), GL_STATIC_DRAW);
-
-	vec3 ray = vec3(0.0);
-	vec3 direction = vec3(0.0); //this is a forward vector
-	vec3 up = vec3(0.0, 1.0, 0.0);
-	mat4 view = mat4(0.0);
-	mat4 projection = mat4(0.0);
 };

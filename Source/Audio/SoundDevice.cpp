@@ -6,12 +6,14 @@
 
 static SoundDevice* _instance = nullptr;
 
+//returns a sound device pointer
 SoundDevice* SoundDevice::get_instance()
 {
 	init();
 	return _instance;
 }
 
+//initializes a sound device pointer
 void SoundDevice::init()
 {
 	if (_instance == nullptr)
@@ -123,6 +125,9 @@ void SoundDevice::set_gain(const float& val)
 	AL_CheckAndThrow();
 }
 
+/*
+	creates a sound device and alc context
+*/
 SoundDevice::SoundDevice()
 {
 	p_ALCDevice = alcOpenDevice(nullptr); // nullptr = get default device
@@ -144,6 +149,7 @@ SoundDevice::SoundDevice()
 	printf("Opened \"%s\"\n", name);
 }
 
+//destroys a sound device
 SoundDevice::~SoundDevice()
 {
 	alcMakeContextCurrent(nullptr);

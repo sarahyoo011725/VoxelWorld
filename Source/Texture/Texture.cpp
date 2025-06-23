@@ -1,5 +1,8 @@
 #include "Texture.h"
 
+/*
+	creates a texture, binding it with provided attributes.
+*/
 Texture::Texture(const char* filename, GLenum texture_type, GLenum slot, GLenum format, GLenum pixel_type) {
 	type = texture_type;
 	glGenTextures(1, &id);
@@ -29,23 +32,39 @@ Texture::Texture(const char* filename, GLenum texture_type, GLenum slot, GLenum 
 	stbi_image_free(data);
 }
 
+/*
+	activates a shader.
+	Then sets and sends a uniform data to the provided shader
+*/
 void Texture::set_unit(Shader shader, const char* uniform, GLuint unit) {
 	shader.activate();
 	glUniform1i(glGetUniformLocation(shader.id, uniform), unit);
 }
 
+/*
+	activates a texture
+*/
 void Texture::activate(GLenum texture) {
 	glActiveTexture(texture);
 }
 
+/*
+	binds a texture
+*/
 void Texture::bind() {
 	glBindTexture(type, id);
 }
 
+/*
+	unbinds a texture
+*/
 void Texture::unbind() {
 	glBindTexture(type, 0);
 }
 
+/*
+	destroys a texture instance
+*/
 void Texture::destroy() {
 	glDeleteTextures(1, &id);
 }

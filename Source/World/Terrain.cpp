@@ -4,6 +4,10 @@ Terrain::Terrain(vec3& cam_pos) : cm(ChunkManager::get_instance()), sg(Structure
 	player_pos = &cam_pos;
 }
 
+/*
+	creates and draw chunks within a render distance.
+	this must be called every frame
+*/
 void Terrain::update() {
 	//player's pos in chunk space
 	origin = {
@@ -54,6 +58,9 @@ void Terrain::update() {
 	visible_chunks.clear();
 }
 
+/*
+	randomly spaws structure on a chunk
+*/
 void Terrain::spawn_structures(Chunk* chunk) {
 	for (int x = 0; x < chunk_size; ++x) {
 		for (int z = 0; z < chunk_size; ++z) {

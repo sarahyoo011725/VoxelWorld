@@ -6,12 +6,15 @@
 #include "Audio/AudioManager.h"
 #include <GLFW/glfw3.h>
 
+/*
+* a screen where voxel engien game is run
+*/
 class GameScreen {
 private:
 	WindowSetting *window_setting;
 	Camera cam;
 	Terrain terrain;
-	Shader shader = Shader("Resources/Shaders/default.vert", "Resources/Shaders/default.frag");
+	Shader shader = Shader("Resources/Shaders/world.vert", "Resources/Shaders/world.frag");
 	Texture texture = Texture("Resources/Textures/texture_atlas.png", GL_TEXTURE_2D, GL_TEXTURE1, GL_RGBA, GL_UNSIGNED_BYTE);
 	bool wireframe = false;
 	bool enable_music = true;
@@ -22,6 +25,9 @@ public:
 		texture.set_unit(shader, "texture1", 1);
 	}
 
+	/*
+	* initializes GL settings for the game. This must be called only once before drawing the screen
+	*/
 	void gl_settings() {
 		if (gl_setting_done) return;
 		glEnable(GL_DEPTH_TEST);
@@ -34,9 +40,10 @@ public:
 		gl_setting_done = true;
 	}
 
+	/*
+	* draws game scene and updates terrain and camera. this must be called every frame
+	*/
 	void draw() {
-		//plays music
-
 		if (glfwGetKey(window_setting->window, GLFW_KEY_1)) {
 			wireframe = !wireframe;
 		}
@@ -73,6 +80,9 @@ public:
 		cam.draw_HUDs();
 	}
 
+	/*
+	* destroys shader and texture
+	*/
 	void destroy() {
 		shader.destroy();
 		texture.destroy();

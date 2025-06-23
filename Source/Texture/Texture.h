@@ -10,6 +10,9 @@
 using namespace std;
 using namespace glm;
 
+/*
+	a class that organizes implementation of opengl texture
+*/
 class Texture
 {
 private:

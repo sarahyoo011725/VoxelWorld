@@ -11,6 +11,9 @@ using namespace std;
 string read_file(const char* filename);
 void check_errors(GLuint vertex, GLuint fragment, GLuint program);
 
+/*
+	a class that organizes implementation of opengl shader
+*/
 class Shader
 {
 public:

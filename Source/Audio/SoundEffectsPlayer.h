@@ -1,6 +1,8 @@
 #pragma once
 #include <AL\al.h>
-
+/*
+	a buffer that is designed to play a sound effect. only one sound effect can be loaded once.
+*/
 class SoundEffectsPlayer
 {
 public:

@@ -5,6 +5,7 @@
 using namespace std;
 using namespace glm;
 
+//names block types
 enum block_type {
 	none,
 	dirt,
@@ -20,6 +21,7 @@ enum block_type {
 	grass,
 };
 
+//names block faces
 enum block_face {
 	Front,
 	Back,
@@ -30,11 +32,14 @@ enum block_face {
 };
 
 namespace {
+	//total rows in the texture atlance
 	const static int texture_rows = 16;
+	//total columns in the texture atlance
 	const static int textures_columns = 16;
 
 	static vec2 grass_text_coord = vec2(8, 14);
 
+	//collects texture index on the texture atlance for block types
 	static map<block_type, map<block_face, vec2>> texture_map = {
 		{dirt, {{Front,vec2(3,16)},{Back,vec2(3,16)},{Left,vec2(3,16)},{Right,vec2(3,16)},{Top,vec2(3,16)},{Bottom,vec2(3,16)}}},
 		{dirt_grass, {{Front,vec2(4, 16)},{Back,vec2(4, 16)},{Left,vec2(4, 16)},{Right,vec2(4, 16)},{Top,vec2(1, 16)},{Bottom,vec2(3, 16)}}},

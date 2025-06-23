@@ -185,6 +185,7 @@
     <ClInclude Include="Source\Screens\StartScreen.h" />
     <ClInclude Include="Source\Shader\Shader.h" />
     <ClInclude Include="Source\Texture\Texture.h" />
+    <ClInclude Include="Source\World\ChunkManager.h" />
     <ClInclude Include="Source\World\StructureGenerator.h" />
     <ClInclude Include="Source\World\Terrain.h" />
   </ItemGroup>
@@ -194,8 +195,8 @@
     <None Include="README.md" />
     <None Include="Resources\Shaders\2d_component.frag" />
     <None Include="Resources\Shaders\2d_component.vert" />
-    <None Include="Resources\Shaders\default.frag" />
-    <None Include="Resources\Shaders\default.vert" />
+    <None Include="Resources\Shaders\world.frag" />
+    <None Include="Resources\Shaders\world.vert" />
     <None Include="Resources\Shaders\outline.frag" />
     <None Include="Resources\Shaders\outline.vert" />
     <None Include="vcpkg-configuration.json" />
@@ -212,7 +213,6 @@
     <ClCompile Include="Source\Buffers\VBO.cpp" />
     <ClCompile Include="Source\Camera\Camera.cpp" />
     <ClCompile Include="Source\Chunk\Chunk.cpp" />
-    <ClCompile Include="Source\Entity\GameObject.cpp" />
     <ClCompile Include="Source\Main.cpp" />
     <ClCompile Include="Source\Shader\Shader.cpp" />
     <ClCompile Include="Source\stb.cpp" />

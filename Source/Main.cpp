@@ -5,6 +5,7 @@
 using namespace std;
 using namespace glm;
 
+//dimension of screen
 const static int width = 1200;
 const static int height = 700;
 
@@ -48,6 +49,7 @@ int main() {
 	StartScreen start_screen = StartScreen();
 	GameScreen game_screen = GameScreen(&window_setting);
 
+	//displays a screen every frame while the window is active
 	while (!glfwWindowShouldClose(window)) {
 		process_inputs(window);
 
@@ -69,6 +71,9 @@ int main() {
 	return 0;
 }
 
+/*
+* callback function for window resize
+*/
 void resize_window(GLFWwindow *window, int width, int height) {
 	//tells glad how to display data and coordinates to the window
 	glViewport(0, 0, width, height);
@@ -76,6 +81,9 @@ void resize_window(GLFWwindow *window, int width, int height) {
 	window_setting.height = height;
 }
 
+/*
+* receives user inputs and executes behaviours
+*/
 void process_inputs(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		unfocus_window(window);
@@ -88,6 +96,9 @@ void process_inputs(GLFWwindow *window) {
 	}
 }
 
+/*
+* callback function for window focus
+*/
 void focus_callback(GLFWwindow* window, int focused) {
 	if (focused) {
 		on_window_focused(window);
@@ -97,11 +108,17 @@ void focus_callback(GLFWwindow* window, int focused) {
 	}
 }
 
+/*
+* a sub-fuction for focus_callback(). disables mouse cursor on window focused
+*/
 void on_window_focused(GLFWwindow* window) {
 	window_setting.window_active = true;
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
 
+/*
+* a sub-function for focus_callback(). enables mouse curosr on window unfocused
+*/
 void unfocus_window(GLFWwindow* window) {
 	window_setting.window_active = false;
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);

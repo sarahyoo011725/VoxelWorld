@@ -90,6 +90,9 @@
     <ClInclude Include="Source\Texture\Texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\World\ChunkManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
@@ -103,10 +106,10 @@
     <None Include="Resources\Shaders\2d_component.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Resources\Shaders\default.frag">
+    <None Include="Resources\Shaders\world.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Resources\Shaders\default.vert">
+    <None Include="Resources\Shaders\world.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
     <None Include="Resources\Shaders\outline.frag">
@@ -160,9 +163,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\Texture\Texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Entity\GameObject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Source\World\ChunkManager.cpp">

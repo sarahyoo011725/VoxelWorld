@@ -4,6 +4,9 @@
 #include <malloc.h>
 #include "OpenALErrorCheck.h"
 
+/*
+	plays a music buffer
+*/
 void MusicBuffer::play()
 {
 	ALsizei i;
@@ -40,24 +43,37 @@ void MusicBuffer::play()
 
 }
 
+/*
+	pause a music being played
+*/
 void MusicBuffer::pause()
 {
 	alSourcePause(p_Source);
 	AL_CheckAndThrow();
 }
 
+/*
+	stops playing a music
+*/
 void MusicBuffer::stop()
 {
 	alSourceStop(p_Source);
 	AL_CheckAndThrow();
 }
 
+/*
+	resumes a music that has been paused
+*/
 void MusicBuffer::resume()
 {
 	alSourcePlay(p_Source);
 	AL_CheckAndThrow();
 }
 
+/*
+	updates the buffer of the currently playing music.
+	this must be called every frame to play the music
+*/
 void MusicBuffer::update_buffer_stream()
 {
 	ALint processed, state;
@@ -110,11 +126,17 @@ void MusicBuffer::update_buffer_stream()
 	}
 }
 
+/*
+	returns the current music buffer source
+*/
 ALint MusicBuffer::get_source()
 {
 	return p_Source;
 }
 
+/*
+	checks if a music is being played
+*/
 bool MusicBuffer::is_playing()
 {
 	ALint state;
@@ -123,6 +145,9 @@ bool MusicBuffer::is_playing()
 	return (state == AL_PLAYING);
 }
 
+/*
+	sets the gain of a music buffer
+*/
 void MusicBuffer::set_gain(const float& val)
 {
 	float newval = val;
@@ -132,6 +157,9 @@ void MusicBuffer::set_gain(const float& val)
 	AL_CheckAndThrow();
 }
 
+/*
+	generates a music buffer with a music file (only in wav format)
+*/
 MusicBuffer::MusicBuffer(const char* filename)
 {
 	alGenSources(1, &p_Source);
@@ -171,6 +199,9 @@ MusicBuffer::MusicBuffer(const char* filename)
 	p_Membuf = static_cast<short*>(malloc(frame_size));
 }
 
+/*
+	destroys music buffer
+*/
 MusicBuffer::~MusicBuffer()
 {
 	alDeleteSources(1, &p_Source);
