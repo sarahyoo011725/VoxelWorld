@@ -21,6 +21,7 @@ private:
 	Shader shader = Shader("default.vert", "default.frag");
 	Texture texture = Texture("texture_atlas.png", GL_TEXTURE_2D, GL_TEXTURE1, GL_RGBA, GL_UNSIGNED_BYTE);
 	bool wireframe = false;
+	bool enable_music = true;
 	bool gl_setting_done = false;
 public:
 	GameScreen(WindowSetting *setting) 
@@ -42,10 +43,19 @@ public:
 
 	void draw() {
 		//plays music
-		audio::play_random_music();
 
 		if (glfwGetKey(window_setting->window, GLFW_KEY_1)) {
 			wireframe = !wireframe;
+		}
+		if (glfwGetKey(window_setting->window, GLFW_KEY_4) == GLFW_PRESS) {
+			enable_music = !enable_music;
+			if (enable_music == false && audio::current_music != nullptr) {
+				audio::current_music->stop();
+			}
+		}
+
+		if (enable_music) {
+			audio::play_random_music();
 		}
 		
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color

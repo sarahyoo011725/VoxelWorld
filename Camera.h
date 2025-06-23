@@ -63,7 +63,6 @@ private:
 	float speed = default_speed;
 	bool enable_physics = false;
 	bool enable_outline = true;
-	bool enable_music = true;
 	bool is_running = false;
 	bool is_jumping = false;
 	bool on_ground = false;
