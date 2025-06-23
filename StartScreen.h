@@ -25,14 +25,15 @@ private:
 	VAO vao = VAO();
 	VBO vbo = VBO(vertices.data(), sizeof(GLfloat) * vertices.size(), GL_STATIC_DRAW);
     EBO ebo = EBO(indices.data(), sizeof(GLuint) * indices.size(), GL_STATIC_DRAW);
-    Texture texture = Texture("menu_background.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
     Shader shader = Shader("2d_component.vert", "2d_component.frag");
+    Texture texture = Texture("menu_background.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
 public:
     StartScreen() {
         vao.bind();
         vao.link_attrib(vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (void*)0);
         vao.link_attrib(vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (void*)(3 * sizeof(GLfloat)));
         texture.set_unit(shader, "texture1", 0);
+        texture.set_unit(shader, "use_texture", GL_TRUE);
         music::moog_city2.play();
     };
 
@@ -41,10 +42,10 @@ public:
             music::moog_city2.update_buffer_stream();
         }
         shader.activate();
-        vao.bind();
-        ebo.bind();
         texture.activate(GL_TEXTURE0);
         texture.bind();
+        vao.bind();
+        ebo.bind();
         glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
     };
 };

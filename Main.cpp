@@ -52,10 +52,11 @@ int main() {
 		process_inputs(window);
 
 		if (start_game) {
+			game_screen.gl_settings();
 			game_screen.draw();
 		}
 		else {
-			start_screen.draw(); //this is blank. but music runs, so it means start screen is drawn
+			start_screen.draw(); 
 		}
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
