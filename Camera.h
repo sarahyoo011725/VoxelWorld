@@ -79,7 +79,7 @@ private:
 	VAO outline_vao = VAO(); //draws objects with lines, such as hitbox
 	VBO outline_vbo = VBO(cube_edges.data(), sizeof(vec3) * cube_edges.size(), GL_STATIC_DRAW);
 	VAO HUD_vao = VAO();  //draws 2d components, like crosshair and inventory box
-	VBO HUD_vbo = VBO(crosshair_vertices.data(), sizeof(vec2) * crosshair_vertices.size(), GL_STATIC_DRAW);
+	VBO HUD_vbo = VBO(crosshair_vertices.data(), sizeof(GLfloat) * crosshair_vertices.size(), GL_STATIC_DRAW);
 
 	vec3 ray = vec3(0.0);
 	vec3 direction = vec3(0.0); //this is a forward vector

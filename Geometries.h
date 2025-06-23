@@ -6,13 +6,13 @@ using namespace std;
 using namespace glm;
 
 namespace {
-	const static vector<vec2> crosshair_vertices = {
+	const static vector<GLfloat> crosshair_vertices = {
 		//horizontal line
-		vec2(-0.02f, 0.0f),
-		vec2(0.02f, 0.0f),
+		-0.02f, 0.0f, 0.0f, 0.0f, 0.0f,
+		0.02f, 0.0f, 0.0f, 0.0f, 0.0f,
 		//vertical line
-		vec2(0.0f, -0.03f),
-		vec2(0.0f,  0.03f),
+		0.0f, -0.03f, 0.0f, 0.0f, 0.0f,
+		0.0f,  0.03f, 0.0f, 0.0f, 0.0f
 	};
 
 	/*

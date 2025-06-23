@@ -98,6 +98,7 @@ Block* Chunk::get_block(ivec3 local_coord) {
 	int y = local_coord.y;
 	int z = local_coord.z;
 	if (x < 0 || y < 0 || z < 0 || x > width - 1 || y > height - 1 || z > length - 1) {
+		//cout << "provided local coord is invalid" << endl;
 		return nullptr;
 	}
 	return &blocks[x][y][z];
@@ -110,6 +111,7 @@ void Chunk::set_block(ivec3 local_coord, block_type type) {
 	int y = local_coord.y;
 	int z = local_coord.z;
 	if (x < 0 || x > width - 1 || y < 0 || y > height - 1 || z < 0 || z > length - 1) {
+		//cout << "provided local coord is invalid" << endl;
 		return;
 	}
 	blocks[x][y][z].type = type;
