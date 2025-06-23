@@ -1,9 +1,9 @@
 #pragma once
-#include "Shader.h"
-#include "Texture.h"
-#include "Camera.h"
-#include "Terrain.h"
-#include "AudioManager.h"
+#include "Shader/Shader.h"
+#include "Texture/Texture.h"
+#include "Camera/Camera.h"
+#include "World/Terrain.h"
+#include "Audio/AudioManager.h"
 #include <GLFW/glfw3.h>
 
 class GameScreen {
@@ -11,8 +11,8 @@ private:
 	WindowSetting *window_setting;
 	Camera cam;
 	Terrain terrain;
-	Shader shader = Shader("default.vert", "default.frag");
-	Texture texture = Texture("texture_atlas.png", GL_TEXTURE_2D, GL_TEXTURE1, GL_RGBA, GL_UNSIGNED_BYTE);
+	Shader shader = Shader("Resources/Shaders/default.vert", "Resources/Shaders/default.frag");
+	Texture texture = Texture("Resources/Textures/texture_atlas.png", GL_TEXTURE_2D, GL_TEXTURE1, GL_RGBA, GL_UNSIGNED_BYTE);
 	bool wireframe = false;
 	bool enable_music = true;
 	bool gl_setting_done = false;

@@ -1,7 +1,7 @@
 #pragma once
-#include "ChunkManager.h"
-#include "BlockType.h"
-#include "Geometries.h"
+#include "World/ChunkManager.h"
+#include "Entity/Geometries.h"
+#include "Block/BlockType.h"
 
 class Chunk;
 

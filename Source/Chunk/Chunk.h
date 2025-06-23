@@ -4,12 +4,12 @@
 #include <glm/gtx/hash.hpp>
 #include <glad/glad.h>
 #include <vector>
-#include "Block.h"
-#include "VAO.h"
-#include "VBO.h"
-#include "EBO.h"
-#include "Texture.h"
-#include "Shader.h"
+#include "Block/Block.h"
+#include "Buffers/VAO.h"
+#include "Buffers/VBO.h"
+#include "Buffers/EBO.h"
+#include "Texture/Texture.h"
+#include "Shader/Shader.h"
 #include "unordered_map"
 
 using namespace glm;

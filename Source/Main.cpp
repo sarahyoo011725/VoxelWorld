@@ -1,6 +1,6 @@
 #include <iostream>
-#include "StartScreen.h"
-#include "GameScreen.h"
+#include "Screens/StartScreen.h"
+#include "Screens/GameScreen.h"
 
 using namespace std;
 using namespace glm;

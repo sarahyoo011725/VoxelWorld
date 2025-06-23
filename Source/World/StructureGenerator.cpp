@@ -1,5 +1,5 @@
 #include "StructureGenerator.h"
-#include "Chunk.h"
+#include "Chunk/Chunk.h"
 
 void StructureGenerator::spawn_nonblock_structure(block_type type, vec3 world_coord) {
 	switch (type) {

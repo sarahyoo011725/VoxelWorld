@@ -1,6 +1,6 @@
 #pragma once
 #include <glad/glad.h>
-#include "Block.h"
+#include "Block/Block.h"
 
 using namespace std;
 

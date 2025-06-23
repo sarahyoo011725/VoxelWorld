@@ -5,7 +5,7 @@
 #include <stb/stb_image.h>
 #include <map>
 #include <glm/glm.hpp>
-#include "Shader.h"
+#include "Shader/Shader.h"
 
 using namespace std;
 using namespace glm;

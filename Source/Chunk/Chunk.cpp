@@ -1,6 +1,6 @@
 #include "Chunk.h"
-#include "ChunkManager.h"
-#include "StructureGenerator.h"
+#include "World/ChunkManager.h"
+#include "World/StructureGenerator.h"
 
 Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()) {
 	//add 1 to width and length to store neighbor chunks' block data in their edge

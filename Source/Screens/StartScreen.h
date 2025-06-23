@@ -1,10 +1,10 @@
 #pragma once
-#include "VAO.h"
-#include "VBO.h"
-#include "EBO.h"
-#include "Texture.h"
-#include "Shader.h"
-#include "AudioManager.h"
+#include "Buffers/VAO.h"
+#include "Buffers/VBO.h"
+#include "Buffers/EBO.h"
+#include "Texture/Texture.h"
+#include "Shader/Shader.h"
+#include "Audio/AudioManager.h"
 #include <vector>
 
 using namespace std;
@@ -25,8 +25,8 @@ private:
 	VAO vao = VAO();
 	VBO vbo = VBO(vertices.data(), sizeof(GLfloat) * vertices.size(), GL_STATIC_DRAW);
     EBO ebo = EBO(indices.data(), sizeof(GLuint) * indices.size(), GL_STATIC_DRAW);
-    Shader shader = Shader("2d_component.vert", "2d_component.frag");
-    Texture texture = Texture("menu_background.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
+    Shader shader = Shader("Resources/Shaders/2d_component.vert", "Resources/Shaders/2d_component.frag");
+    Texture texture = Texture("Resources/Textures/menu_background.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGBA, GL_UNSIGNED_BYTE);
 public:
     StartScreen() {
         vao.bind();

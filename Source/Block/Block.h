@@ -5,7 +5,7 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "BlockType.h"
-#include "GameObject.h"
+#include "Entity/GameObject.h"
 
 using namespace std;
 using namespace glm;

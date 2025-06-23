@@ -4,8 +4,8 @@
 #include <glm/gtx/hash.hpp>
 #include <FastNoise/FastNoiseLite.h>
 #include "unordered_map"
-#include "Chunk.h"
-#include "Block.h"
+#include "Chunk/Chunk.h"
+#include "Block/Block.h"
 
 using namespace std;
 using namespace glm;

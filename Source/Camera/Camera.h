@@ -4,15 +4,15 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include "ChunkManager.h"
-#include "StructureGenerator.h"
-#include "GameObject.h"
-#include "VAO.h"
-#include "VBO.h"
-#include "EBO.h"
-#include "Shader.h"
-#include "Geometries.h"
-#include "AudioManager.h"
+#include "World/ChunkManager.h"
+#include "World/StructureGenerator.h"
+#include "Entity/GameObject.h"
+#include "Buffers/VAO.h"
+#include "Buffers/VBO.h"
+#include "Buffers/EBO.h"
+#include "Shader/Shader.h"
+#include "Entity/Geometries.h"
+#include "Audio/AudioManager.h"
 
 using namespace glm;
 
@@ -80,8 +80,8 @@ private:
 
 	vec4 crosshair_color = vec4(1.0); //white
 	vec4 hovered_block_outline_color = vec4(0.0, 1.0, 1.0, 1.0); //cyan
-	Shader outline_shader = Shader("outline.vert", "outline.frag");
-	Shader HUD_shader = Shader("2d_component.vert", "2d_component.frag");
+	Shader outline_shader = Shader("Resources/Shaders/outline.vert", "Resources/Shaders/outline.frag");
+	Shader HUD_shader = Shader("Resources/Shaders/2d_component.vert", "Resources/Shaders/2d_component.frag");
 	VAO outline_vao = VAO(); //draws objects with lines, such as hitbox
 	VBO outline_vbo = VBO(cube_edges.data(), sizeof(vec3) * cube_edges.size(), GL_STATIC_DRAW);
 	VAO HUD_vao = VAO();  //draws 2d components, like crosshair and inventory box

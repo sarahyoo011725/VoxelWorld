@@ -27,204 +27,198 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="glad.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VAO.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VBO.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Shader.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="EBO.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="stb.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Camera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Chunk.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Terrain.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ChunkManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StructureGenerator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SoundDevice.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="MusicBuffer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SoundEffectsPlayer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SoundEffectsLibrary.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GameObject.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AudioManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="VAO.h">
+    <ClInclude Include="Source\Audio\AudioManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VBO.h">
+    <ClInclude Include="Source\Block\Block.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shader.h">
+    <ClInclude Include="Source\Block\BlockType.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="EBO.h">
+    <ClInclude Include="Source\Camera\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Texture.h">
+    <ClInclude Include="Source\Chunk\Chunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.h">
+    <ClInclude Include="Source\Buffers\EBO.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Chunk.h">
+    <ClInclude Include="Source\Screens\GameScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Block.h">
+    <ClInclude Include="Source\Audio\MusicBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Terrain.h">
+    <ClInclude Include="Source\Audio\OpenALErrorCheck.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ChunkManager.h">
+    <ClInclude Include="Source\Audio\SoundDevice.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="StructureGenerator.h">
+    <ClInclude Include="Source\Audio\SoundEffectsLibrary.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="BlockType.h">
+    <ClInclude Include="Source\Audio\SoundEffectsPlayer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GameObject.h">
+    <ClInclude Include="Source\Screens\StartScreen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Geometries.h">
+    <ClInclude Include="Source\World\StructureGenerator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SoundDevice.h">
+    <ClInclude Include="Source\World\Terrain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="OpenALErrorCheck.h">
+    <ClInclude Include="Source\Buffers\VAO.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="MusicBuffer.h">
+    <ClInclude Include="Source\Buffers\VBO.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SoundEffectsPlayer.h">
+    <ClInclude Include="Source\Shader\Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SoundEffectsLibrary.h">
+    <ClInclude Include="Source\Entity\GameObject.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AudioManager.h">
+    <ClInclude Include="Source\Entity\Geometries.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="StartScreen.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GameScreen.h">
+    <ClInclude Include="Source\Texture\Texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="default.frag">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
-    <None Include="default.vert">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
-    <None Include="outline.vert">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
-    <None Include="outline.frag">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
-    <None Include="2d_component.vert">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
-    <None Include="2d_component.frag">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
     <None Include="README.md" />
     <None Include="vcpkg.json" />
     <None Include="vcpkg-configuration.json" />
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
+    <None Include="Resources\Shaders\2d_component.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\2d_component.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\default.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\default.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\outline.frag">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\outline.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="texture_atlas.png">
-      <Filter>Resource Files\Textures</Filter>
-    </Image>
-    <Image Include="menu_background.png">
-      <Filter>Resource Files\Textures</Filter>
-    </Image>
+    <ClCompile Include="Source\Main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\World\StructureGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\World\Terrain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Chunk\Chunk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Camera\Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Buffers\EBO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Buffers\VAO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Buffers\VBO.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Audio\AudioManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Audio\MusicBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Audio\SoundDevice.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Audio\SoundEffectsLibrary.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Audio\SoundEffectsPlayer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Shader\Shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Texture\Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Entity\GameObject.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\World\ChunkManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\stb.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <Media Include="minecraft.wav">
+    <Media Include="Resources\Musics\aria_math.wav">
       <Filter>Resource Files\Musics</Filter>
     </Media>
-    <Media Include="wet_hands.wav">
+    <Media Include="Resources\Musics\blind_spots.wav">
       <Filter>Resource Files\Musics</Filter>
     </Media>
-    <Media Include="sweden.wav">
+    <Media Include="Resources\Musics\minecraft.wav">
       <Filter>Resource Files\Musics</Filter>
     </Media>
-    <Media Include="aria_math.wav">
+    <Media Include="Resources\Musics\moog_city2.wav">
       <Filter>Resource Files\Musics</Filter>
     </Media>
-    <Media Include="blind_spots.wav">
+    <Media Include="Resources\Sound Effects\place_and_break_dirt.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="Resources\Sound Effects\place_and_break_grass.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="Resources\Sound Effects\place_and_break_sand.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="Resources\Sound Effects\place_and_break_stone.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="Resources\Sound Effects\place_and_break_wood.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="Resources\Sound Effects\place_water.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="Resources\Sound Effects\walk_grass.wav">
+      <Filter>Resource Files\SoundEffects</Filter>
+    </Media>
+    <Media Include="Resources\Musics\sweden.wav">
       <Filter>Resource Files\Musics</Filter>
     </Media>
-    <Media Include="place_and_break_grass.wav">
-      <Filter>Resource Files\SoundEffects</Filter>
-    </Media>
-    <Media Include="place_and_break_sand.wav">
-      <Filter>Resource Files\SoundEffects</Filter>
-    </Media>
-    <Media Include="place_and_break_stone.wav">
-      <Filter>Resource Files\SoundEffects</Filter>
-    </Media>
-    <Media Include="place_and_break_wood.wav">
-      <Filter>Resource Files\SoundEffects</Filter>
-    </Media>
-    <Media Include="place_water.wav">
-      <Filter>Resource Files\SoundEffects</Filter>
-    </Media>
-    <Media Include="place_and_break_dirt.wav">
-      <Filter>Resource Files\SoundEffects</Filter>
-    </Media>
-    <Media Include="walk_grass.wav">
-      <Filter>Resource Files\SoundEffects</Filter>
-    </Media>
-    <Media Include="moog_city2.wav">
+    <Media Include="Resources\Musics\wet_hands.wav">
       <Filter>Resource Files\Musics</Filter>
     </Media>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\Textures\menu_background.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
+    <Image Include="Resources\Textures\texture_atlas.png">
+      <Filter>Resource Files\Textures</Filter>
+    </Image>
   </ItemGroup>
 </Project>

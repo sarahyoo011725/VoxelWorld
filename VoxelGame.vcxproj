@@ -99,7 +99,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Source;$(SolutionDir)Resources;$(SolutionDir)Libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -117,7 +117,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Source;$(SolutionDir)Resources;$(SolutionDir)Libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -135,7 +135,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Source;$(SolutionDir)Resources;$(SolutionDir)Libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -153,7 +153,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir)Libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Source;$(SolutionDir)Resources;$(SolutionDir)Libraries\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -166,81 +166,79 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="AudioManager.cpp" />
-    <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Chunk.cpp" />
-    <ClCompile Include="ChunkManager.cpp" />
-    <ClCompile Include="EBO.cpp" />
-    <ClCompile Include="GameObject.cpp" />
-    <ClCompile Include="glad.c" />
-    <ClCompile Include="Main.cpp" />
-    <ClCompile Include="MusicBuffer.cpp" />
-    <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="SoundDevice.cpp" />
-    <ClCompile Include="SoundEffectsLibrary.cpp" />
-    <ClCompile Include="SoundEffectsPlayer.cpp" />
-    <ClCompile Include="stb.cpp" />
-    <ClCompile Include="StructureGenerator.cpp" />
-    <ClCompile Include="Terrain.cpp" />
-    <ClCompile Include="Texture.cpp" />
-    <ClCompile Include="VAO.cpp" />
-    <ClCompile Include="VBO.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="AudioManager.h" />
-    <ClInclude Include="Block.h" />
-    <ClInclude Include="BlockType.h" />
-    <ClInclude Include="Camera.h" />
-    <ClInclude Include="Chunk.h" />
-    <ClInclude Include="ChunkManager.h" />
-    <ClInclude Include="EBO.h" />
-    <ClInclude Include="GameObject.h" />
-    <ClInclude Include="GameScreen.h" />
-    <ClInclude Include="Geometries.h" />
-    <ClInclude Include="MusicBuffer.h" />
-    <ClInclude Include="OpenALErrorCheck.h" />
-    <ClInclude Include="Shader.h" />
-    <ClInclude Include="SoundDevice.h" />
-    <ClInclude Include="SoundEffectsLibrary.h" />
-    <ClInclude Include="SoundEffectsPlayer.h" />
-    <ClInclude Include="StartScreen.h" />
-    <ClInclude Include="StructureGenerator.h" />
-    <ClInclude Include="Terrain.h" />
-    <ClInclude Include="Texture.h" />
-    <ClInclude Include="VAO.h" />
-    <ClInclude Include="VBO.h" />
+    <ClInclude Include="Source\Audio\AudioManager.h" />
+    <ClInclude Include="Source\Audio\MusicBuffer.h" />
+    <ClInclude Include="Source\Audio\OpenALErrorCheck.h" />
+    <ClInclude Include="Source\Audio\SoundDevice.h" />
+    <ClInclude Include="Source\Audio\SoundEffectsLibrary.h" />
+    <ClInclude Include="Source\Audio\SoundEffectsPlayer.h" />
+    <ClInclude Include="Source\Block\Block.h" />
+    <ClInclude Include="Source\Block\BlockType.h" />
+    <ClInclude Include="Source\Buffers\EBO.h" />
+    <ClInclude Include="Source\Buffers\VAO.h" />
+    <ClInclude Include="Source\Buffers\VBO.h" />
+    <ClInclude Include="Source\Camera\Camera.h" />
+    <ClInclude Include="Source\Chunk\Chunk.h" />
+    <ClInclude Include="Source\Entity\GameObject.h" />
+    <ClInclude Include="Source\Entity\Geometries.h" />
+    <ClInclude Include="Source\Screens\GameScreen.h" />
+    <ClInclude Include="Source\Screens\StartScreen.h" />
+    <ClInclude Include="Source\Shader\Shader.h" />
+    <ClInclude Include="Source\Texture\Texture.h" />
+    <ClInclude Include="Source\World\StructureGenerator.h" />
+    <ClInclude Include="Source\World\Terrain.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />
     <None Include=".gitignore" />
-    <None Include="2d_component.frag" />
-    <None Include="2d_component.vert" />
-    <None Include="default.frag" />
-    <None Include="default.vert" />
-    <None Include="outline.frag" />
-    <None Include="outline.vert" />
     <None Include="README.md" />
+    <None Include="Resources\Shaders\2d_component.frag" />
+    <None Include="Resources\Shaders\2d_component.vert" />
+    <None Include="Resources\Shaders\default.frag" />
+    <None Include="Resources\Shaders\default.vert" />
+    <None Include="Resources\Shaders\outline.frag" />
+    <None Include="Resources\Shaders\outline.vert" />
     <None Include="vcpkg-configuration.json" />
     <None Include="vcpkg.json" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="menu_background.png" />
-    <Image Include="texture_atlas.png" />
+    <ClCompile Include="Source\Audio\AudioManager.cpp" />
+    <ClCompile Include="Source\Audio\MusicBuffer.cpp" />
+    <ClCompile Include="Source\Audio\SoundDevice.cpp" />
+    <ClCompile Include="Source\Audio\SoundEffectsLibrary.cpp" />
+    <ClCompile Include="Source\Audio\SoundEffectsPlayer.cpp" />
+    <ClCompile Include="Source\Buffers\EBO.cpp" />
+    <ClCompile Include="Source\Buffers\VAO.cpp" />
+    <ClCompile Include="Source\Buffers\VBO.cpp" />
+    <ClCompile Include="Source\Camera\Camera.cpp" />
+    <ClCompile Include="Source\Chunk\Chunk.cpp" />
+    <ClCompile Include="Source\Entity\GameObject.cpp" />
+    <ClCompile Include="Source\Main.cpp" />
+    <ClCompile Include="Source\Shader\Shader.cpp" />
+    <ClCompile Include="Source\stb.cpp" />
+    <ClCompile Include="Source\Texture\Texture.cpp" />
+    <ClCompile Include="Source\World\ChunkManager.cpp" />
+    <ClCompile Include="Source\World\StructureGenerator.cpp" />
+    <ClCompile Include="Source\World\Terrain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Media Include="aria_math.wav" />
-    <Media Include="blind_spots.wav" />
-    <Media Include="minecraft.wav" />
-    <Media Include="moog_city2.wav" />
-    <Media Include="place_and_break_dirt.wav" />
-    <Media Include="place_and_break_grass.wav" />
-    <Media Include="place_and_break_sand.wav" />
-    <Media Include="place_and_break_stone.wav" />
-    <Media Include="place_and_break_wood.wav" />
-    <Media Include="place_water.wav" />
-    <Media Include="sweden.wav" />
-    <Media Include="walk_grass.wav" />
-    <Media Include="wet_hands.wav" />
+    <Media Include="Resources\Musics\aria_math.wav" />
+    <Media Include="Resources\Musics\blind_spots.wav" />
+    <Media Include="Resources\Musics\minecraft.wav" />
+    <Media Include="Resources\Musics\moog_city2.wav" />
+    <Media Include="Resources\Musics\sweden.wav" />
+    <Media Include="Resources\Musics\wet_hands.wav" />
+    <Media Include="Resources\Sound Effects\place_and_break_dirt.wav" />
+    <Media Include="Resources\Sound Effects\place_and_break_grass.wav" />
+    <Media Include="Resources\Sound Effects\place_and_break_sand.wav" />
+    <Media Include="Resources\Sound Effects\place_and_break_stone.wav" />
+    <Media Include="Resources\Sound Effects\place_and_break_wood.wav" />
+    <Media Include="Resources\Sound Effects\place_water.wav" />
+    <Media Include="Resources\Sound Effects\walk_grass.wav" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Resources\Textures\menu_background.png" />
+    <Image Include="Resources\Textures\texture_atlas.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
