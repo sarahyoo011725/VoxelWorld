@@ -73,13 +73,6 @@ bool Camera::is_ground() {
 	return block != nullptr &&is_solid(block->type);
 }
 
-void Camera::raycast() {
-	//normally, the conversion from 2d screen into 3d world space would like this:
-	//viewport space (2d screen) -> normalized device space (opengl coord system) -> homogenenous clip state -> eye space(origin is cam) -> world space
-	//but it's so simple that I can just cast a ray with direction (or forward) vector
-	ray = position + direction * ray_length;
-}
-
 void Camera::update_matrix(int shader_id) {
 	view = lookAt(position, position + direction, up);
 	projection = perspective(radians(fov_degrees), (float)window_width / window_height, near_plane, far_plane);
@@ -119,44 +112,36 @@ void Camera::outline_hovered_cube() {
 }
 
 void Camera::block_interaction() {
-	ivec2 chunk_id = get_chunk_origin(ray);
-	ivec3 local_coord = world_to_local_coord(ray);
-
-	Chunk* chunk = cm.get_chunk(chunk_id);
-	Block* block = nullptr;
-	if (chunk != nullptr) {
-		block = chunk->get_block(local_coord);
-	}
+	if (hovered_block == nullptr) return;
 	
-	hovered_block = block;
-
-	if (block == nullptr) return;
+	Chunk* chunk = cm.get_chunk(hovered_block->position);
+	ivec3 local_coord = world_to_local_coord(hovered_block->position);
 
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-		if (holding_block_type != none && block->type != holding_block_type && (block->type == none || block->type == water)) {
+		if (holding_block_type != none && hovered_block->type != holding_block_type && (hovered_block->type == none || hovered_block->type == water)) {
 			if (is_nonblock(holding_block_type)) {
-				if (block->type == water && !can_be_placed_underwater(holding_block_type)) {
+				if (hovered_block->type == water && !can_be_placed_underwater(holding_block_type)) {
 					return;
 				}
 				else {
-					sg.spawn_nonblock_structure(holding_block_type, block->position);
+					sg.spawn_nonblock_structure(holding_block_type, hovered_block->position);
 					chunk->should_rebuild = true;
 				}
 			}
 			else {
-				cm.set_block_manual(chunk_id, local_coord, holding_block_type); //TOOD: selection of block type, inventory 
+				cm.set_block_manual(chunk->id, local_coord, holding_block_type); //TOOD: selection of block type, inventory 
 			}
 			audio::play_block_sound_effect(holding_block_type);
 		}
 	}
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-		if (block->type != none) {
+		if (hovered_block->type != none) {
 			holding_block_type = hovered_block->type;
-			if (is_nonblock(block->type)) {
+			if (is_nonblock(hovered_block->type)) {
 				chunk->remove_structure(local_coord); 
 			}
-			audio::play_block_sound_effect(block->type);
-			cm.set_block_manual(chunk_id, local_coord, none);
+			audio::play_block_sound_effect(hovered_block->type);
+			cm.set_block_manual(chunk->id, local_coord, none);
 		}
 	}
 }
@@ -265,6 +250,86 @@ void Camera::update_movement(float dt) {
 	position.z += velocity.z * dt;
 	collision(0, 0, velocity.z);
 }
+
+void Camera::raycast() {
+	vec3 origin = position;
+	vec3 dir = direction;
+	float block_size = 0.5f;
+	vec3 delta = { //unit step size in x, z, and y axis
+		abs(1.0f / dir.x),
+		abs(1.0f / dir.y),
+		abs(1.0f / dir.z),
+	};
+	vec3 ray_length, step;
+	vec3 current = floor(origin);
+	if (dir.x < 0) {
+		step.x = -1;
+		ray_length.x = (origin.x - current.x) * delta.x; // dist with neighbor
+	}
+	else {
+		step.x = 1;
+		ray_length.x = (current.x + 1 - origin.x) * delta.x;
+	}
+	if (dir.y < 0) {
+		step.y = -1;
+		ray_length.y = (origin.y - current.y) * delta.y;
+	}
+	else {
+		step.y = 1;
+		ray_length.y = (current.y + 1 - origin.y) * delta.y;
+	}
+	if (dir.z < 0) {
+		step.z = -1;
+		ray_length.z = (origin.z - current.z) * delta.z;
+	}
+	else {
+		step.z = 1;
+		ray_length.z = (current.z + 1 - origin.z) * delta.z;
+	}
+
+	float dist = 0.0f;
+	while (dist < max_ray_length) {
+		Block* block = cm.get_block_worldspace(current);
+		if (block != nullptr) {
+			hovered_block = block;
+			if (block->type != none) {
+				return;
+			}
+		}
+
+		//increment in the direction that ray's ray_length is shorter
+		if (ray_length.x < ray_length.y) {
+			if (ray_length.x < ray_length.z) {
+				//horizontal step in x-axis
+				current.x += step.x;
+				dist = ray_length.x;
+				ray_length.x += delta.x;
+			}
+			else {
+				//horizontal step in z-axis
+				current.z += step.z;
+				dist = ray_length.z;
+				ray_length.z += delta.z;
+			}
+		}
+		else {
+			if (ray_length.z < ray_length.y) {
+				//horizontal step in z-axis
+				current.z += step.z;
+				dist = ray_length.z;
+				ray_length.z += delta.z;
+			}
+			else {
+				//vertical step in y-axis
+				current.y += step.y;
+				dist = ray_length.y;
+				ray_length.y += delta.y;
+			}
+		}
+	}
+}
+
+
 
 //handles player's collision with blocks (aabb collision logic)
 void Camera::collision(float vx, float vy, float vz) {
