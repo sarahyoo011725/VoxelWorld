@@ -53,7 +53,7 @@ $env:PATH = "$env:VCPKG_ROOT;$env:PATH"
 After installing **vcpkg** you can build project:
 ```PowerShell
 git clone --recursive https://github.com/sarahyoo011725/VoxelWorld.git
-cd VoxelCore
+cd VoxelWorld
 cmake --preset default-vs-msvc-windows
 cmake --build --preset default-vs-msvc-windows
 ```
