@@ -1,5 +1,20 @@
 # Voxel World
 
+## 🖱️Mouse and ⌨️Keyboard Controls
+### 🎮 Basic Controls
+- **W / A / S / D** – Move the player (forward, left, backward, right)
+- **Spacebar** – Jump
+
+### 🖱 Mouse Actions
+- **Left Click** – Break (destroy) the targeted block
+- **Right Click** – Place a block at the targeted location
+
+### 🔧 Toggle Features
+- **[1]** – Toggle **wireframe mode** (visualize mesh edges)
+- **[2]** – Toggle **physics simulation** on/off
+- **[3]** – Toggle **block highlight** for hovered block
+- **[4]** – Toggle **background music**
+
 ## Feature Overview
 - texture atlansing
 - face culling
