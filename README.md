@@ -10,6 +10,7 @@
 - **Right Click** – Place a block at the targeted location
 
 ### 🔧 Toggle Features
+- **Control** - Toggle **speed up** on/off
 - **[1]** – Toggle **wireframe mode** (visualize mesh edges)
 - **[2]** – Toggle **physics simulation** on/off
 - **[3]** – Toggle **block highlight** for hovered block
