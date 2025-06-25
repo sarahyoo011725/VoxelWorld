@@ -102,9 +102,11 @@ void process_inputs(GLFWwindow *window) {
 void focus_callback(GLFWwindow* window, int focused) {
 	if (focused) {
 		on_window_focused(window);
+		window_refocused = true;
 	}
 	else {
 		unfocus_window(window);
+		window_refocused = false;
 	}
 }
 

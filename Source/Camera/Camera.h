@@ -24,13 +24,16 @@ struct WindowSetting {
 	bool window_active;
 };
 
+namespace {
+	static bool window_refocused = false;
+}
+
 /*
 * Camera or Player class that handles physics, collision, block interaction, and updates view
 */
 class Camera: public GameObject
 {
 public:
-	//bool window_refocused = false; //TODO: prevent cam view jump on window re-focus
 	Camera(WindowSetting *setting, vec3 position);
 	void update();
 	void update_matrix(int world_shader_id);

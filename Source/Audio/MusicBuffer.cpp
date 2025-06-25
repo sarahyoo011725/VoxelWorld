@@ -79,7 +79,7 @@ void MusicBuffer::update_buffer_stream()
 	ALint processed, state;
 
 	// clear error 
-	//alGetError();
+	alGetError();
 	/* Get relevant source info */
 	alGetSourcei(p_Source, AL_SOURCE_STATE, &state);
 	alGetSourcei(p_Source, AL_BUFFERS_PROCESSED, &processed);

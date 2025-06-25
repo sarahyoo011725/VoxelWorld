@@ -160,13 +160,13 @@ void Camera::block_interaction() {
 void Camera::update_mouse() {
 	glfwGetCursorPos(window_setting->window, &mouse_xpos, &mouse_ypos);
 	//prevents sudden view jump when window_setting->window re-focued
-	/*
+	
 	if (window_refocused) {
 		mouse_xpos = last_xpos;
 		mouse_ypos = last_ypos;
 		window_refocused = false;
 	}
-	*/
+	
 	float x_offset = last_xpos - mouse_xpos;
 	float y_offset = mouse_ypos - last_ypos;
 	last_xpos = mouse_xpos;
