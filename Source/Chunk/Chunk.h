@@ -49,7 +49,7 @@ private:
 	Block*** blocks;
 	int** get_heightmap();
 	void add_face(block_face face, block_type type, vec3 local_coord);
-	void add_face_indices(bool has_transparency, bool is_water);
+	void update_face_indices(bool has_transparency, bool is_water);
 	void update_nonblock_structure_vertices_and_indices();
 	void update_buffers_data();
 public:

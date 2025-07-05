@@ -185,7 +185,7 @@ void Chunk::update_nonblock_structure_vertices_and_indices() {
 		for (int i = 1; i <= e.second.size(); ++i) {
 			transp_vertices.push_back(e.second[i - 1]);
 			if (i > 1 && i % 4 == 0) {
-				add_face_indices(true, false);
+				update_face_indices(true, false);
 			}
 		}
 	}
@@ -195,7 +195,7 @@ void Chunk::update_nonblock_structure_vertices_and_indices() {
 	only used for block objects.
 	updates and adds indices for either transparent or opaque types of blocks
 */
-void Chunk::add_face_indices(bool has_transparency, bool is_water) {
+void Chunk::update_face_indices(bool has_transparency, bool is_water) {
 	if (is_water) {
 		GLuint base_index = water_vertices.size() - 4; 
 		water_indices.push_back(base_index);
@@ -233,28 +233,46 @@ void Chunk::add_face_indices(bool has_transparency, bool is_water) {
 */
 void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 	if (texture_map.find(type) == texture_map.end()) return; //a type is not in texture map if it is a structure that is not cube i.e. grass
-	vector<vertex> verts = face_map[face];
 	vec2 texture_coord = texture_map[type][face];
-	bool transparency = has_transparency(type);
 
-	//transforms vertices
-	for (int i = 0; i < verts.size(); ++i) {
-		vertex v = verts[i];
-		v.position += local_coord + world_position + vec3(-1, 0, -1); //subtract 1 to adjust chunk position due to boundaries
-		v.texture = convert_to_uv(i, texture_coord);
-		if (transparency) {
-			if (type == water) {
-				water_vertices.push_back(v);
+	if (type == water) {
+		vector<vertex> cw_verts = cw_face_map[face];
+		for (int i = 0; i < cw_verts.size(); ++i) {
+			vertex v = cw_verts[i];
+			v.position += local_coord + world_position + vec3(-1, 0, -1); 
+			v.texture = convert_to_uv(i, texture_coord);
+			water_vertices.push_back(v);
+		}
+		update_face_indices(true, true);
+
+		vector<vertex> ccw_verts = ccw_face_map[face];
+		for (int i = 0; i < ccw_verts.size(); ++i) {
+			vertex v = ccw_verts[i];
+			v.position += local_coord + world_position + vec3(-1, 0, -1); 
+			v.texture = convert_to_uv(i, texture_coord);
+			water_vertices.push_back(v);
+		}
+		update_face_indices(true, true);
+	}
+	else {
+		vector<vertex> verts = cw_face_map[face];
+		bool transparency = has_transparency(type);
+
+		//transforms vertices
+		for (int i = 0; i < verts.size(); ++i) {
+			vertex v = verts[i];
+			v.position += local_coord + world_position + vec3(-1, 0, -1); //subtract 1 to adjust chunk position due to boundaries
+			v.texture = convert_to_uv(i, texture_coord);
+			if (transparency) {
+				transp_vertices.push_back(v);
+				
 			}
 			else {
-				transp_vertices.push_back(v);
+				opaque_vertices.push_back(v);
 			}
 		}
-		else {
-			opaque_vertices.push_back(v);
-		}
+		update_face_indices(transparency, false);
 	}
-	add_face_indices(transparency, type == water);
 }
 
 /*

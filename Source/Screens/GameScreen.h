@@ -35,8 +35,8 @@ public:
 		glEnable(GL_DEPTH_TEST);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_BLEND);
-		//my vertices are winded in counter wise for the front face.
-		//glCullFace is set to cull back face and glFrontFace is CCW by default. So, I tell gl that front faces are winded in counter wise.
+		//my front face vertices are winded in clock wise (CW).
+		//glCullFace is set to cull back face with glFrontFace being counter-clock wise (CCW) by default. So, I tell GL that front faces are winded in clock wise (CW).
 		glEnable(GL_CULL_FACE);
 		glFrontFace(GL_CW);
 		gl_setting_done = true;

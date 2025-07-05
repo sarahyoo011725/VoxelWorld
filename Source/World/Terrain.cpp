@@ -35,7 +35,6 @@ void Terrain::update() {
 		}
 	}
 
-	//TODO: fix mesh crossing chunk
 	for (Chunk* c : visible_chunks) {
 		if (!c->has_built) {
 			spawn_structures(c);

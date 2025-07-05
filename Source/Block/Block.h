@@ -107,8 +107,8 @@ namespace {
 		return vec2(-1, -1); //invalid index
 	}
 
-	//a face map of vertices and texture coordinates for a cube
-	static map<block_face, vector<vertex>> face_map = {
+	//a front face map of vertices and texture coordinates for a cube, winded in clock wise
+	static map<block_face, vector<vertex>> cw_face_map = {
 		{Front, {
 			{vec3(-0.5, 0.5, 0.5),  vec2(0.0, 1.0)},
 			{vec3(0.5, 0.5, 0.5),	vec2(1.0, 1.0)},
@@ -144,6 +144,46 @@ namespace {
 			{vec3(-0.5,-0.5,-0.5),	vec2(1.0, 1.0)},
 			{vec3(-0.5, -0.5, 0.5),	vec2(1.0, 0.0)},
 			{vec3(0.5, -0.5, 0.5),	vec2(0.0, 0.0)},
+		}},
+	};
+
+	//back face map of vertices and texture coordinates for a cube, winded in counter-clock wise.
+	static map<block_face, vector<vertex>> ccw_face_map = {
+		{Front, {
+			{vec3(0.5, 0.5, 0.5),	vec2(1.0, 1.0)},
+			{vec3(-0.5, 0.5, 0.5),  vec2(0.0, 1.0)},
+			{vec3(-0.5,-0.5, 0.5),	vec2(0.0, 0.0)},
+			{vec3(0.5, -0.5, 0.5),	vec2(1.0, 0.0)},
+		}},
+		{Back, {
+			{vec3(-0.5, 0.5,-0.5),	vec2(1.0, 1.0)},
+			{vec3(0.5, 0.5, -0.5) ,	vec2(0.0, 1.0)},
+			{vec3(0.5,-0.5, -0.5),	vec2(0.0, 0.0)},
+			{vec3(-0.5,-0.5,-0.5),	vec2(1.0, 0.0)},
+		}},
+		{Left, {
+			{vec3(-0.5, 0.5, 0.5),	vec2(1.0, 1.0)},
+			{vec3(-0.5, 0.5, -0.5),	vec2(0.0, 1.0)},
+			{vec3(-0.5, -0.5,-0.5),	vec2(0.0, 0.0)},
+			{vec3(-0.5, -0.5, 0.5),	vec2(1.0, 0.0)},
+		}},
+		{Right, {
+			{vec3(0.5, 0.5, -0.5),	vec2(1.0, 1.0)},
+			{vec3(0.5, 0.5, 0.5),	vec2(0.0, 1.0)},
+			{vec3(0.5, -0.5, 0.5),	vec2(0.0, 0.0)},
+			{vec3(0.5,-0.5, -0.5),	vec2(1.0, 0.0)},
+		}},
+		{Top, {
+			{vec3(0.5, 0.5, -0.5),	vec2(1.0, 1.0)},
+			{vec3(-0.5, 0.5,-0.5),	vec2(0.0, 1.0)},
+			{vec3(-0.5, 0.5, 0.5),	vec2(0.0, 0.0)},
+			{vec3(0.5, 0.5, 0.5),	vec2(1.0, 0.0)},
+		}},
+		{Bottom, {
+			{vec3(-0.5,-0.5,-0.5),	vec2(1.0, 1.0)},
+			{vec3(0.5, -0.5, -0.5), vec2(0.0, 1.0)},
+			{vec3(0.5, -0.5, 0.5),	vec2(0.0, 0.0)},
+			{vec3(-0.5, -0.5, 0.5),	vec2(1.0, 0.0)},
 		}},
 	};
 }
