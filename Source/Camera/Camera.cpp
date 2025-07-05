@@ -3,7 +3,8 @@
 /*
 	initializes instance variables, sets up VAOs
 */
-Camera::Camera(WindowSetting *setting, vec3 position) : cm(ChunkManager::get_instance()), sg(StructureGenerator::get_instance()), window_setting(setting) {
+Camera::Camera(WindowSetting *setting, vec3 position) 
+: cm(ChunkManager::get_instance()), sg(StructureGenerator::get_instance()), sm(ShaderManager::get_instance()), window_setting(setting) {
 	size = vec3(1, 2, 1);
 	this->position = position;
 	//sets last cursor position to be at the center of the window_setting->window
@@ -25,6 +26,15 @@ void Camera::update() {
 	float frame = (float)glfwGetTime();
 	dt = frame - last_frame;
 	last_frame = frame;
+
+	update_matrix();
+
+	sm.default_shader.activate();
+	send_matrix(sm.default_shader.id);
+
+	sm.wave_shader.activate();
+	glUniform1f(glGetUniformLocation(sm.wave_shader.id, "time"), frame);
+	send_matrix(sm.wave_shader.id);
 
 	update_other_inputs();
 	update_mouse();
@@ -65,22 +75,26 @@ bool Camera::is_ground() {
 	return block != nullptr && is_solid(block->type);
 }
 
+void Camera::send_matrix(GLuint shader_id) {
+	glUniformMatrix4fv(glGetUniformLocation(shader_id, "cam_matrix"), 1, GL_FALSE, value_ptr(mat));
+}
+
 /*
-	updates camera projection * view matrix and sends to the world shader
+	updates camera projection * view matrix 
 */
-void Camera::update_matrix(int shader_id) {
+void Camera::update_matrix() {
 	view = lookAt(position, position + direction, up);
 	projection = perspective(radians(fov_degrees), (float)window_setting->width / window_setting->height, near_plane, far_plane);
-	glUniformMatrix4fv(glGetUniformLocation(shader_id, "cam_matrix"), 1, GL_FALSE, value_ptr(projection * view));
+	mat = projection * view;
 }
 
 /*
 	draws 2D HUD components like crosshair
 */
 void Camera::draw_HUDs() {
-	HUD_shader.activate();
-	glUniform1i(glGetUniformLocation(HUD_shader.id, "use_texture"), GL_FALSE);
-	glUniform4fv(glGetUniformLocation(HUD_shader.id, "color"), 1, value_ptr(crosshair_color));
+	sm.HUD_shader.activate();
+	glUniform1i(glGetUniformLocation(sm.HUD_shader.id, "use_texture"), GL_FALSE);
+	glUniform4fv(glGetUniformLocation(sm.HUD_shader.id, "color"), 1, value_ptr(crosshair_color));
 	//draw crosshair
 	HUD_vao.bind();
 	glLineWidth(1.0);
@@ -93,9 +107,9 @@ void Camera::draw_HUDs() {
 void Camera::draw_outlines() {
 	if (!enable_outline) return;
 	//outlines are must be drawn after activating the shader
-	outline_shader.activate();
+	sm.outline_shader.activate();
 	outline_vao.bind();
-	update_matrix(outline_shader.id);  //must be sent to the shader
+	send_matrix(sm.outline_shader.id);  //must be sent to the shader
 	outline_hovered_cube();
 }
 
@@ -106,8 +120,8 @@ void Camera::outline_hovered_cube() {
 	if (hovered_block == nullptr) return;
 	//sends cube model and outline color to the outline shader
 	mat4 cube_model = translate(mat4(1.0), hovered_block->position);
-	glUniformMatrix4fv(glGetUniformLocation(outline_shader.id, "cube_model"), 1, GL_FALSE, value_ptr(cube_model));
-	glUniform4fv(glGetUniformLocation(outline_shader.id, "color"), 1, value_ptr(hovered_block_outline_color));
+	glUniformMatrix4fv(glGetUniformLocation(sm.outline_shader.id, "cube_model"), 1, GL_FALSE, value_ptr(cube_model));
+	glUniform4fv(glGetUniformLocation(sm.outline_shader.id, "color"), 1, value_ptr(hovered_block_outline_color));
 
 	//draw cube outline
 	glDisable(GL_DEPTH_TEST); //keeps the cube outline visible
@@ -345,8 +359,6 @@ void Camera::raycast() {
 	}
 }
 
-
-
 /*
 	handles the player's collision with blocks (AABB collision check)
 */
@@ -414,7 +426,7 @@ void Camera::collision(float vx, float vy, float vz) {
 			velocity.x = 0;
 		}
 	}
-	//checks if any solid bloccks are touchign the player's right side at any vertical level
+	//checks if any solid blocks are touching the player's right side at any vertical level
 	if (is_solid(cm.get_block_worldspace(vec3(x2, y3, z3))) || is_solid(cm.get_block_worldspace(vec3(x2, y3, z4))) || //right-bottom-back || right-bottom-front
 		is_solid(cm.get_block_worldspace(vec3(x2, y4, z3))) || is_solid(cm.get_block_worldspace(vec3(x2, y4, z4))) || //right-top-back || right-top-front
 		is_solid(cm.get_block_worldspace(vec3(x2, y5, z3))) || is_solid(cm.get_block_worldspace(vec3(x2, y5, z4)))) { //right-middle-back || right-middle-front

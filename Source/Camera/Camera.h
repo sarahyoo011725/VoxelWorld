@@ -10,7 +10,7 @@
 #include "Buffers/VAO.h"
 #include "Buffers/VBO.h"
 #include "Buffers/EBO.h"
-#include "Shader/Shader.h"
+#include "Shader/ShaderManager.h"
 #include "Entity/Geometries.h"
 #include "Audio/AudioManager.h"
 
@@ -36,11 +36,11 @@ class Camera: public GameObject
 public:
 	Camera(WindowSetting *setting, vec3 position);
 	void update();
-	void update_matrix(int world_shader_id);
 	void draw_outlines();
 	void draw_HUDs();
-
+	void send_matrix(GLuint shader_id);
 private:
+	void update_matrix();
 	void update_movement(float dt);
 	void update_mouse();
 	void update_other_inputs();
@@ -92,16 +92,16 @@ private:
 	vec3 up = vec3(0.0, 1.0, 0.0);
 	mat4 view = mat4(0.0);
 	mat4 projection = mat4(0.0);
+	mat4 mat = mat4(0.0);
 
 	//singleton helpers
 	ChunkManager& cm;
 	StructureGenerator& sg;
+	ShaderManager& sm;
 
 	//setups for outlining interacted block and 2D HUDs
-	vec4 crosshair_color = vec4(1.0); //white
 	vec4 hovered_block_outline_color = vec4(0.0, 1.0, 1.0, 1.0); //cyan
-	Shader outline_shader = Shader("Resources/Shaders/outline.vert", "Resources/Shaders/outline.frag");
-	Shader HUD_shader = Shader("Resources/Shaders/2d_component.vert", "Resources/Shaders/2d_component.frag");
+	vec4 crosshair_color = vec4(1.0); //white
 	VAO outline_vao = VAO(); //draws objects with lines, such as hitbox
 	VBO outline_vbo = VBO(cube_edges.data(), sizeof(vec3) * cube_edges.size(), GL_STATIC_DRAW);
 	VAO HUD_vao = VAO();  //draws 2d components, like crosshair and inventory box

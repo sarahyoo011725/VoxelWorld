@@ -5,7 +5,7 @@
 /*
 	initializes blocks array, define block types based on noise height map, and links VBOs attributes to VAOs
 */
-Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()) {
+Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManager::get_instance()) {
 	//add 1 to width and length to store neighbor chunks' block data in their edge
 	id = chunk_id;
 	world_position = vec3(chunk_id.x * chunk_size, 0, chunk_id.y * chunk_size);
@@ -57,6 +57,10 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()) {
 	transp_vao.bind();
 	transp_vao.link_attrib(transp_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 	transp_vao.link_attrib(transp_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
+
+	water_vao.bind();
+	water_vao.link_attrib(water_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
+	water_vao.link_attrib(water_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
 }
 
 /*
@@ -90,6 +94,8 @@ void Chunk::update_buffers_data() {
 	opaque_ebo.reset_indices(opaque_indices.data(), sizeof(GLuint) * opaque_indices.size(), GL_STATIC_DRAW);
 	transp_vbo.reset_vertices(transp_vertices.data(), sizeof(vertex) * transp_vertices.size(), GL_STATIC_DRAW);
 	transp_ebo.reset_indices(transp_indices.data(), sizeof(GLuint) * transp_indices.size(), GL_STATIC_DRAW);
+	water_vbo.reset_vertices(water_vertices.data(), sizeof(vertex) * water_vertices.size(), GL_STATIC_DRAW);
+	water_ebo.reset_indices(water_indices.data(), sizeof(GLuint) * water_indices.size(), GL_STATIC_DRAW);
 }
 
 /*
@@ -97,6 +103,7 @@ void Chunk::update_buffers_data() {
 	Opaque objects must be drawn before transparent objects 
 */
 void Chunk::draw_opaque_blocks() {
+	sm.default_shader.activate();
 	opaque_vao.bind();
 	opaque_ebo.bind();
 	glDrawElements(GL_TRIANGLES, opaque_indices.size(), GL_UNSIGNED_INT, 0);
@@ -107,9 +114,17 @@ void Chunk::draw_opaque_blocks() {
 	Transparent objects must be drawn after opaque objects
 */
 void Chunk::draw_transparent_blocks() {
+	sm.default_shader.activate();
 	transp_vao.bind();
 	transp_ebo.bind();
 	glDrawElements(GL_TRIANGLES, transp_indices.size(), GL_UNSIGNED_INT, 0);
+}
+
+void Chunk::draw_water() {
+	sm.wave_shader.activate();
+	water_vao.bind();
+	water_ebo.bind();
+	glDrawElements(GL_TRIANGLES, water_indices.size(), GL_UNSIGNED_INT, 0);
 }
 
 /*
@@ -170,7 +185,7 @@ void Chunk::update_nonblock_structure_vertices_and_indices() {
 		for (int i = 1; i <= e.second.size(); ++i) {
 			transp_vertices.push_back(e.second[i - 1]);
 			if (i > 1 && i % 4 == 0) {
-				add_face_indices(true);
+				add_face_indices(true, false);
 			}
 		}
 	}
@@ -180,7 +195,17 @@ void Chunk::update_nonblock_structure_vertices_and_indices() {
 	only used for block objects.
 	updates and adds indices for either transparent or opaque types of blocks
 */
-void Chunk::add_face_indices(bool has_transparency) {
+void Chunk::add_face_indices(bool has_transparency, bool is_water) {
+	if (is_water) {
+		GLuint base_index = water_vertices.size() - 4; 
+		water_indices.push_back(base_index);
+		water_indices.push_back(base_index + 1);
+		water_indices.push_back(base_index + 2);
+		water_indices.push_back(base_index + 2);
+		water_indices.push_back(base_index + 3);
+		water_indices.push_back(base_index);
+		return;
+	}
 	if (has_transparency) {
 		GLuint base_index = transp_vertices.size() - 4; //ensures base_index to start at 0
 		//indices are added in: 0 -> 1 -> 2  (one triangle) --> 2 -> 3 -> 0 (another triangle)
@@ -218,23 +243,30 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 		v.position += local_coord + world_position + vec3(-1, 0, -1); //subtract 1 to adjust chunk position due to boundaries
 		v.texture = convert_to_uv(i, texture_coord);
 		if (transparency) {
-			transp_vertices.push_back(v);
+			if (type == water) {
+				water_vertices.push_back(v);
+			}
+			else {
+				transp_vertices.push_back(v);
+			}
 		}
 		else {
 			opaque_vertices.push_back(v);
 		}
 	}
-	add_face_indices(transparency);
+	add_face_indices(transparency, type == water);
 }
 
 /*
 	rebuilds chunk, emptying all vertices and indices of chunk
 */
 void Chunk::rebuild_chunk() {
-	transp_vertices.clear();
-	transp_indices.clear();
 	opaque_vertices.clear();
 	opaque_indices.clear();
+	transp_vertices.clear();
+	transp_indices.clear();
+	water_vertices.clear();
+	water_indices.clear();
 
 	build_chunk();
 	should_rebuild = false;

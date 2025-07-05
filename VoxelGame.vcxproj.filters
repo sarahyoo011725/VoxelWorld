@@ -93,6 +93,9 @@
     <ClInclude Include="Source\World\ChunkManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Source\Shader\ShaderManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="README.md" />
@@ -106,16 +109,22 @@
     <None Include="Resources\Shaders\2d_component.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Resources\Shaders\world.frag">
+    <None Include="Resources\Shaders\default.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="Resources\Shaders\world.vert">
+    <None Include="Resources\Shaders\default.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
     <None Include="Resources\Shaders\outline.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
     <None Include="Resources\Shaders\outline.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\wave.vert">
+      <Filter>Resource Files\Shaders</Filter>
+    </None>
+    <None Include="Resources\Shaders\wave.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
   </ItemGroup>

@@ -53,6 +53,7 @@ void Terrain::update() {
 	//TODO: sort transparent geometries and draw them in order from furthest to closest to player
 	for (Chunk* c : visible_chunks) {
 		c->draw_transparent_blocks();
+		c->draw_water();
 	}
 
 	visible_chunks.clear();

@@ -1,5 +1,5 @@
 #pragma once
-#include "Shader/Shader.h"
+#include "Shader/ShaderManager.h"
 #include "Texture/Texture.h"
 #include "Camera/Camera.h"
 #include "World/Terrain.h"
@@ -11,18 +11,20 @@
 */
 class GameScreen {
 private:
+	ShaderManager& sm;
+
 	WindowSetting *window_setting;
 	Camera cam;
 	Terrain terrain;
-	Shader shader = Shader("Resources/Shaders/world.vert", "Resources/Shaders/world.frag");
 	Texture texture = Texture("Resources/Textures/texture_atlas.png", GL_TEXTURE_2D, GL_TEXTURE1, GL_RGBA, GL_UNSIGNED_BYTE);
 	bool wireframe = false;
 	bool enable_music = true;
 	bool gl_setting_done = false;
 public:
 	GameScreen(WindowSetting *setting) 
-	: window_setting(setting), cam(Camera(setting, vec3(0, 60, 0))), terrain(Terrain(cam.position)) {
-		texture.set_unit(shader, "texture1", 1);
+	: window_setting(setting), cam(Camera(setting, vec3(0, 60, 0))), terrain(Terrain(cam.position)), sm(ShaderManager::get_instance()) {
+		texture.set_unit(sm.default_shader, "texture1", 1);
+		texture.set_unit(sm.wave_shader, "texture1", 1);
 	}
 
 	/*
@@ -68,23 +70,13 @@ public:
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		}
 
-		shader.activate();
 		texture.activate(GL_TEXTURE1);
 		texture.bind();
-		terrain.update(); //must called after world shader is activated
+		terrain.update(); 
 		if (window_setting->window_active) {
 			cam.update();
 		}
-		cam.update_matrix(shader.id);
 		cam.draw_outlines();
 		cam.draw_HUDs();
-	}
-
-	/*
-	* destroys shader and texture
-	*/
-	void destroy() {
-		shader.destroy();
-		texture.destroy();
 	}
 };
