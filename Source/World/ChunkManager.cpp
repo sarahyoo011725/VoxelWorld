@@ -65,21 +65,14 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 		}
 	}
 
-	//TODO: fix structure generation across chunks edge issue
-	if (local_coord.x == 0 || local_coord.x == 1 || local_coord.x == 15 || local_coord.x == 16 ||
-		local_coord.z == 0 || local_coord.z == 1 || local_coord.z == 15 || local_coord.z == 16) {
+	if (local_coord.x == 1 || local_coord.x == 16) {
 		ivec2 offset = ivec2(0.0);
-		offset.x = (local_coord.x == 0 || local_coord.x == 1) ? -1 : (local_coord.x == 15 || local_coord.x == 16) ? 1 : 0;
-		offset.y = (local_coord.z == 0 || local_coord.z == 1) ? -1 : (local_coord.z == 15 || local_coord.z == 16) ? 1 : 0;
-
-		//if (offset.x != 0 && offset.y != 0) return;
+		offset.x = (local_coord.x == 1) ? -1 : 1;
 
 		ivec2 adj_id = chunk_id + offset;
 
-		ivec3 adj_local_coord;
-		adj_local_coord.x = (local_coord.x == 0) ? 15 : (local_coord.x == 1) ? 16 : (local_coord.x == 15) ? 0 : (local_coord.x == 16) ? 1 : local_coord.x;
-		adj_local_coord.y = local_coord.y;
-		adj_local_coord.z = (local_coord.z == 0) ? 15 : (local_coord.z == 1) ? 16 : (local_coord.z == 15) ? 0 : (local_coord.z == 16) ? 1 : local_coord.z;
+		ivec3 adj_local_coord = local_coord;
+		adj_local_coord.x = (local_coord.x == 1) ? 17 : 0;
 
 		auto adj = chunks.find(adj_id);
 		if (adj != chunks.end()) {
@@ -91,6 +84,25 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 		}
 	}
 	
+	if (local_coord.z == 1 || local_coord.z == 16) {
+		ivec2 offset = ivec2(0.0);
+		offset.y = (local_coord.z == 1) ? -1 : 1;
+
+		ivec2 adj_id = chunk_id + offset;
+
+		ivec3 adj_local_coord = local_coord;
+		adj_local_coord.z = (local_coord.z == 1) ? 17 : 0;
+
+		auto adj = chunks.find(adj_id);
+		if (adj != chunks.end()) {
+			adj->second.set_block(adj_local_coord, type);
+			adj->second.should_rebuild = true;
+		}
+		else {
+			unloaded_blocks[adj_id].push_back({ adj_local_coord, type });
+		}
+	}
+
 	return true;
 }
 

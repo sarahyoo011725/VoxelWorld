@@ -61,8 +61,8 @@ namespace {
 	float get_noise(int x, int z) {
 		return m_noise.GetNoise((float)x, (float)z);
 	}
-
-	//formats a world space coordiate into a chunk ID
+	
+	//formats a world space coordinate into a chunk ID
 	ivec2 get_chunk_origin(vec3 world_coord) {
 		ivec2 chunk_origin = {
 			floor(world_coord.x / chunk_size),
@@ -92,14 +92,14 @@ namespace {
 
 	/*
 		converts a world space coordinate into a local space coordinate.
-		returning range: from 0 to 15 (which is chunk_size - 1)
+		returning range: from 0 to 15 (which is owned coordinates)
 	*/
 	ivec3 world_to_local_coord(vec3 world_coord) {
 		ivec2 chunk_origin = get_chunk_origin(world_coord);
 		ivec3 local_coord  = {
-			static_cast<int> (floor(world_coord.x - chunk_origin.x * 16 )), 
+			floor(world_coord.x - chunk_origin.x * chunk_size) + 1, 
 			floor(world_coord.y),
-			static_cast<int> (floor(world_coord.z - chunk_origin.y * 16 ))
+			floor(world_coord.z - chunk_origin.y * chunk_size) + 1
 		};
 		return local_coord;
 	}

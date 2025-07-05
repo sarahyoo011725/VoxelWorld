@@ -9,9 +9,9 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()) {
 	//add 1 to width and length to store neighbor chunks' block data in their edge
 	id = chunk_id;
 	world_position = vec3(chunk_id.x * chunk_size, 0, chunk_id.y * chunk_size);
-	width = chunk_size + 1;
-	height = 100 + 1;
-	length = chunk_size + 1;
+	width = chunk_size + 2;
+	height = 50;
+	length = chunk_size + 2;
 
 	//TODO: optimize blocks initialization
 	blocks = new Block * *[width];
@@ -45,10 +45,11 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()) {
 					type = sand;
 				}
 				blocks[x][y][z].type = type;
-				blocks[x][y][z].position = world_position + vec3(x, y, z); //needed for collision check
+				blocks[x][y][z].position = world_position + vec3(x - 1, y, z - 1); //needed for collision check
 			}
 		}
 	}
+
 	opaque_vao.bind();
 	opaque_vao.link_attrib(opaque_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0); //vertex positions coords
 	opaque_vao.link_attrib(opaque_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float))); //vertex texture coords
@@ -66,13 +67,14 @@ int** Chunk::get_heightmap() {
 	for (int x = 0; x < width; ++x) {
 		map[x] = new int[length];
 	}
+
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
 			//get a block's world coords
-			int x_pos = world_position.x + x;
-			int z_pos = world_position.z + z;
+			int x_pos = world_position.x + x - 1;
+			int z_pos = world_position.z + z - 1;
 			int height_val = abs(static_cast<int> (get_noise(x_pos, z_pos) * 20)) + 4;
-			if (height_val > height + 1) height_val = height;
+			if (height_val > height) height_val = height;
 			map[x][z] = height_val;
 		}
 	}
@@ -92,7 +94,7 @@ void Chunk::update_buffers_data() {
 
 /*
 	draws opaque objects.
-	Opaque objects must be drawn before trasparent objects 
+	Opaque objects must be drawn before transparent objects 
 */
 void Chunk::draw_opaque_blocks() {
 	opaque_vao.bind();
@@ -102,7 +104,7 @@ void Chunk::draw_opaque_blocks() {
 
 /*
 	draws objects with transparency.
-	Trasparet objects must be drawn after opaque objects
+	Transparent objects must be drawn after opaque objects
 */
 void Chunk::draw_transparent_blocks() {
 	transp_vao.bind();
@@ -143,7 +145,7 @@ void Chunk::set_block(ivec3 local_coord, block_type type) {
 /*
 	adds vertices of a non-block structure, telling to spawn the structure at the designated local coordinate.
 	non-block structures are drawn after all blocks are drawn.
-	To efficeintly add/remove non-block structures, use the local coordinate as the structure's unique ID within a chunk.
+	To efficiently add/remove non-block structures, use the local coordinate as the structure's unique ID within a chunk.
 */
 void Chunk::add_nonblock_structure_vertices(ivec3 local_coord, vector<vertex> vertices) {
 	const auto& structure = nonblock_structure_vertices.find(local_coord);
@@ -153,7 +155,7 @@ void Chunk::add_nonblock_structure_vertices(ivec3 local_coord, vector<vertex> ve
 }
 
 /*
-	remove non-block structre at a local coordinate
+	remove non-block structure at a local coordinate
 */
 void Chunk::remove_structure(ivec3 local_coord) {
 	nonblock_structure_vertices.erase(local_coord);
@@ -202,9 +204,9 @@ void Chunk::add_face_indices(bool has_transparency) {
 
 /*
 	used to construct a chunk mesh and only for block type objects.
-	pushes the new vertices to opaque or transparet vertices based on the block type's transparency
+	pushes the new vertices to opaque or transparent vertices based on the block type's transparency
 */
-void Chunk::add_face(block_face face, block_type type, vec3 pos) {
+void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 	if (texture_map.find(type) == texture_map.end()) return; //a type is not in texure map if it is a structure that is not cube i.e. grass
 	vector<vertex> verts = face_map[face];
 	vec2 texture_coord = texture_map[type][face];
@@ -213,7 +215,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 pos) {
 	//transforms vertices
 	for (int i = 0; i < verts.size(); ++i) {
 		vertex v = verts[i];
-		v.position += pos + world_position;
+		v.position += local_coord + world_position + vec3(-1, 0, -1); //subtract 1 to adjust chunk position due to boundaries
 		v.texture = convert_to_uv(i, texture_coord);
 		if (transparency) {
 			transp_vertices.push_back(v);
@@ -244,50 +246,35 @@ void Chunk::rebuild_chunk() {
 	lastly sets has_built to be true.
 */
 void Chunk::build_chunk() {
-	for (int x = 0; x < width ; ++x) {
-		for (int z = 0; z < length; ++z) {
+	//check x and z from 1 to 16 (boundaries at 0 and 17)
+	for (int x = 1; x < width - 1; ++x) {
+		for (int z = 1; z < length - 1; ++z) {
 			for (int y = 0; y < height; ++y) {
-				if (blocks[x][y][z].type == none) {
+				const Block &current = blocks[x][y][z];
+				if (current.type == none) {
 					continue;
 				}
 				int h = height_map[x][z];
-				bool am_i_transparent = has_transparency(blocks[x][y][z].type);
-				vec3 pos = vec3(x, y, z);
-				block_type type = blocks[x][y][z].type;
-				//TODO: I will make this look better in some days lol
-				if (
-					(x == 1 && (blocks[0][y][z].type == none || has_transparency(blocks[0][y][z].type) && !am_i_transparent))||
-					(x > 0 && (blocks[x - 1][y][z].type == none || has_transparency(blocks[x - 1][y][z].type) && !am_i_transparent))
-				) {
+				bool am_i_transparent = has_transparency(current.type);
+				ivec3 pos = ivec3(x, y, z);
+				block_type type = current.type;
+
+				if (blocks[x - 1][y][z].type == none || has_transparency(blocks[x - 1][y][z].type) && !am_i_transparent) {
 					add_face(Left, type, pos);
 				}
-				if (
-					(y > 0 && (blocks[x][y - 1][z].type == none || has_transparency(blocks[x][y - 1][z].type) && !am_i_transparent))
-				) {
+				if (y > 0 && (blocks[x][y - 1][z].type == none || has_transparency(blocks[x][y - 1][z].type) && !am_i_transparent)) {
 					add_face(Bottom, type, pos);
 				}
-				if (
-					(z == 1 && (blocks[x][y][0].type == none || has_transparency(blocks[x][y][0].type) && !am_i_transparent)) ||
-					(z > 0 && (blocks[x][y][z - 1].type == none || has_transparency(blocks[x][y][z - 1].type) && !am_i_transparent))
-				) {
+				if (blocks[x][y][z - 1].type == none || has_transparency(blocks[x][y][z - 1].type) && !am_i_transparent) {
 					add_face(Back, type, pos);
 				}
-				if (
-					(x == width - 2 && (blocks[width - 1][y][z].type == none || has_transparency(blocks[width - 1][y][z].type) && !am_i_transparent)) ||
-					(x < width - 1 && (blocks[x + 1][y][z].type == none || has_transparency(blocks[x + 1][y][z].type) && !am_i_transparent))
-				) {
+				if (blocks[x + 1][y][z].type == none || has_transparency(blocks[x + 1][y][z].type) && !am_i_transparent) {
 					add_face(Right, type, pos);
 				}
-				if (
-					(y == height - 2 && (blocks[x][height - 1][z].type == none || has_transparency(blocks[x][height - 1][z].type) && !am_i_transparent)) ||
-					(y < height - 1 && (blocks[x][y + 1][z].type == none || has_transparency(blocks[x][y + 1][z].type) && !am_i_transparent))
-				) {
+				if (y < height - 1 && (blocks[x][y + 1][z].type == none || has_transparency(blocks[x][y + 1][z].type) && !am_i_transparent)) {
 					add_face(Top, type, pos);
 				}
-				if (
-					(z == length - 2 && (blocks[x][y][length - 1].type == none || has_transparency(blocks[x][y][length - 1].type) && !am_i_transparent)) ||
-					(z < length - 1 && (blocks[x][y][z + 1].type == none || has_transparency(blocks[x][y][z + 1].type) && !am_i_transparent))
-				) {
+				if (blocks[x][y][z + 1].type == none || has_transparency(blocks[x][y][z + 1].type) && !am_i_transparent) {
 					add_face(Front, type, pos);
 				}
 			}

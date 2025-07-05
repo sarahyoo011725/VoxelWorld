@@ -62,11 +62,11 @@ void Terrain::update() {
 	randomly spaws structure on a chunk
 */
 void Terrain::spawn_structures(Chunk* chunk) {
-	for (int x = 0; x < chunk_size; ++x) {
-		for (int z = 0; z < chunk_size; ++z) {
+	for (int x = 1; x < chunk_size + 1; ++x) {
+		for (int z = 1; z < chunk_size + 1; ++z) {
 			//convert local coords into world coord
-			int wx = chunk->world_position.x + x;
-			int wz = chunk->world_position.z + z;
+			int wx = chunk->world_position.x + x - 1;
+			int wz = chunk->world_position.z + z - 1;
 			int h = chunk->height_map[x][z];
 
 			//do not spawn anything in water
