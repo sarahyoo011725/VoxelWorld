@@ -61,7 +61,6 @@ cmake --build --preset default-vs-msvc-windows
 
 ## Dev TO-DOs
 - custom perlin noise
-- fix mesh generation across chunk
 - optimize storing block data: instead of storing all block types in an array, store them in a range. ex) a block in [1 ~ n] range is grass.
 - optimize storing music files (musics take a lot of space)
 - make raycasting align with crosshair
