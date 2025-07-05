@@ -29,7 +29,7 @@ public:
 };
 
 namespace {
-	//checks if a block type has a trasnparency
+	//checks if a block type has a transparency
 	bool has_transparency(block_type type) {
 		switch (type) {
 		case water:
@@ -41,7 +41,7 @@ namespace {
 		return false;
 	}
 
-	//checks if a block type has a trasnparency by passing a block pointer
+	//checks if a block type has a transparency by passing a block pointer
 	bool has_transparency(Block* block) {
 		if (block == nullptr) return false;
 		return has_transparency(block->type);
@@ -87,7 +87,7 @@ namespace {
 	* uv column & row range: 0 ~ 1.
 	* index: index of a vertex from a face vertices. 
 	* face left-top index: 0 / face right-top index: 1 / face right-bottom index: 2 / face left_bottom index = 3 (clockwise order)
-	* *** the unit for block data modifcation is face, which is a 2d square.
+	* *** the unit for block data modification is face, which is a 2d square.
 	*/
 	static vec2 convert_to_uv(int index, vec2 texture_coord) {
 		float x = texture_coord.x;

@@ -95,7 +95,7 @@ void Camera::draw_outlines() {
 	//outlines are must be drawn after activating the shader
 	outline_shader.activate();
 	outline_vao.bind();
-	update_matrix(outline_shader.id);  //must be sendt to the shader
+	update_matrix(outline_shader.id);  //must be sent to the shader
 	outline_hovered_cube();
 }
 
@@ -112,7 +112,7 @@ void Camera::outline_hovered_cube() {
 	//draw cube outline
 	glDisable(GL_DEPTH_TEST); //keeps the cube outline visible
 	glLineWidth(outline_thickness);
-	glDrawArrays(GL_LINES, 0, cube_edges.size()); //first: index where verticies are inserted, counts: # of vertices to draw the line(s)
+	glDrawArrays(GL_LINES, 0, cube_edges.size()); //first: index where vertices are inserted, counts: # of vertices to draw the line(s)
 	glEnable(GL_DEPTH_TEST);
 }
 
@@ -159,7 +159,7 @@ void Camera::block_interaction() {
 */
 void Camera::update_mouse() {
 	glfwGetCursorPos(window_setting->window, &mouse_xpos, &mouse_ypos);
-	//prevents sudden view jump when window_setting->window re-focued
+	//prevents sudden view jump when window_setting->window re-focused
 	
 	if (window_refocused) {
 		mouse_xpos = last_xpos;
@@ -348,7 +348,7 @@ void Camera::raycast() {
 
 
 /*
-	handles the player's collision with blocks (aabb collision check)
+	handles the player's collision with blocks (AABB collision check)
 */
 void Camera::collision(float vx, float vy, float vz) {
 	if (!enable_physics) return;
@@ -389,7 +389,7 @@ void Camera::collision(float vx, float vy, float vz) {
 	if (is_solid(cm.get_block_worldspace(vec3(x1, y2, z1))) || is_solid(cm.get_block_worldspace(vec3(x2, y2, z1))) ||
 		is_solid(cm.get_block_worldspace(vec3(x1, y2, z2))) || is_solid(cm.get_block_worldspace(vec3(x2, y2, z2)))) {
 		if (vy > 0) { //the player is jumping
-			position.y = y2 * block_size - p_top - 0.01; //locates the plyaer just below the blocks
+			position.y = y2 * block_size - p_top - 0.01; //locates the player just below the blocks
 			velocity.y = 0;
 		}
 	}
@@ -432,7 +432,7 @@ void Camera::collision(float vx, float vy, float vz) {
 			velocity.z = 0;
 		}
 	}
-	//checks if any blocks are touchig the player's front side at any vertical level
+	//checks if any blocks are touching the player's front side at any vertical level
 	if (is_solid(cm.get_block_worldspace(vec3(x3, y3, z2))) || is_solid(cm.get_block_worldspace(vec3(x4, y3, z2))) || //left-bottom-front || left-bottom-front
 		is_solid(cm.get_block_worldspace(vec3(x4, y4, z2))) || is_solid(cm.get_block_worldspace(vec3(x3, y4, z2))) || //right-top-front || left-top-front
 		is_solid(cm.get_block_worldspace(vec3(x3, y5, z2))) || is_solid(cm.get_block_worldspace(vec3(x4, y5, z2)))) { //left-middle-front || right-middle-front

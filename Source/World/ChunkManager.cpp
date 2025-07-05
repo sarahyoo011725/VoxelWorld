@@ -107,7 +107,7 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 }
 
 /*
-	finds and returns the pointer of a block at a world coordiate
+	finds and returns the pointer of a block at a world coordinate
 */
 Block* ChunkManager::get_block_worldspace(vec3 world_coord) {
 	ivec2 chunk_origin = get_chunk_origin(world_coord);

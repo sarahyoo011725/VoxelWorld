@@ -2,7 +2,7 @@
 #include <AL\alc.h>
 
 /// <summary>
-/// Singleton class that initilizes our sound hardware device and allows
+/// Singleton class that initializes our sound hardware device and allows
 /// us to change our listener values.
 /// </summary>
 
@@ -19,7 +19,7 @@ public:
 	void get_orientation(float& ori);
 	float get_gain();
 
-	void set_attunation(int key);
+	void set_attenuation(int key);
 	void set_location(const float& x, const float& y, const float& z);
 	void set_orientation(
 		const float& atx, const float& aty, const float& atz,

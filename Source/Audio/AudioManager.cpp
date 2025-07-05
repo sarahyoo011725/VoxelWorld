@@ -1,7 +1,7 @@
 #include "AudioManager.h"
 
 /*
-	plays a placing / breakig block sound effect based on the block type
+	plays a placing & breaking block sound effect based on the block type
 */
 void audio::play_block_sound_effect(block_type type) {
 	ALuint sound = -1;

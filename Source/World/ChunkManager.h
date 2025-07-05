@@ -57,7 +57,7 @@ namespace {
 	const static int chunk_size = 16;
 	const static int water_level = 10;
 
-	//get height hoise value at (x, z) in world space
+	//get height noise value at (x, z) in world space
 	float get_noise(int x, int z) {
 		return m_noise.GetNoise((float)x, (float)z);
 	}

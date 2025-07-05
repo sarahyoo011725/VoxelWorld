@@ -207,7 +207,7 @@ void Chunk::add_face_indices(bool has_transparency) {
 	pushes the new vertices to opaque or transparent vertices based on the block type's transparency
 */
 void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
-	if (texture_map.find(type) == texture_map.end()) return; //a type is not in texure map if it is a structure that is not cube i.e. grass
+	if (texture_map.find(type) == texture_map.end()) return; //a type is not in texture map if it is a structure that is not cube i.e. grass
 	vector<vertex> verts = face_map[face];
 	vec2 texture_coord = texture_map[type][face];
 	bool transparency = has_transparency(type);

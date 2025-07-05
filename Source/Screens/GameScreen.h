@@ -7,7 +7,7 @@
 #include <GLFW/glfw3.h>
 
 /*
-* a screen where voxel engien game is run
+* a screen where voxel engine game is run
 */
 class GameScreen {
 private:

@@ -19,10 +19,10 @@ void on_window_focused(GLFWwindow* window);
 void unfocus_window(GLFWwindow* window);
 
 int main() {
-	//initializees glfw libraries
+	//initializes GLFW libraries
 	glfwInit();
 
-	//specifies opengl version (3.3)
+	//specifies OpenGL version (3.3)
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	//gets access to modern features, not outdated ones.
@@ -82,7 +82,7 @@ void resize_window(GLFWwindow *window, int width, int height) {
 }
 
 /*
-* receives user inputs and executes behaviours
+* receives user inputs and executes behaviors
 */
 void process_inputs(GLFWwindow *window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
@@ -119,7 +119,7 @@ void on_window_focused(GLFWwindow* window) {
 }
 
 /*
-* a sub-function for focus_callback(). enables mouse curosr on window unfocused
+* a sub-function for focus_callback(). enables mouse cursor on window unfocused
 */
 void unfocus_window(GLFWwindow* window) {
 	window_setting.window_active = false;

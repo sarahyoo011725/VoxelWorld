@@ -21,7 +21,7 @@ void SoundDevice::init()
 }
 
 /// <summary>
-/// Gets the listeners current locaiton.
+/// Gets the listeners current location.
 /// </summary>
 /// <param name="x">return value x</param>
 /// <param name="y">return value y</param>
@@ -55,7 +55,7 @@ float SoundDevice::get_gain()
 }
 
 /// <summary>
-/// Sets the Attunation Model.
+/// Sets the Attenuation Model.
 /// </summary>
 /// <param name="key">
 ///#define AL_INVERSE_DISTANCE                      0xD001
@@ -65,10 +65,10 @@ float SoundDevice::get_gain()
 ///#define AL_EXPONENT_DISTANCE                     0xD005
 ///#define AL_EXPONENT_DISTANCE_CLAMPED             0xD006
 /// </param>
-void SoundDevice::set_attunation(int key)
+void SoundDevice::set_attenuation(int key)
 {
 	if (key < 0xD001 || key > 0xD006)
-		throw("bad attunation key");
+		throw("bad attenuation key");
 
 	alDistanceModel(key);
 	AL_CheckAndThrow();

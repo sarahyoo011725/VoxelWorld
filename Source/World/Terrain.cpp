@@ -59,7 +59,7 @@ void Terrain::update() {
 }
 
 /*
-	randomly spaws structure on a chunk
+	randomly spawns structure on a chunk
 */
 void Terrain::spawn_structures(Chunk* chunk) {
 	for (int x = 1; x < chunk_size + 1; ++x) {

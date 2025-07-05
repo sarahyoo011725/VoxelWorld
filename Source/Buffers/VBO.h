@@ -13,7 +13,7 @@ using namespace std;
 */
 
 /*
-	a class that organizes implementation of opengl VBO buffer
+	a class that organizes implementation of OpenGL VBO buffer
 */
 class VBO
 {
