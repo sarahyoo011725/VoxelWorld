@@ -32,14 +32,14 @@ enum block_face {
 };
 
 namespace {
-	//total rows in the texture atlance
+	//total rows in the texture atlas
 	const static int texture_rows = 16;
-	//total columns in the texture atlance
+	//total columns in the texture atlas
 	const static int textures_columns = 16;
 
 	static vec2 grass_text_coord = vec2(8, 14);
 
-	//collects texture index on the texture atlance for block types
+	//collects texture index on the texture atlas for block types
 	static map<block_type, map<block_face, vec2>> texture_map = {
 		{dirt, {{Front,vec2(3,16)},{Back,vec2(3,16)},{Left,vec2(3,16)},{Right,vec2(3,16)},{Top,vec2(3,16)},{Bottom,vec2(3,16)}}},
 		{dirt_grass, {{Front,vec2(4, 16)},{Back,vec2(4, 16)},{Left,vec2(4, 16)},{Right,vec2(4, 16)},{Top,vec2(1, 16)},{Bottom,vec2(3, 16)}}},
