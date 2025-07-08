@@ -10,7 +10,10 @@
 #include "Buffers/VAO.h"
 #include "Buffers/VBO.h"
 #include "Buffers/EBO.h"
+#include "Buffers/FBO.h"
+#include "Buffers/RBO.h"
 #include "Shader/ShaderManager.h"
+#include "Texture/Texture.h"
 #include "Entity/Geometries.h"
 #include "Audio/AudioManager.h"
 
@@ -38,13 +41,17 @@ public:
 	void update();
 	void draw_outlines();
 	void draw_HUDs();
+	void post_process();
 	void send_matrix(GLuint shader_id);
+	bool is_ground();
+	bool is_underwater();
+	void bind_fbo();
+	void unbind_fbo();
 private:
 	void update_matrix();
 	void update_movement(float dt);
 	void update_mouse();
 	void update_other_inputs();
-	bool is_ground();
 	void collision(float dx, float dy, float dz);
 	void raycast();
 	void block_interaction();
@@ -105,5 +112,17 @@ private:
 	VAO outline_vao = VAO(); //draws objects with lines, such as hitbox
 	VBO outline_vbo = VBO(cube_edges.data(), sizeof(vec3) * cube_edges.size(), GL_STATIC_DRAW);
 	VAO HUD_vao = VAO();  //draws 2d components, like crosshair and inventory box
-	VBO HUD_vbo = VBO(crosshair_vertices.data(), sizeof(GLfloat) * crosshair_vertices.size(), GL_STATIC_DRAW);
+	VBO HUD_vbo = VBO(crosshair_vertices.data(), sizeof(vertex_2d) * crosshair_vertices.size(), GL_STATIC_DRAW);
+	
+	//post-processing framebuffer. used for effects such as water submerging
+	VAO quad_vao = VAO();
+	VBO quad_vbo = VBO(quad_vertices.data(), sizeof(vertex_2d) * quad_vertices.size(), GL_STATIC_DRAW);
+	FBO fbo = FBO();
+	RBO rbo = RBO(window_setting->width, window_setting->height, GL_DEPTH24_STENCIL8);
+	Texture texture_color_buffer = Texture(window_setting->width, window_setting->height, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE,
+		GL_CLAMP_TO_EDGE, GL_LINEAR);
+	/*
+	Texture depth_texture = Texture(window_setting->width, window_setting->height, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT,
+		GL_FLOAT, GL_CLAMP_TO_BORDER, GL_LINEAR);
+	*/
 };

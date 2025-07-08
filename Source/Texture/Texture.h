@@ -11,17 +11,19 @@ using namespace std;
 using namespace glm;
 
 /*
-	a class that organizes implementation of opengl texture
+	a class that organizes implementation of OpenGL texture
 */
 class Texture
 {
 private:
-	GLenum type;
+	GLenum target;
+	GLenum slot;
 public:
 	GLuint id;
-	Texture(const char* texture_path, GLenum texture_type, GLenum slot, GLenum format, GLenum pixel_type);
-	void set_unit(Shader shader, const char* uniform, GLuint unit);
-	void activate(GLenum texture);
+	Texture(const char* texture_path, GLenum slot, GLenum texture_target, GLenum internal_format, GLenum format, GLenum pixel_type);
+	Texture(int width, int height, GLenum internal_format, GLenum format, GLenum pixel_type,
+		GLenum wrap_type,GLenum min_mag_filter_type);
+	void activate();
 	void bind();
 	void unbind();
 	void destroy();

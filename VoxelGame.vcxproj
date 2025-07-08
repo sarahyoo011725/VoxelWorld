@@ -175,6 +175,8 @@
     <ClInclude Include="Source\Block\Block.h" />
     <ClInclude Include="Source\Block\BlockType.h" />
     <ClInclude Include="Source\Buffers\EBO.h" />
+    <ClInclude Include="Source\Buffers\FBO.h" />
+    <ClInclude Include="Source\Buffers\RBO.h" />
     <ClInclude Include="Source\Buffers\VAO.h" />
     <ClInclude Include="Source\Buffers\VBO.h" />
     <ClInclude Include="Source\Camera\Camera.h" />
@@ -198,6 +200,8 @@
     <None Include="Resources\Shaders\2d_component.vert" />
     <None Include="Resources\Shaders\default.frag" />
     <None Include="Resources\Shaders\default.vert" />
+    <None Include="Resources\Shaders\framebuffer.frag" />
+    <None Include="Resources\Shaders\framebuffer.vert" />
     <None Include="Resources\Shaders\outline.frag" />
     <None Include="Resources\Shaders\outline.vert" />
     <None Include="Resources\Shaders\wave.frag" />
@@ -212,6 +216,8 @@
     <ClCompile Include="Source\Audio\SoundEffectsLibrary.cpp" />
     <ClCompile Include="Source\Audio\SoundEffectsPlayer.cpp" />
     <ClCompile Include="Source\Buffers\EBO.cpp" />
+    <ClCompile Include="Source\Buffers\FBO.cpp" />
+    <ClCompile Include="Source\Buffers\RBO.cpp" />
     <ClCompile Include="Source\Buffers\VAO.cpp" />
     <ClCompile Include="Source\Buffers\VBO.cpp" />
     <ClCompile Include="Source\Camera\Camera.cpp" />

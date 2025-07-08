@@ -20,5 +20,6 @@ public:
 	GLuint id;
 	Shader(const char* vertex_file, const char* fragment_file);
 	void activate();
+	void set_uniform_1i(const char* uniform_name, GLuint value);
 	void destroy();
 };

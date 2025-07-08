@@ -5,15 +5,31 @@
 using namespace std;
 using namespace glm;
 
+struct vertex_2d {
+	vec2 position;
+	vec2 texture;
+};
+
 //collection of vertices of geometries
 namespace {
-	const static vector<GLfloat> crosshair_vertices = {
+	const static vector<vertex_2d> crosshair_vertices = {
 		//horizontal line
-		-0.02f, 0.0f, 0.0f, 0.0f, 0.0f,
-		0.02f, 0.0f, 0.0f, 0.0f, 0.0f,
+		{vec2(-0.02f, 0.0f), vec2(0.0f, 0.0f)},
+		{vec2(0.02f, 0.0f), vec2(0.0f, 0.0f)},
 		//vertical line
-		0.0f, -0.03f, 0.0f, 0.0f, 0.0f,
-		0.0f,  0.03f, 0.0f, 0.0f, 0.0f
+		{vec2(0.0f, -0.03f), vec2(0.0f, 0.0f)},
+		{vec2(0.0f,  0.03f), vec2(0.0f, 0.0f)}
+	};
+
+	//quad (rectangle) vertices winded in clock-wise
+	const static vector<vertex_2d> quad_vertices = {
+		{vec2(-1.0f, 1.0f), vec2(0.0f, 1.0f)},
+		{vec2(1.0f, 1.0f), vec2(1.0f, 1.0f)},
+		{vec2(1.0f, -1.0f), vec2(1.0f, 0.0f)},
+
+		{vec2(1.0f, -1.0f), vec2(1.0f, 0.0f)},
+		{vec2(-1.0f, -1.0f), vec2(0.0f, 0.0f)},
+		{vec2(-1.0f,  1.0f), vec2(0.0f, 1.0f)},
 	};
 
 	/*

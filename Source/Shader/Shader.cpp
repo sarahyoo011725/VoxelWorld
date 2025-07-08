@@ -1,7 +1,7 @@
 #include "Shader.h"
 
 /*
-	reads file and retreives its data
+	reads file and retrieves its data
 */
 string read_file(const char* filename) {
 	ifstream in(filename, ios::binary);
@@ -74,6 +74,15 @@ Shader::Shader(const char* vertex_file, const char* fragment_file) {
 */
 void Shader::activate() {
 	glUseProgram(id);
+}
+
+/*
+	sends one integer uniform value.
+	normally used for sending a boolean value or telling which texture slot to use.
+*/
+void Shader::set_uniform_1i(const char* uniform_name, GLuint value) {
+	activate();
+	glUniform1i(glGetUniformLocation(id, uniform_name), value);
 }
 
 /*

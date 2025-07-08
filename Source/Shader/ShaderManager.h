@@ -12,7 +12,8 @@ public:
 		return instance;
 	}
 	Shader default_shader = Shader("Resources/Shaders/default.vert", "Resources/Shaders/default.frag");
-	Shader wave_shader = Shader("Resources/Shaders/wave.vert", "Resources/Shaders/wave.frag");
 	Shader outline_shader = Shader("Resources/Shaders/outline.vert", "Resources/Shaders/outline.frag");
 	Shader HUD_shader = Shader("Resources/Shaders/2d_component.vert", "Resources/Shaders/2d_component.frag");
+	Shader wave_shader = Shader("Resources/Shaders/wave.vert", "Resources/Shaders/wave.frag");
+	Shader frame_buffer_shader = Shader("Resources/Shaders/framebuffer.vert", "Resources/Shaders/framebuffer.frag");
 };

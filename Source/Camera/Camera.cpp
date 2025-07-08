@@ -16,9 +16,21 @@ Camera::Camera(WindowSetting *setting, vec3 position)
 
 	outline_vao.bind();
 	outline_vao.link_attrib(outline_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void*)0);
+
 	HUD_vao.bind();
-	HUD_vao.link_attrib(HUD_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (void*)0);
-	HUD_vao.link_attrib(HUD_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(GLfloat) * 5, (void*)(3 * sizeof(GLfloat)));
+	HUD_vao.link_attrib(HUD_vbo, 0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)0);
+	HUD_vao.link_attrib(HUD_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)(2 * sizeof(float)));
+	
+	quad_vao.bind();
+	quad_vao.link_attrib(quad_vbo, 0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)0);
+	quad_vao.link_attrib(quad_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)(2 * sizeof(float)));
+
+	sm.frame_buffer_shader.set_uniform_1i("screen_texture", 1);
+
+	fbo.bind();
+	fbo.attach_texture(GL_COLOR_ATTACHMENT0, texture_color_buffer.id);
+	fbo.attach_render_buffer(GL_DEPTH_STENCIL_ATTACHMENT, rbo.id);
+	fbo.unbind();
 }
 
 //updates anything required periodically
@@ -35,6 +47,9 @@ void Camera::update() {
 	sm.wave_shader.activate();
 	glUniform1f(glGetUniformLocation(sm.wave_shader.id, "time"), frame);
 	send_matrix(sm.wave_shader.id);
+	
+	//sm.frame_buffer_shader.activate();
+	//glUniform1i(glGetUniformLocation(sm.frame_buffer_shader.id, "underwater"), is_underwater());
 
 	update_other_inputs();
 	update_mouse();
@@ -42,6 +57,7 @@ void Camera::update() {
 	raycast();
 	block_interaction();
 }
+
 /*
 	handles user inputs and enables/disables modes
 */
@@ -65,6 +81,18 @@ void Camera::update_other_inputs() {
 	}
 }
 
+void Camera::bind_fbo() {
+	fbo.bind();
+}
+
+void Camera::unbind_fbo() {
+	fbo.unbind();
+}
+
+void Camera::send_matrix(GLuint shader_id) {
+	glUniformMatrix4fv(glGetUniformLocation(shader_id, "cam_matrix"), 1, GL_FALSE, value_ptr(mat));
+}
+
 /*
 	checks if the player is on ground
 */
@@ -75,8 +103,12 @@ bool Camera::is_ground() {
 	return block != nullptr && is_solid(block->type);
 }
 
-void Camera::send_matrix(GLuint shader_id) {
-	glUniformMatrix4fv(glGetUniformLocation(shader_id, "cam_matrix"), 1, GL_FALSE, value_ptr(mat));
+bool Camera::is_underwater() {
+	Block* block = cm.get_block_worldspace(position);
+	if (block != nullptr && block->type == water) {
+		return true;
+	}
+	return false;
 }
 
 /*
@@ -111,6 +143,12 @@ void Camera::draw_outlines() {
 	outline_vao.bind();
 	send_matrix(sm.outline_shader.id);  //must be sent to the shader
 	outline_hovered_cube();
+}
+
+void Camera::post_process() {
+	quad_vao.bind();
+	texture_color_buffer.bind();
+	glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
 }
 
 /*
@@ -436,9 +474,9 @@ void Camera::collision(float vx, float vy, float vz) {
 		}
 	}
 	//checks if any blocks are touching the player's back side at any vertical level
-	if (is_solid(cm.get_block_worldspace(vec3(x3, y3, z1))) || is_solid(cm.get_block_worldspace(vec3(x4, y3, z1))) || //left-bottom-back || rigth-bottom-back
+	if (is_solid(cm.get_block_worldspace(vec3(x3, y3, z1))) || is_solid(cm.get_block_worldspace(vec3(x4, y3, z1))) || //left-bottom-back || right-bottom-back
 		is_solid(cm.get_block_worldspace(vec3(x4, y4, z1))) || is_solid(cm.get_block_worldspace(vec3(x3, y4, z1))) || //right-top-back || left-bottom-back
-		is_solid(cm.get_block_worldspace(vec3(x3, y5, z1))) || is_solid(cm.get_block_worldspace(vec3(x4, y5, z1)))) { //left-middle-back || rigth-middle-back
+		is_solid(cm.get_block_worldspace(vec3(x3, y5, z1))) || is_solid(cm.get_block_worldspace(vec3(x4, y5, z1)))) { //left-middle-back || right-middle-back
 		if (vz < 0) { //the player is moving backward
 			position.z = (z1 + 1) * block_size + p_depth; //locates the player just in front of the blocks
 			velocity.z = 0;
