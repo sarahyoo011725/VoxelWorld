@@ -4,6 +4,11 @@ FBO::FBO() {
 	glGenFramebuffers(1, &id);
 }
 
+GLuint FBO::get_id()
+{
+	return id;
+}
+
 void FBO::bind() {
 	glBindFramebuffer(GL_FRAMEBUFFER, id);
 }

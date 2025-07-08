@@ -17,9 +17,11 @@ using namespace std;
 */
 class VBO
 {
-public:
+private:
 	GLuint id;
+public:
 	VBO(const void* vertices, GLsizeiptr size, GLenum draw_type);
+	GLuint get_id();
 	void reset_vertices(const void* vertices, GLsizeiptr size, GLenum draw_type);
 	void sub_vertices(const void* vertices, GLsizeiptr size, GLsizeiptr offset);
 	void bind();

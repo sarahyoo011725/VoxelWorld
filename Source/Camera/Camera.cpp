@@ -25,11 +25,12 @@ Camera::Camera(WindowSetting *setting, vec3 position)
 	quad_vao.link_attrib(quad_vbo, 0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)0);
 	quad_vao.link_attrib(quad_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)(2 * sizeof(float)));
 
+	sm.frame_buffer_shader.activate();
 	sm.frame_buffer_shader.set_uniform_1i("screen_texture", 1);
 
 	fbo.bind();
-	fbo.attach_texture(GL_COLOR_ATTACHMENT0, texture_color_buffer.id);
-	fbo.attach_render_buffer(GL_DEPTH_STENCIL_ATTACHMENT, rbo.id);
+	fbo.attach_texture(GL_COLOR_ATTACHMENT0, texture_color_buffer.get_id());
+	fbo.attach_render_buffer(GL_DEPTH_STENCIL_ATTACHMENT, rbo.get_id());
 	fbo.unbind();
 }
 
@@ -42,14 +43,14 @@ void Camera::update() {
 	update_matrix();
 
 	sm.default_shader.activate();
-	send_matrix(sm.default_shader.id);
+	sm.default_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);
 
 	sm.wave_shader.activate();
-	glUniform1f(glGetUniformLocation(sm.wave_shader.id, "time"), frame);
-	send_matrix(sm.wave_shader.id);
+	sm.wave_shader.set_uniform_1f("time", frame);
+	sm.wave_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);
 	
 	//sm.frame_buffer_shader.activate();
-	//glUniform1i(glGetUniformLocation(sm.frame_buffer_shader.id, "underwater"), is_underwater());
+	//glUniform1i(glGetUniformLocation(sm.frame_buffer_shader.get_id(), "underwater"), is_underwater());
 
 	update_other_inputs();
 	update_mouse();
@@ -89,10 +90,6 @@ void Camera::unbind_fbo() {
 	fbo.unbind();
 }
 
-void Camera::send_matrix(GLuint shader_id) {
-	glUniformMatrix4fv(glGetUniformLocation(shader_id, "cam_matrix"), 1, GL_FALSE, value_ptr(mat));
-}
-
 /*
 	checks if the player is on ground
 */
@@ -125,8 +122,8 @@ void Camera::update_matrix() {
 */
 void Camera::draw_HUDs() {
 	sm.HUD_shader.activate();
-	glUniform1i(glGetUniformLocation(sm.HUD_shader.id, "use_texture"), GL_FALSE);
-	glUniform4fv(glGetUniformLocation(sm.HUD_shader.id, "color"), 1, value_ptr(crosshair_color));
+	sm.HUD_shader.set_uniform_1i("use_texture", GL_FALSE);
+	sm.HUD_shader.set_uniform_4f("color", 1, crosshair_color);
 	//draw crosshair
 	HUD_vao.bind();
 	glLineWidth(1.0);
@@ -140,8 +137,8 @@ void Camera::draw_outlines() {
 	if (!enable_outline) return;
 	//outlines are must be drawn after activating the shader
 	sm.outline_shader.activate();
+	sm.outline_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);  //must be sent to the shader
 	outline_vao.bind();
-	send_matrix(sm.outline_shader.id);  //must be sent to the shader
 	outline_hovered_cube();
 }
 
@@ -158,9 +155,8 @@ void Camera::outline_hovered_cube() {
 	if (hovered_block == nullptr) return;
 	//sends cube model and outline color to the outline shader
 	mat4 cube_model = translate(mat4(1.0), hovered_block->position);
-	glUniformMatrix4fv(glGetUniformLocation(sm.outline_shader.id, "cube_model"), 1, GL_FALSE, value_ptr(cube_model));
-	glUniform4fv(glGetUniformLocation(sm.outline_shader.id, "color"), 1, value_ptr(hovered_block_outline_color));
-
+	sm.outline_shader.set_uniform_mat4f("cube_model", 1, GL_FALSE, cube_model);
+	sm.outline_shader.set_uniform_4f("color", 1, hovered_block_outline_color);
 	//draw cube outline
 	glDisable(GL_DEPTH_TEST); //keeps the cube outline visible
 	glLineWidth(outline_thickness);

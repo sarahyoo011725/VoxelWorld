@@ -42,7 +42,6 @@ public:
 	void draw_outlines();
 	void draw_HUDs();
 	void post_process();
-	void send_matrix(GLuint shader_id);
 	bool is_ground();
 	bool is_underwater();
 	void bind_fbo();

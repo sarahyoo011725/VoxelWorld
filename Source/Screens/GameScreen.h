@@ -23,7 +23,9 @@ private:
 public:
 	GameScreen(WindowSetting *setting) 
 	: window_setting(setting), cam(Camera(setting, vec3(0, 60, 0))), terrain(Terrain(cam.position)), sm(ShaderManager::get_instance()) {
+		sm.default_shader.activate();
 		sm.default_shader.set_uniform_1i("texture1", 1);
+		sm.wave_shader.activate();
 		sm.wave_shader.set_uniform_1i("texture1", 1);
 	}
 

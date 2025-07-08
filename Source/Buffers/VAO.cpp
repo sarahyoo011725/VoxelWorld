@@ -7,6 +7,11 @@ VAO::VAO() {
 	glGenVertexArrays(1, &id);
 }
 
+GLuint VAO::get_id()
+{
+	return id;
+}
+
 /*
 	links VBO attributes to the current VAO.
 

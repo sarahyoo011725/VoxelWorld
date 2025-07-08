@@ -9,6 +9,11 @@ VBO::VBO(const void* vertices, GLsizeiptr size, GLenum draw_type) {
 	glBufferData(GL_ARRAY_BUFFER, size, vertices, draw_type);
 }
 
+GLuint VBO::get_id()
+{
+	return id;
+}
+
 /*
 	replaces the whole data with a new vertices data
 */

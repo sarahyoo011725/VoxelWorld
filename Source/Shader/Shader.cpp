@@ -69,6 +69,11 @@ Shader::Shader(const char* vertex_file, const char* fragment_file) {
 	glDeleteShader(fragment_shader);
 }
 
+GLuint Shader::get_id()
+{
+	return id;
+}
+
 /*
 	activates a shader
 */
@@ -80,9 +85,31 @@ void Shader::activate() {
 	sends one integer uniform value.
 	normally used for sending a boolean value or telling which texture slot to use.
 */
-void Shader::set_uniform_1i(const char* uniform_name, GLuint value) {
-	activate();
+void Shader::set_uniform_1i(const char* uniform_name, GLint value) {
 	glUniform1i(glGetUniformLocation(id, uniform_name), value);
+}
+
+/*
+	sends one float uniform value
+*/
+void Shader::set_uniform_1f(const char* uniform_name, GLfloat value) {
+	glUniform1f(glGetUniformLocation(id, uniform_name), value);
+}
+
+/*
+	sends one or more vec4 uniform value.
+	normally used for sending a colour.
+*/
+void Shader::set_uniform_4f(const char* uniform_name, GLsizei count, vec4 value) {
+	glUniform4fv(glGetUniformLocation(id, uniform_name), count, value_ptr(value));
+}
+
+/*
+	sends one or more mat4 uniform value.
+	normally used for sending a camera matrix.
+*/
+void Shader::set_uniform_mat4f(const char* uniform_name, GLsizei count, GLboolean tranpose, mat4 value) {
+	glUniformMatrix4fv(glGetUniformLocation(id, uniform_name), count, tranpose, value_ptr(value));
 }
 
 /*

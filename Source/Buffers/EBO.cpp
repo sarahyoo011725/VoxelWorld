@@ -9,6 +9,11 @@ EBO::EBO(const void* indices, GLsizeiptr size, GLenum draw_type) {
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, size, indices, draw_type);
 }
 
+GLuint EBO::get_id()
+{
+	return id;
+}
+
 /*
 	replaces the whole data with a new indices data
 */

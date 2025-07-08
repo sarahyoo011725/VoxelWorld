@@ -7,10 +7,20 @@ RBO::RBO(int width, int height, GLenum internal_format) {
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 }
 
+GLuint RBO::get_id()
+{
+	return id;
+}
+
 void RBO::bind() {
 	glBindRenderbuffer(GL_RENDERBUFFER, id);
 }
 
 void RBO::unbind() {
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+}
+
+void RBO::destroy()
+{
+	glDeleteRenderbuffers(1, &id);
 }

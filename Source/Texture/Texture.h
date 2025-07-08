@@ -16,15 +16,19 @@ using namespace glm;
 class Texture
 {
 private:
+	GLuint id;
 	GLenum target;
 	GLenum slot;
 public:
-	GLuint id;
 	Texture(const char* texture_path, GLenum slot, GLenum texture_target, GLenum internal_format, GLenum format, GLenum pixel_type);
 	Texture(int width, int height, GLenum internal_format, GLenum format, GLenum pixel_type,
 		GLenum wrap_type,GLenum min_mag_filter_type);
+	GLuint get_id();
 	void activate();
 	void bind();
 	void unbind();
 	void destroy();
+	~Texture() {
+		destroy();
+	}
 };

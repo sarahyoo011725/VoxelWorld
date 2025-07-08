@@ -48,6 +48,10 @@ Texture::Texture(int width, int height, GLenum internal_format, GLenum format, G
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+GLuint Texture::get_id() {
+	return id;
+}
+
 /*
 	activates a texture
 */
