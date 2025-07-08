@@ -46,22 +46,20 @@ int main() {
 	}
 
 	window_setting = { window, width, height, true };
-	//StartScreen start_screen = StartScreen();
+	StartScreen start_screen = StartScreen();
 	GameScreen game_screen = GameScreen(&window_setting);
 
 	//displays a screen every frame while the window is active
 	while (!glfwWindowShouldClose(window)) {
 		process_inputs(window);
 
-			game_screen.gl_settings();
-			game_screen.draw();
-		/*
 		if (start_game) {
+			game_screen.gl_settings();
+			game_screen.draw();	
 		}
 		else {
 			start_screen.draw(); 
 		}
-		*/
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
 		glfwPollEvents(); //checks if any events triggered

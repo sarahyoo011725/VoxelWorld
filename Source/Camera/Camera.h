@@ -117,11 +117,8 @@ private:
 	VAO quad_vao = VAO();
 	VBO quad_vbo = VBO(quad_vertices.data(), sizeof(vertex_2d) * quad_vertices.size(), GL_STATIC_DRAW);
 	FBO fbo = FBO();
-	RBO rbo = RBO(window_setting->width, window_setting->height, GL_DEPTH24_STENCIL8);
-	Texture texture_color_buffer = Texture(window_setting->width, window_setting->height, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE,
-		GL_CLAMP_TO_EDGE, GL_LINEAR);
-	/*
-	Texture depth_texture = Texture(window_setting->width, window_setting->height, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT,
+	Texture texture_color_buffer = Texture(window_setting->width, window_setting->height, GL_TEXTURE2, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE,
+		GL_CLAMP_TO_EDGE, GL_NEAREST);
+	Texture depth_texture = Texture(window_setting->width, window_setting->height, GL_TEXTURE3, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT,
 		GL_FLOAT, GL_CLAMP_TO_BORDER, GL_LINEAR);
-	*/
 };

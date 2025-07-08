@@ -34,11 +34,12 @@ Texture::Texture(const char* filename, GLenum slot, GLenum texture_target, GLenu
 /*
 	creates a texture color buffer
 */
-Texture::Texture(int width, int height, GLenum internal_format, GLenum format, GLenum pixel_type,
+Texture::Texture(int width, int height, GLenum slot, GLenum internal_format, GLenum format, GLenum pixel_type,
 	GLenum wrap_type, GLenum min_mag_filter_type) {
 	target = GL_TEXTURE_2D;
-	this->slot = -1;
+	this->slot = slot;
 	glGenTextures(1, &id);
+	glActiveTexture(slot);
 	glBindTexture(GL_TEXTURE_2D, id);
 	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, pixel_type, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrap_type);
@@ -71,6 +72,14 @@ void Texture::bind() {
 */
 void Texture::unbind() {
 	glBindTexture(target, 0);
+}
+
+/*
+	sets which slot the texture is assigned to
+*/
+void Texture::set_slot(GLint slot) {
+	glActiveTexture(GL_TEXTURE0 + slot);
+	bind();
 }
 
 /*

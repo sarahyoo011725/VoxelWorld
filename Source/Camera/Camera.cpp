@@ -27,10 +27,11 @@ Camera::Camera(WindowSetting *setting, vec3 position)
 
 	sm.frame_buffer_shader.activate();
 	sm.frame_buffer_shader.set_uniform_1i("screen_texture", 1);
+	sm.frame_buffer_shader.set_uniform_1i("depth_texture", 3);
 
 	fbo.bind();
 	fbo.attach_texture(GL_COLOR_ATTACHMENT0, texture_color_buffer.get_id());
-	fbo.attach_render_buffer(GL_DEPTH_STENCIL_ATTACHMENT, rbo.get_id());
+	fbo.attach_texture(GL_DEPTH_ATTACHMENT, depth_texture.get_id());
 	fbo.unbind();
 }
 
@@ -49,8 +50,8 @@ void Camera::update() {
 	sm.wave_shader.set_uniform_1f("time", frame);
 	sm.wave_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);
 	
-	//sm.frame_buffer_shader.activate();
-	//glUniform1i(glGetUniformLocation(sm.frame_buffer_shader.get_id(), "underwater"), is_underwater());
+	sm.frame_buffer_shader.activate();
+	sm.frame_buffer_shader.set_uniform_1i("is_underwater", is_underwater());
 
 	update_other_inputs();
 	update_mouse();
@@ -144,7 +145,10 @@ void Camera::draw_outlines() {
 
 void Camera::post_process() {
 	quad_vao.bind();
+	texture_color_buffer.set_slot(1);
 	texture_color_buffer.bind();
+	depth_texture.activate();
+	depth_texture.bind();
 	glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
 }
 

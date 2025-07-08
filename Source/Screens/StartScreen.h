@@ -28,6 +28,7 @@ public:
         vao.bind();
         vao.link_attrib(vbo, 0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)0);
         vao.link_attrib(vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)(2 * sizeof(float)));
+        sm.HUD_shader.activate();
         sm.HUD_shader.set_uniform_1i("texture1", 0);
         sm.HUD_shader.set_uniform_1i("use_texture", GL_TRUE);
         music::moog_city2.play();
