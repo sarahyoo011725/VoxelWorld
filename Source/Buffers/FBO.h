@@ -2,7 +2,7 @@
 #include <glad/glad.h>
 
 /*
-	creates a post-processing frame buffer
+	creates a frame buffer object
 */
 class FBO {
 private:
@@ -14,5 +14,7 @@ public:
 	void unbind();
 	void attach_texture(GLenum attachment, GLuint texture_id);
 	void attach_render_buffer(GLenum attachment, GLuint rbo_id);
+	void draw_buffer(GLenum buffer);
+	void read_buffer(GLenum buffer);
 	void destroy();
 };

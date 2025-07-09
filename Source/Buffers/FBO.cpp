@@ -25,6 +25,14 @@ void FBO::attach_render_buffer(GLenum attachment, GLuint rbo_id) {
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, rbo_id);
 }
 
+void FBO::draw_buffer(GLenum buffer) {
+	glDrawBuffer(buffer);
+}
+
+void FBO::read_buffer(GLenum buffer) {
+	glReadBuffer(buffer);
+}
+
 void FBO::destroy() {
 	glDeleteFramebuffers(1, &id);
 }
