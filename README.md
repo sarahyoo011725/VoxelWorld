@@ -1,5 +1,7 @@
 # Voxel World
-![Voxel World](https://github.com/user-attachments/assets/c04e0d06-ce54-4822-be0e-133506768bb1)
+Click the image to watch the video demo.
+
+[![Voxel World Video Demo](https://github.com/user-attachments/assets/c04e0d06-ce54-4822-be0e-133506768bb1)](https://www.youtube.com/watch?v=Jtg4xtUPc4M)
 
 ## 🖱️Mouse and ⌨️Keyboard Controls
 ### 🎮 Basic Controls
