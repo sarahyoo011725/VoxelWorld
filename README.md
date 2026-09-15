@@ -30,36 +30,76 @@ Click the image to watch the video demo.
 - block placing and breaking
 - Implemetation of OpenAL for Sound Effects and Musics
 
-## How to Build a Project
->[!NOTE]
-> Requirement:
->
-> vcpkg, CMake, Git
-There are two options to use vcpkg:
-1. If you have Visual Studio installed, most likely the **VCPKG_ROOT** environment variable will already exist in **Developer Command Prompt for VS**
-2. If you want use **vcpkg**, install **vcpkg** from git to you system:
+## How to Build and Run
+
+Windows only for now. The game targets OpenGL 3.3 core.
+
+### 1. Prerequisites
+
+| Tool | Notes |
+| --- | --- |
+| [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/) with the **Desktop development with C++** workload | The Build Tools edition is enough if you only plan to use VS Code. This provides the MSVC compiler and the Windows SDK. |
+| [CMake](https://cmake.org/download/) 3.21+ | Bundled with the C++ workload above. |
+| [Git](https://git-scm.com/downloads) and [Git LFS](https://git-lfs.com/) | **Git LFS is required** — the music and sound effects (~235 MB) are stored in LFS. |
+| [vcpkg](https://github.com/microsoft/vcpkg) | Fetches glad, GLFW, GLM, OpenAL Soft and libsndfile. |
+
+### 2. Set up vcpkg
+
+Skip this if `VCPKG_ROOT` is already set (Visual Studio installs a copy, and its
+**Developer Command Prompt** usually sets the variable for you).
+
 ```PowerShell
-cd C:/{your path to install vcpkg}
-git clone https://github.com/microsoft/vcpkg.git
-cd vcpkg
-.\bootstrap-vcpkg.bat
+git clone https://github.com/microsoft/vcpkg.git C:\dev\vcpkg
+C:\dev\vcpkg\bootstrap-vcpkg.bat
+[Environment]::SetEnvironmentVariable("VCPKG_ROOT", "C:\dev\vcpkg", "User")
 ```
 
-After installing **vcpkg**, setup env variable **VCPKG_ROOT** and add it to **PATH**:
-```PowerShell
-$env:VCPKG_ROOT = "C:\{your path to}\vcpkg"
-$env:PATH = "$env:VCPKG_ROOT;$env:PATH"
-```
->[!TIP]
->For troubleshooting you can read full [documentation](https://learn.microsoft.com/ru-ru/vcpkg/get_started/get-started?pivots=shell-powershell) for **vcpkg**
+Open a new terminal afterwards so the variable takes effect.
 
-After installing **vcpkg** you can build project:
+> [!TIP]
+> Full vcpkg setup documentation is [here](https://learn.microsoft.com/vcpkg/get_started/get-started?pivots=shell-powershell).
+
+### 3. Clone
+
 ```PowerShell
-git clone --recursive https://github.com/sarahyoo011725/VoxelWorld.git
+git lfs install
+git clone https://github.com/sarahyoo011725/VoxelWorld.git
 cd VoxelWorld
+```
+
+If you cloned before installing Git LFS, run `git lfs pull` to replace the audio
+placeholder files. The game prints a warning at startup if you forget.
+
+### 4. Build and run
+
+**From the command line:**
+
+```PowerShell
 cmake --preset default-vs-msvc-windows
 cmake --build --preset default-vs-msvc-windows
+.\build\Release\VoxelWorld.exe
 ```
+
+The first configure takes a while — vcpkg builds all dependencies from source.
+
+**From VS Code:**
+
+1. Open the folder in VS Code and install the recommended extensions when prompted
+   (C/C++ and CMake Tools).
+2. When CMake Tools asks for a configure preset, pick **Visual Studio 2022 (x64)**.
+3. Press <kbd>F5</kbd> to build and play.
+
+**From Visual Studio:** open `VoxelGame.sln` and press <kbd>F5</kbd>, or open the
+folder directly to use the CMake presets.
+
+### Troubleshooting
+
+| Symptom | Fix |
+| --- | --- |
+| `Could not find vcpkg` during configure | `VCPKG_ROOT` is unset or points at the wrong folder. See step 2, and open a fresh terminal. |
+| `Could not find the Resources folder` | Run the executable from the repository root, or copy `Resources/` next to it. |
+| Crash on startup with no message, or the LFS warning | Audio files were not fetched: `git lfs install && git lfs pull`. |
+| `Failed to create a window` | Your GPU/driver does not expose OpenGL 3.3 core. Update your graphics drivers. |
 
 ## Dev TO-DOs
 - custom perlin noise

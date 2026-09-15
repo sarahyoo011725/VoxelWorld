@@ -1,12 +1,15 @@
 {
+  "name": "voxelworld",
+  "version": "0.1.0",
   "dependencies": [
     "glad",
     "glfw3",
     "glm",
-    "libnoise",
-    "libsndfile",
+    {
+      "name": "libsndfile",
+      "default-features": false
+    },
     "openal-soft",
-    "opengl",
-    "audiofile"
+    "opengl"
   ]
 }
