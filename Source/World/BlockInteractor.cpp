@@ -12,7 +12,9 @@ void BlockInteractor::update(vec3 origin, vec3 direction) {
 /*
 	casts a ray to detect a block, updating hovered_block
 */
-void BlockInteractor::raycast(vec3 origin, vec3 direction) {
+void BlockInteractor::raycast(vec3 world_origin, vec3 direction) {
+	//blocks are centered on integer coords; get_block_worldspace() floors raw world coords
+	vec3 origin = world_origin + vec3(0.5f);
 	vec3 dir = direction;
 	vec3 delta = { //unit step size in x, z, and y axis
 		abs(1.0f / dir.x),
