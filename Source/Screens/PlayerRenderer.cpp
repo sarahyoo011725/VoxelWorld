@@ -18,6 +18,17 @@ PlayerRenderer::PlayerRenderer(WindowSetting* setting)
 	quad_vao.link_attrib(quad_vbo, 0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)0);
 	quad_vao.link_attrib(quad_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)(2 * sizeof(float)));
 
+	cloud_vao.bind();
+	cloud_vao.link_attrib(cloud_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
+	cloud_vao.link_attrib(cloud_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
+	cloud_vao.link_attrib(cloud_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float)));
+
+	cloud_noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+	//frequency high enough that its correlation length is close to one cell width,
+	//so adjacent cells aren't almost always occupied together - otherwise every
+	//formation spans many contiguous cells and reads as one big overlapping mass
+	cloud_noise.SetFrequency(0.08f);
+
 	sm.frame_buffer_shader.activate();
 	sm.frame_buffer_shader.set_uniform_1i("screen_texture", 1);
 	sm.frame_buffer_shader.set_uniform_1i("depth_texture", 3);
@@ -146,6 +157,126 @@ void PlayerRenderer::draw_sky_discs(mat4 view, mat4 projection, vec3 eye_positio
 	glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
 
 	glDepthMask(GL_TRUE);
+}
+
+/*
+	draws a full-screen horizon-to-zenith gradient with a warm glow near the sun.
+	must be drawn with depth test disabled, before anything else, as the scene's backdrop
+*/
+void PlayerRenderer::draw_sky_background(mat4 view, mat4 projection, vec3 zenith_color, vec3 horizon_color, vec3 to_sun) {
+	sm.sky_shader.activate();
+	sm.sky_shader.set_uniform_mat4f("inv_view", 1, GL_FALSE, inverse(view));
+	sm.sky_shader.set_uniform_mat4f("inv_projection", 1, GL_FALSE, inverse(projection));
+	sm.sky_shader.set_uniform_3f("zenith_color", 1, zenith_color);
+	sm.sky_shader.set_uniform_3f("horizon_color", 1, horizon_color);
+	sm.sky_shader.set_uniform_3f("to_sun", 1, to_sun);
+	quad_vao.bind();
+	glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
+}
+
+/*
+	builds an actual voxel-style cloud mesh: a grid of cells, each either empty or a
+	solid box. rebuilding is not cheap enough to do every frame, so it only happens
+	when the player has moved far enough that the old mesh no longer covers them (see
+	draw_clouds), not on a timer or every frame.
+*/
+void PlayerRenderer::generate_cloud_mesh(vec2 center) {
+	cloud_vertices.clear();
+	last_cloud_center = center;
+
+	//snap to the cell grid so regenerating doesn't shift the pattern's alignment
+	vec2 snapped_center = vec2(floor(center.x / cloud_cell_size) * cloud_cell_size, floor(center.y / cloud_cell_size) * cloud_cell_size);
+
+	int size = cloud_grid_radius * 2 + 1;
+	vector<bool> occupied(static_cast<size_t>(size) * size, false);
+	auto cell_index = [size](int x, int z) { return (x + size / 2) * size + (z + size / 2); };
+
+	for (int cx = -cloud_grid_radius; cx <= cloud_grid_radius; ++cx) {
+		for (int cz = -cloud_grid_radius; cz <= cloud_grid_radius; ++cz) {
+			float wx = snapped_center.x + cx * cloud_cell_size;
+			float wz = snapped_center.y + cz * cloud_cell_size;
+			occupied[cell_index(cx, cz)] = cloud_noise.GetNoise(wx, wz) > cloud_threshold;
+		}
+	}
+
+	//a small deterministic per-cell hash, decorrelated from the occupancy noise via
+	//an arbitrary seed offset, so no two cloud boxes end up the same size/shape
+	auto cell_hash = [](int cx, int cz, float seed) {
+		float v = sin((float)cx * 127.1f + (float)cz * 311.7f + seed) * 43758.5453f;
+		return v - floor(v);
+	};
+
+	float base_half_xz = cloud_cell_size * 0.4f;
+	float base_half_y = cloud_thickness * 0.5f;
+
+	for (int cx = -cloud_grid_radius; cx <= cloud_grid_radius; ++cx) {
+		for (int cz = -cloud_grid_radius; cz <= cloud_grid_radius; ++cz) {
+			if (!occupied[cell_index(cx, cz)]) continue;
+
+			float cell_x = snapped_center.x + cx * cloud_cell_size;
+			float cell_z = snapped_center.y + cz * cloud_cell_size;
+
+			//1-3 overlapping sub-boxes per cell, each with its own offset and independently
+			//jittered x/z extents, so a cloud unit reads as an irregular cluster of
+			//rectangular blocks instead of a single uniformly-scaled cube - kept small and
+			//close to the cell center so neighboring cells' clusters don't bleed into each other
+			int sub_box_count = 1 + (cell_hash(cx, cz, 201.1f) > 0.65f ? 1 : 0) + (cell_hash(cx, cz, 404.4f) > 0.88f ? 1 : 0);
+
+			for (int i = 0; i < sub_box_count; ++i) {
+				float s = (float)i * 91.0f;
+				float offset_x = (cell_hash(cx, cz, s + 1.0f) - 0.5f) * cloud_cell_size * 0.25f;
+				float offset_z = (cell_hash(cx, cz, s + 2.0f) - 0.5f) * cloud_cell_size * 0.25f;
+				float half_x = base_half_xz * (0.45f + cell_hash(cx, cz, s + 3.0f) * 0.5f);
+				float half_z = base_half_xz * (0.45f + cell_hash(cx, cz, s + 4.0f) * 0.5f);
+				float half_y = base_half_y * (0.5f + cell_hash(cx, cz, s + 5.0f) * 1.0f);
+				float height_jitter = (cell_hash(cx, cz, s + 6.0f) - 0.5f) * 3.0f;
+
+				vec3 box_center = vec3(cell_x + offset_x, cloud_base_height + height_jitter, cell_z + offset_z);
+
+				add_cloud_face(Top, box_center, half_x, half_z, half_y);
+				add_cloud_face(Bottom, box_center, half_x, half_z, half_y);
+				add_cloud_face(Left, box_center, half_x, half_z, half_y);
+				add_cloud_face(Right, box_center, half_x, half_z, half_y);
+				add_cloud_face(Back, box_center, half_x, half_z, half_y);
+				add_cloud_face(Front, box_center, half_x, half_z, half_y);
+			}
+		}
+	}
+
+	cloud_vbo.reset_vertices(cloud_vertices.data(), sizeof(vertex) * cloud_vertices.size(), GL_STATIC_DRAW);
+}
+
+//reuses the standard cube face template (block_face.h) so cloud boxes wind exactly
+//like normal opaque blocks - correctly front/back-face culled, no special-casing needed
+void PlayerRenderer::add_cloud_face(block_face face, vec3 center, float half_x, float half_z, float half_y) {
+	static const int order[6] = { 0, 1, 2, 2, 3, 0 };
+	vec3 scale = vec3(half_x * 2.0f, half_y * 2.0f, half_z * 2.0f);
+	vec3 normal = face_normal(face);
+	const vector<vertex>& verts = cw_face_map.at(face);
+	for (int idx : order) {
+		vec3 pos = verts[idx].position * scale + center;
+		cloud_vertices.push_back({ pos, vec2(0.0f), normal });
+	}
+}
+
+/*
+	draws the cloud mesh, regenerating it first if the player has wandered far from
+	where it was last centered. wind is a pure visual drift applied in the vertex
+	shader, independent of regeneration.
+*/
+void PlayerRenderer::draw_clouds(mat4 cam_matrix, vec2 player_xz, float time, vec3 light_color) {
+	if (distance(player_xz, last_cloud_center) > cloud_regen_distance) {
+		generate_cloud_mesh(player_xz);
+	}
+
+	sm.clouds_shader.activate();
+	sm.clouds_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, cam_matrix);
+	sm.clouds_shader.set_uniform_1f("time", time);
+	sm.clouds_shader.set_uniform_1f("wind_speed", cloud_wind_speed);
+	sm.clouds_shader.set_uniform_3f("light_color", 1, light_color);
+
+	cloud_vao.bind();
+	glDrawArrays(GL_TRIANGLES, 0, cloud_vertices.size());
 }
 
 void PlayerRenderer::post_process() {

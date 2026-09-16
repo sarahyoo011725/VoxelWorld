@@ -91,6 +91,7 @@ void Camera::update_day_night_cycle(float dt) {
 	ambient_strength = mix(0.12f, 0.45f, day_factor);
 	diffuse_strength = mix(0.2f, 0.55f, day_factor);
 	sky_color = mix(night_sky_color, day_sky_color, day_factor);
+	sky_zenith_color = mix(night_zenith_color, day_zenith_color, day_factor);
 }
 
 /*

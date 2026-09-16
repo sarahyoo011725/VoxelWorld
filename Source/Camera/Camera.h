@@ -29,7 +29,8 @@ public:
 	//day/night cycle state, exposed so the sun/moon discs can be drawn in the sky
 	float time_of_day = 0.2f; //0 = sunrise, 0.25 = noon, 0.5 = sunset, 0.75 = midnight
 	vec3 to_sun = vec3(0.0f, 1.0f, 0.0f); //unit direction from the player toward the sun
-	vec3 sky_color = vec3(0.0f);
+	vec3 sky_color = vec3(0.0f); //horizon-level sky/fog color
+	vec3 sky_zenith_color = vec3(0.0f); //color straight overhead, for the sky gradient
 	vec3 light_color = vec3(1.0f);
 	float ambient_strength = 0.45f;
 	float diffuse_strength = 0.55f;
@@ -54,6 +55,8 @@ private:
 	const float day_length = 120.0f; //seconds for a full day/night cycle
 	const vec3 day_sky_color = vec3(135.0f / 255, 206.0f / 255, 235.0f / 255);
 	const vec3 night_sky_color = vec3(0.03f, 0.03f, 0.1f);
+	const vec3 day_zenith_color = vec3(0.25f, 0.45f, 0.85f);
+	const vec3 night_zenith_color = vec3(0.0f, 0.0f, 0.02f);
 	const vec3 day_light_color = vec3(1.0f, 0.97f, 0.9f);
 	const vec3 night_light_color = vec3(0.45f, 0.55f, 0.75f);
 

@@ -97,6 +97,13 @@ void Shader::set_uniform_1f(const char* uniform_name, GLfloat value) {
 }
 
 /*
+	sends one or more vec2 uniform value
+*/
+void Shader::set_uniform_2f(const char* uniform_name, GLsizei count, vec2 value) {
+	glUniform2fv(glGetUniformLocation(id, uniform_name), count, value_ptr(value));
+}
+
+/*
 	sends one or more vec3 uniform value
 */
 void Shader::set_uniform_3f(const char* uniform_name, GLsizei count, vec3 value) {

@@ -19,4 +19,6 @@ public:
 	Shader frame_buffer_shader = Shader("Resources/Shaders/framebuffer.vert", "Resources/Shaders/framebuffer.frag");
 	Shader shadow_shader = Shader("Resources/Shaders/shadow.vert", "Resources/Shaders/shadow.frag");
 	Shader sky_disc_shader = Shader("Resources/Shaders/sky_disc.vert", "Resources/Shaders/sky_disc.frag");
+	Shader sky_shader = Shader("Resources/Shaders/sky.vert", "Resources/Shaders/sky.frag");
+	Shader clouds_shader = Shader("Resources/Shaders/clouds.vert", "Resources/Shaders/clouds.frag");
 };

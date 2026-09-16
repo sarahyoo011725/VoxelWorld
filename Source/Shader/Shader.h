@@ -27,6 +27,7 @@ public:
 	void activate();
 	void set_uniform_1i(const char* uniform_name, GLint value);
 	void set_uniform_1f(const char* uniform_name, GLfloat value);
+	void set_uniform_2f(const char* uniform_name, GLsizei count, vec2 value);
 	void set_uniform_3f(const char* uniform_name, GLsizei count, vec3 value);
 	void set_uniform_4f(const char* uniform_name, GLsizei count, vec4 value);
 	void set_uniform_mat4f(const char* uniform_name, GLsizei count, GLboolean tranpose, mat4 value);

@@ -1,4 +1,5 @@
 #pragma once
+#include <FastNoise/FastNoiseLite.h>
 #include "Buffers/VAO.h"
 #include "Buffers/VBO.h"
 #include "Buffers/FBO.h"
@@ -26,9 +27,13 @@ public:
 	void draw_HUDs();
 	void draw_outlines(mat4 cam_matrix, Block* hovered_block);
 	void draw_sky_discs(mat4 view, mat4 projection, vec3 eye_position, vec3 to_sun);
+	void draw_sky_background(mat4 view, mat4 projection, vec3 zenith_color, vec3 horizon_color, vec3 to_sun);
+	void draw_clouds(mat4 cam_matrix, vec2 player_xz, float time, vec3 light_color);
 	void post_process();
 private:
 	void outline_hovered_cube(Block* hovered_block);
+	void generate_cloud_mesh(vec2 center);
+	void add_cloud_face(block_face face, vec3 center, float half_x, float half_z, float half_y);
 
 	WindowSetting* window_setting;
 	ShaderManager& sm;
@@ -49,12 +54,25 @@ private:
 	const vec3 moon_edge_color = vec3(0.55f, 0.6f, 0.7f);
 	const vec3 moon_glow_color = vec3(0.6f, 0.68f, 0.85f);
 
+	const float cloud_cell_size = 16.0f;
+	const float cloud_thickness = 2.5f;
+	const float cloud_base_height = 70.0f; //above the terrain's max height (50)
+	const int cloud_grid_radius = 13; 
+	const float cloud_threshold = 0.42f; //higher = sparser clouds
+	const float cloud_wind_speed = 0.3f;
+	const float cloud_regen_distance = 80.0f;
+	FastNoiseLite cloud_noise;
+	vector<vertex> cloud_vertices;
+	vec2 last_cloud_center = vec2(1e9f); 
+
 	VAO outline_vao = VAO();
 	VBO outline_vbo = VBO(cube_edges.data(), sizeof(vec3) * cube_edges.size(), GL_STATIC_DRAW);
 	VAO HUD_vao = VAO();
 	VBO HUD_vbo = VBO(crosshair_vertices.data(), sizeof(vertex_2d) * crosshair_vertices.size(), GL_STATIC_DRAW);
 	VAO quad_vao = VAO();
 	VBO quad_vbo = VBO(quad_vertices.data(), sizeof(vertex_2d) * quad_vertices.size(), GL_STATIC_DRAW);
+	VAO cloud_vao = VAO();
+	VBO cloud_vbo = VBO(nullptr, sizeof(vertex) * 0, GL_STATIC_DRAW);
 	FBO fbo = FBO();
 	Texture texture_color_buffer;
 	Texture depth_texture;
