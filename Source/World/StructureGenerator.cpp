@@ -55,23 +55,32 @@ void StructureGenerator::spawn_tree(vec3 world_coord) {
 		}
 	}
 
-	//make a stem of height 5
-	for (int h = 0; h < 5; ++h) {
+	//make a stem, height varies a bit so trees aren't all identical
+	int trunk_height = 4 + rand() % 3;
+	for (int h = 0; h < trunk_height; ++h) {
 		chunk_manager.set_block_worldspace(vec3(world_coord.x, world_coord.y + h, world_coord.z), wood);
 	}
 
 	//add leaves
 	int r = rand() % 2;
 	block_type leaf_type = (r == 0) ? leaf_red : leaf_yellow;
+	float layer_radius[4] = { 2.2f, 2.2f, 2.0f, 1.6f };
 	for (int dx = -2; dx <= 2; ++dx) {
 		for (int dz = -2; dz <= 2; ++dz) {
 			for (int dy = 0; dy < 4; ++dy) {
 				if (dx == 0 && dz == 0 && dy < 2) continue;
+
+				float dist = sqrt((float)(dx * dx + dz * dz));
+				if (dist > layer_radius[dy]) continue;
+				if (dist > layer_radius[dy] - 0.5f && rand() % 5 == 0) continue;
+
 				int wx = world_coord.x + dx;
-				int wy = world_coord.y + 3 + dy; //add leaves 3 trunks above
+				int wy = world_coord.y + trunk_height - 2 + dy;
 				int wz = world_coord.z + dz;
 				chunk_manager.set_block_worldspace(vec3(wx, wy, wz), leaf_type);
 			}
 		}
 	}
+
+	chunk_manager.set_block_worldspace(vec3(world_coord.x, world_coord.y + trunk_height - 2 + 4, world_coord.z), leaf_type);
 }
