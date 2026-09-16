@@ -13,6 +13,8 @@ void Camera::update(vec3 eye_position) {
 	float dt = frame - last_frame;
 	last_frame = frame;
 
+	update_mouse();
+	update_zoom(dt);
 	update_matrix(eye_position);
 
 	sm.default_shader.activate();
@@ -29,9 +31,6 @@ void Camera::update(vec3 eye_position) {
 	sm.wave_shader.set_uniform_3f("fog_color", 1, fog_color);
 	sm.wave_shader.set_uniform_1f("fog_start", fog_start);
 	sm.wave_shader.set_uniform_1f("fog_end", fog_end);
-
-	update_zoom(dt);
-	update_mouse();
 }
 
 void Camera::update_zoom(float dt) {
