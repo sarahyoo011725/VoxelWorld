@@ -67,7 +67,7 @@ void Terrain::spawn_structures(Chunk* chunk) {
 			//convert local coords into world coord
 			int wx = chunk->world_position.x + x - 1;
 			int wz = chunk->world_position.z + z - 1;
-			int h = chunk->height_map[x][z];
+			int h = chunk->get_height(x, z);
 
 			//do not spawn anything in water
 			if (h <= water_level) continue;

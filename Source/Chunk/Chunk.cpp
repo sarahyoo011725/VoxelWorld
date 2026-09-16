@@ -13,14 +13,7 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	height = 50;
 	length = chunk_size + 2;
 
-	//TODO: optimize blocks initialization
-	blocks = new Block * *[width];
-	for (int x = 0; x < width; ++x) {
-		blocks[x] = new Block * [height];
-		for (int y = 0; y < height; ++y) {
-			blocks[x][y] = new Block[length];
-		}
-	}
+	blocks.resize(static_cast<size_t>(width) * height * length);
 
 	//define block types
 	height_map = get_heightmap();
@@ -28,7 +21,7 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 		for (int z = 0; z < length; ++z) {
 			for (int y = 0; y < height; ++y) {
 				block_type type = none;
-				int h = height_map[x][z];
+				int h = get_height(x, z);
 				if (y > h && y <= water_level) {
 					type = water;
 				}
@@ -44,8 +37,9 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 				if (y <= h && y >= h - 2 && y + 1 < height && y + 1 <= water_level) {
 					type = sand;
 				}
-				blocks[x][y][z].type = type;
-				blocks[x][y][z].position = world_position + vec3(x - 1, y, z - 1); //needed for collision check
+				Block& block = blocks[block_index(x, y, z)];
+				block.type = type;
+				block.position = world_position + vec3(x - 1, y, z - 1); //needed for collision check
 			}
 		}
 	}
@@ -66,11 +60,8 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 /*
 	generate a height map from a block's world coordinate
 */
-int** Chunk::get_heightmap() {
-	int** map = new int *[width];
-	for (int x = 0; x < width; ++x) {
-		map[x] = new int[length];
-	}
+vector<int> Chunk::get_heightmap() {
+	vector<int> map(static_cast<size_t>(width) * length);
 
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
@@ -79,7 +70,7 @@ int** Chunk::get_heightmap() {
 			int z_pos = world_position.z + z - 1;
 			int height_val = abs(static_cast<int> (get_noise(x_pos, z_pos) * 20)) + 4;
 			if (height_val > height) height_val = height;
-			map[x][z] = height_val;
+			map[height_index(x, z)] = height_val;
 		}
 	}
 	return map;
@@ -138,7 +129,7 @@ Block* Chunk::get_block(ivec3 local_coord) {
 		//cout << "provided local coord is invalid" << endl;
 		return nullptr;
 	}
-	return &blocks[x][y][z];
+	return &blocks[block_index(x, y, z)];
 }
 
 /*
@@ -154,7 +145,7 @@ void Chunk::set_block(ivec3 local_coord, block_type type) {
 		//cout << "provided local coord is invalid" << endl;
 		return;
 	}
-	blocks[x][y][z].type = type;
+	blocks[block_index(x, y, z)].type = type;
 }
 
 /*
@@ -300,31 +291,41 @@ void Chunk::build_chunk() {
 	for (int x = 1; x < width - 1; ++x) {
 		for (int z = 1; z < length - 1; ++z) {
 			for (int y = 0; y < height; ++y) {
-				const Block &current = blocks[x][y][z];
+				const Block &current = blocks[block_index(x, y, z)];
 				if (current.type == none) {
 					continue;
 				}
-				int h = height_map[x][z];
 				bool am_i_transparent = has_transparency(current.type);
 				ivec3 pos = ivec3(x, y, z);
 				block_type type = current.type;
 
-				if (blocks[x - 1][y][z].type == none || has_transparency(blocks[x - 1][y][z].type) && !am_i_transparent) {
+				block_type left = blocks[block_index(x - 1, y, z)].type;
+				block_type back = blocks[block_index(x, y, z - 1)].type;
+				block_type right = blocks[block_index(x + 1, y, z)].type;
+				block_type front = blocks[block_index(x, y, z + 1)].type;
+
+				if (left == none || has_transparency(left) && !am_i_transparent) {
 					add_face(Left, type, pos);
 				}
-				if (y > 0 && (blocks[x][y - 1][z].type == none || has_transparency(blocks[x][y - 1][z].type) && !am_i_transparent)) {
-					add_face(Bottom, type, pos);
+				if (y > 0) {
+					block_type below = blocks[block_index(x, y - 1, z)].type;
+					if (below == none || has_transparency(below) && !am_i_transparent) {
+						add_face(Bottom, type, pos);
+					}
 				}
-				if (blocks[x][y][z - 1].type == none || has_transparency(blocks[x][y][z - 1].type) && !am_i_transparent) {
+				if (back == none || has_transparency(back) && !am_i_transparent) {
 					add_face(Back, type, pos);
 				}
-				if (blocks[x + 1][y][z].type == none || has_transparency(blocks[x + 1][y][z].type) && !am_i_transparent) {
+				if (right == none || has_transparency(right) && !am_i_transparent) {
 					add_face(Right, type, pos);
 				}
-				if (y < height - 1 && (blocks[x][y + 1][z].type == none || has_transparency(blocks[x][y + 1][z].type) && !am_i_transparent)) {
-					add_face(Top, type, pos);
+				if (y < height - 1) {
+					block_type above = blocks[block_index(x, y + 1, z)].type;
+					if (above == none || has_transparency(above) && !am_i_transparent) {
+						add_face(Top, type, pos);
+					}
 				}
-				if (blocks[x][y][z + 1].type == none || has_transparency(blocks[x][y][z + 1].type) && !am_i_transparent) {
+				if (front == none || has_transparency(front) && !am_i_transparent) {
 					add_face(Front, type, pos);
 				}
 			}
@@ -336,15 +337,3 @@ void Chunk::build_chunk() {
 	has_built = true;
 }
 
-Chunk::~Chunk() {
-	//TODO: deleting blocks array causes an issue.
-	/*
-	for (int x = 0; x < width; ++x) {
-		for (int y = 0; y < height; ++y) {
-			delete[] blocks[x][y];
-		}
-		delete[] blocks[x];
-	}
-	delete[] blocks;
-	*/
-}

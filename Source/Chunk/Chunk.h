@@ -46,8 +46,11 @@ private:
 	VBO water_vbo = VBO(nullptr, sizeof(vertex) * 0, GL_STATIC_DRAW);
 	EBO water_ebo = EBO(nullptr, sizeof(GLuint) * 0, GL_STATIC_DRAW);
 
-	Block*** blocks;
-	int** get_heightmap();
+	vector<Block> blocks;
+	vector<int> height_map;
+	inline size_t block_index(int x, int y, int z) const { return (static_cast<size_t>(x) * height + y) * length + z; }
+	inline size_t height_index(int x, int z) const { return static_cast<size_t>(x) * length + z; }
+	vector<int> get_heightmap();
 	void add_face(block_face face, block_type type, vec3 local_coord);
 	void update_face_indices(bool has_transparency, bool is_water);
 	void update_nonblock_structure_vertices_and_indices();
@@ -55,13 +58,15 @@ private:
 public:
 	bool should_rebuild = false;
 	bool has_built = false;
-	int** height_map;
 	int width, length, height;
 	vec3 world_position = vec3(0.0f);
 	ivec2 id = ivec2(0);
 
 	Chunk(ivec2 chunk_origin);
-	~Chunk();
+	Chunk(const Chunk&) = delete;
+	Chunk& operator=(const Chunk&) = delete;
+	~Chunk() = default;
+	int get_height(int x, int z) const { return height_map[height_index(x, z)]; }
 	void build_chunk();
 	void rebuild_chunk();
 	void draw_opaque_blocks();
