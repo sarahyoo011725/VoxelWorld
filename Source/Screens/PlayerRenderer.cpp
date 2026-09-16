@@ -104,6 +104,50 @@ void PlayerRenderer::draw_outlines(mat4 cam_matrix, Block* hovered_block) {
 	outline_hovered_cube(hovered_block);
 }
 
+/*
+	draws the sun and moon as camera-facing discs, opposite each other in the sky.
+	drawn with depth writes off so terrain drawn afterward still occludes them correctly,
+	without the discs themselves blocking anything
+*/
+void PlayerRenderer::draw_sky_discs(mat4 view, mat4 projection, vec3 eye_position, vec3 to_sun) {
+	sm.sky_disc_shader.activate();
+	sm.sky_disc_shader.set_uniform_mat4f("view", 1, GL_FALSE, view);
+	sm.sky_disc_shader.set_uniform_mat4f("projection", 1, GL_FALSE, projection);
+	quad_vao.bind();
+
+	glDepthMask(GL_FALSE);
+
+	vec3 sun_center = eye_position + to_sun * sky_disc_distance;
+	vec3 moon_center = eye_position - to_sun * sky_disc_distance;
+
+	//glow halos first (larger, soft, behind), then the flat squares on top as the core
+	sm.sky_disc_shader.set_uniform_1i("is_glow", GL_TRUE);
+	sm.sky_disc_shader.set_uniform_1f("disc_size", sky_glow_size);
+
+	sm.sky_disc_shader.set_uniform_3f("disc_center", 1, sun_center);
+	sm.sky_disc_shader.set_uniform_3f("color", 1, sun_glow_color);
+	glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
+
+	sm.sky_disc_shader.set_uniform_3f("disc_center", 1, moon_center);
+	sm.sky_disc_shader.set_uniform_3f("color", 1, moon_glow_color);
+	glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
+
+	sm.sky_disc_shader.set_uniform_1i("is_glow", GL_FALSE);
+	sm.sky_disc_shader.set_uniform_1f("disc_size", sky_disc_size);
+
+	sm.sky_disc_shader.set_uniform_3f("disc_center", 1, sun_center);
+	sm.sky_disc_shader.set_uniform_3f("core_color", 1, sun_core_color);
+	sm.sky_disc_shader.set_uniform_3f("color", 1, sun_edge_color);
+	glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
+
+	sm.sky_disc_shader.set_uniform_3f("disc_center", 1, moon_center);
+	sm.sky_disc_shader.set_uniform_3f("core_color", 1, moon_core_color);
+	sm.sky_disc_shader.set_uniform_3f("color", 1, moon_edge_color);
+	glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
+
+	glDepthMask(GL_TRUE);
+}
+
 void PlayerRenderer::post_process() {
 	quad_vao.bind();
 	texture_color_buffer.set_slot(1);

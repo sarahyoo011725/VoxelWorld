@@ -10,8 +10,11 @@ in vec3 normal;
 uniform sampler2D texture1;
 uniform sampler2D shadow_map;
 uniform vec3 fog_color;
-uniform vec3 sun_direction; //direction the sunlight travels, normalized
+uniform vec3 sun_direction; //direction the active light (sun or moon) travels, normalized
 uniform mat4 light_space_matrix;
+uniform vec3 light_color;
+uniform float ambient_strength;
+uniform float diffuse_strength;
 
 //1.0 = fully in shadow, 0.0 = fully lit
 float calculate_shadow(vec3 n) {
@@ -39,8 +42,8 @@ void main() {
 	vec3 n = normalize(normal);
 	float shadow = calculate_shadow(n);
 	float diffuse = max(dot(n, -sun_direction), 0.0);
-	float light = 0.45 + diffuse * 0.55 * (1.0 - shadow);
+	float light = ambient_strength + diffuse * diffuse_strength * (1.0 - shadow);
 
-	vec3 lit_color = tex_color.rgb * light;
+	vec3 lit_color = tex_color.rgb * light * light_color;
 	FragColor = mix(vec4(fog_color, 1.0), vec4(lit_color, tex_color.a), fog_factor);
 }

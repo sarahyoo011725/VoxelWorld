@@ -16,36 +16,46 @@ void Camera::update(vec3 eye_position) {
 	update_mouse();
 	update_zoom(dt);
 	update_matrix(eye_position);
+	update_day_night_cycle(dt);
 	update_light_space_matrix(eye_position);
 
 	sm.default_shader.activate();
 	sm.default_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);
 	sm.default_shader.set_uniform_3f("cam_pos", 1, eye_position);
-	sm.default_shader.set_uniform_3f("fog_color", 1, fog_color);
+	sm.default_shader.set_uniform_3f("fog_color", 1, sky_color);
 	sm.default_shader.set_uniform_1f("fog_start", fog_start);
 	sm.default_shader.set_uniform_1f("fog_end", fog_end);
 	sm.default_shader.set_uniform_3f("sun_direction", 1, sun_direction);
 	sm.default_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, light_space_matrix);
+	sm.default_shader.set_uniform_3f("light_color", 1, light_color);
+	sm.default_shader.set_uniform_1f("ambient_strength", ambient_strength);
+	sm.default_shader.set_uniform_1f("diffuse_strength", diffuse_strength);
 
 	sm.wave_shader.activate();
 	sm.wave_shader.set_uniform_1f("time", frame);
 	sm.wave_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);
 	sm.wave_shader.set_uniform_3f("cam_pos", 1, eye_position);
-	sm.wave_shader.set_uniform_3f("fog_color", 1, fog_color);
+	sm.wave_shader.set_uniform_3f("fog_color", 1, sky_color);
 	sm.wave_shader.set_uniform_1f("fog_start", fog_start);
 	sm.wave_shader.set_uniform_1f("fog_end", fog_end);
 	sm.wave_shader.set_uniform_3f("sun_direction", 1, sun_direction);
 	sm.wave_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, light_space_matrix);
+	sm.wave_shader.set_uniform_3f("light_color", 1, light_color);
+	sm.wave_shader.set_uniform_1f("ambient_strength", ambient_strength);
+	sm.wave_shader.set_uniform_1f("diffuse_strength", diffuse_strength);
 
 	sm.foliage_shader.activate();
 	sm.foliage_shader.set_uniform_1f("time", frame);
 	sm.foliage_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);
 	sm.foliage_shader.set_uniform_3f("cam_pos", 1, eye_position);
-	sm.foliage_shader.set_uniform_3f("fog_color", 1, fog_color);
+	sm.foliage_shader.set_uniform_3f("fog_color", 1, sky_color);
 	sm.foliage_shader.set_uniform_1f("fog_start", fog_start);
 	sm.foliage_shader.set_uniform_1f("fog_end", fog_end);
 	sm.foliage_shader.set_uniform_3f("sun_direction", 1, sun_direction);
 	sm.foliage_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, light_space_matrix);
+	sm.foliage_shader.set_uniform_3f("light_color", 1, light_color);
+	sm.foliage_shader.set_uniform_1f("ambient_strength", ambient_strength);
+	sm.foliage_shader.set_uniform_1f("diffuse_strength", diffuse_strength);
 }
 
 void Camera::update_zoom(float dt) {
@@ -57,6 +67,30 @@ void Camera::update_zoom(float dt) {
 	else {
 		fov_degrees = 45.0f;
 	}
+}
+
+/*
+	advances the day/night clock and derives the active light (sun by day, its mirror
+	position by night, standing in for the moon), its color/strength, and the sky color
+*/
+void Camera::update_day_night_cycle(float dt) {
+	time_of_day += dt / day_length;
+	if (time_of_day > 1.0f) time_of_day -= 1.0f;
+
+	const float two_pi = 6.28318530718f;
+	float angle = time_of_day * two_pi;
+	//a small fixed z tilt keeps the sun from passing exactly through the up vector at
+	//noon, which would make lookAt() in update_light_space_matrix degenerate
+	to_sun = normalize(vec3(cos(angle), sin(angle), 0.15f));
+
+	vec3 to_light = (to_sun.y >= 0.0f) ? to_sun : -to_sun;
+	sun_direction = -to_light;
+
+	float day_factor = clamp(to_sun.y * 2.5f, 0.0f, 1.0f);
+	light_color = mix(night_light_color, day_light_color, day_factor);
+	ambient_strength = mix(0.12f, 0.45f, day_factor);
+	diffuse_strength = mix(0.2f, 0.55f, day_factor);
+	sky_color = mix(night_sky_color, day_sky_color, day_factor);
 }
 
 /*

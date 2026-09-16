@@ -18,4 +18,5 @@ public:
 	Shader foliage_shader = Shader("Resources/Shaders/foliage.vert", "Resources/Shaders/foliage.frag");
 	Shader frame_buffer_shader = Shader("Resources/Shaders/framebuffer.vert", "Resources/Shaders/framebuffer.frag");
 	Shader shadow_shader = Shader("Resources/Shaders/shadow.vert", "Resources/Shaders/shadow.frag");
+	Shader sky_disc_shader = Shader("Resources/Shaders/sky_disc.vert", "Resources/Shaders/sky_disc.frag");
 };

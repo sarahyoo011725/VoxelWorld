@@ -12,6 +12,9 @@ uniform sampler2D shadow_map;
 uniform vec3 fog_color;
 uniform vec3 sun_direction;
 uniform mat4 light_space_matrix;
+uniform vec3 light_color;
+uniform float ambient_strength;
+uniform float diffuse_strength;
 
 float calculate_shadow(vec3 n) {
 	vec4 light_space_pos = light_space_matrix * vec4(world_pos, 1.0);
@@ -38,8 +41,8 @@ void main() {
 	vec3 n = normalize(normal);
 	float shadow = calculate_shadow(n);
 	float diffuse = max(dot(n, -sun_direction), 0.0);
-	float light = 0.45 + diffuse * 0.55 * (1.0 - shadow);
+	float light = ambient_strength + diffuse * diffuse_strength * (1.0 - shadow);
 
-	vec3 lit_color = tex_color.rgb * light;
+	vec3 lit_color = tex_color.rgb * light * light_color;
 	FragColor = mix(vec4(fog_color, 1.0), vec4(lit_color, tex_color.a), fog_factor);
 }
