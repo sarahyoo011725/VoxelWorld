@@ -15,7 +15,7 @@ out float fog_factor;
 void main() {
 	vec3 pos = vertex_pos;
 	pos.y -= 0.15;
-	pos.y += sin(pos.x + time) * 0.12;
+	pos.y += sin(pos.x * 0.6 + time) * 0.07 + sin(pos.z * 0.6 + time * 0.8) * 0.07;
 	gl_Position = cam_matrix * vec4(pos, 1.0);
 	tex_coord = texture_coord;
 	float dist = distance(pos, cam_pos);
