@@ -2,26 +2,42 @@
 #include "World/ChunkManager.h"
 #include "Entity/Geometries.h"
 #include "Block/BlockType.h"
+#include <functional>
+#include <map>
 
 class Chunk;
 
 /*
-	a singleton class that creates structures across chunks
+	a rule for procedurally spawning a structure while generating a chunk
+*/
+struct structure_rule {
+	int spawn_chance; //1 in N chance per terrain column
+	function<void(vec3)> spawn;
+};
+
+/*
+	a singleton class that creates structures across chunks.
+	to add a new structure: write a spawn_X method, then register it in
+	terrain_structures (world generation) and/or placeable_structures (player placement)
+	in the constructor - no other class needs to change.
 */
 class StructureGenerator {
 private:
 	ChunkManager& chunk_manager;
-	StructureGenerator() : chunk_manager(ChunkManager::get_instance()) {};
+	StructureGenerator();
 	StructureGenerator(const StructureGenerator&) = delete;
 	StructureGenerator& operator=(const StructureGenerator&) = delete;
+
+	void spawn_tree(vec3 world_coord);
+	void spawn_grass(vec3 world_coord);
 public:
 	static StructureGenerator& get_instance() {
 		static StructureGenerator instance;
 		return instance;
 	}
+	vector<structure_rule> terrain_structures;
+	map<block_type, function<void(vec3)>> placeable_structures;
 	void spawn_nonblock_structure(block_type type, vec3 world_coord);
-	void spawn_tree(vec3 world_vec3);
-	void spawn_grass(vec3 world_vec3);
 };
 
 namespace {

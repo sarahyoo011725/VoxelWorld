@@ -82,13 +82,10 @@ void Terrain::spawn_structures(Chunk* chunk) {
 			//do not spawn anything in water
 			if (h <= water_level) continue;
 
-			int n_tree = rand() % 60;
-			int n_grass = rand() % 10;
-			if (n_tree == 0) {
-				sg.spawn_tree(vec3(wx, h + 1, wz));
-			}
-			if (n_grass == 0) {
-				sg.spawn_grass(vec3(wx, h + 1, wz));
+			for (const structure_rule& rule : sg.terrain_structures) {
+				if (rand() % rule.spawn_chance == 0) {
+					rule.spawn(vec3(wx, h + 1, wz));
+				}
 			}
 		}
 	}

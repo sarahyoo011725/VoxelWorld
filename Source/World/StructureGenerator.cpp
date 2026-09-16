@@ -1,14 +1,23 @@
 #include "StructureGenerator.h"
 #include "Chunk/Chunk.h"
 
+StructureGenerator::StructureGenerator() : chunk_manager(ChunkManager::get_instance()) {
+	terrain_structures = {
+		{ 60, [this](vec3 c) { spawn_tree(c); } },
+		{ 10, [this](vec3 c) { spawn_grass(c); } },
+	};
+	placeable_structures = {
+		{ grass, [this](vec3 c) { spawn_grass(c); } },
+	};
+}
+
 /*
-	checks the block type and creates a non-block structure
+	looks up the structure registered for a block type and spawns it
 */
 void StructureGenerator::spawn_nonblock_structure(block_type type, vec3 world_coord) {
-	switch (type) {
-	case grass:
-		spawn_grass(world_coord);
-		return;
+	const auto& rule = placeable_structures.find(type);
+	if (rule != placeable_structures.end()) {
+		rule->second(world_coord);
 	}
 }
 
