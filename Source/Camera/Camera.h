@@ -31,7 +31,7 @@ private:
 	ShaderManager& sm;
 
 	const float mouse_sensitivity = 0.1f;
-	const float near_plane = 1.0f;
+	const float near_plane = 0.1f;
 	const float far_plane = 180.0f;
 	const vec3 fog_color = vec3(135.0f / 255, 206.0f / 255, 235.0f / 255);
 	const float fog_start = 90.0f;

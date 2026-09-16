@@ -16,9 +16,10 @@ public:
 	void update();
 	mat4 view_matrix() const { return camera.mat; }
 	Block* hovered_block() const { return block_interactor.hovered_block; }
-	bool is_underwater() { return physics.is_underwater(position); }
+	bool is_underwater() { return physics.is_underwater(eye_position()); }
 private:
 	void update_movement(float dt);
+	vec3 eye_position() const { return position + vec3(0.0f, eye_height, 0.0f); }
 
 	WindowSetting* window_setting;
 	PlayerPhysics physics;
@@ -28,6 +29,7 @@ private:
 	const float run_speed = 10.0f;
 	const float run_speed_fly = 50.0f;
 	const float jump_force = 8.0f;
+	const float eye_height = 0.72f;
 
 	float last_frame = 0.0f;
 	float speed = default_speed;

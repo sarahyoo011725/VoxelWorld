@@ -3,7 +3,7 @@
 
 Player::Player(WindowSetting* setting, vec3 position)
 	: camera(setting), window_setting(setting), block_interactor(setting) {
-	size = vec3(1, 2, 1);
+	size = vec3(0.6f, 1.8f, 0.6f);
 	this->position = position;
 }
 
@@ -20,8 +20,8 @@ void Player::update() {
 	}
 
 	update_movement(dt);
-	camera.update(position);
-	block_interactor.update(position, camera.direction);
+	camera.update(eye_position());
+	block_interactor.update(eye_position(), camera.direction);
 }
 
 /*
