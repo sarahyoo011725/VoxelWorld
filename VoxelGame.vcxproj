@@ -70,25 +70,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LibraryPath>C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\arm64￦ｏｐｅｎｇｌ３２．ｌｉｂ;$(LibraryPath)</LibraryPath>
-    <ExternalIncludePath>$(ExternalIncludePath)</ExternalIncludePath>
-    <IncludePath>C:\Users\dongh\Source\Repos\VoxelGame\Libraries\include;$(IncludePath)</IncludePath>
-    <SourcePath>$(SourcePath)</SourcePath>
-    <PublicIncludeDirectories>$(PublicIncludeDirectories)</PublicIncludeDirectories>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LibraryPath>C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\arm64￦ｏｐｅｎｇｌ３２．ｌｉｂ;$(LibraryPath)</LibraryPath>
-    <ExternalIncludePath>$(ExternalIncludePath)</ExternalIncludePath>
-    <IncludePath>C:\Users\dongh\Source\Repos\VoxelGame\Libraries\include;$(IncludePath)</IncludePath>
-    <SourcePath>$(SourcePath)</SourcePath>
-    <PublicIncludeDirectories>$(PublicIncludeDirectories)</PublicIncludeDirectories>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LibraryPath>C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\arm64￦ｏｐｅｎｇｌ３２．ｌｉｂ;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LibraryPath>C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0\um\arm64￦ｏｐｅｎｇｌ３２．ｌｉｂ;$(LibraryPath)</LibraryPath>
+  <PropertyGroup>
+    <LocalDebuggerWorkingDirectory>$(ProjectDir)</LocalDebuggerWorkingDirectory>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Label="Vcpkg">
     <VcpkgEnableManifest>true</VcpkgEnableManifest>

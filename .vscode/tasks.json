@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "type": "cmake",
+      "label": "CMake: build VoxelWorld",
+      "command": "build",
+      "targets": ["VoxelWorld"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$msCompile"],
+      "detail": "Build the game with the selected CMake preset."
+    }
+  ]
+}

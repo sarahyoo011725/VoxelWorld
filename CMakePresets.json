@@ -1,0 +1,82 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 21,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "default-vs-msvc-windows",
+      "displayName": "Visual Studio 2022 (x64)",
+      "description": "MSVC build via vcpkg. Requires the VCPKG_ROOT environment variable.",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "Debug;Release"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "default-vs-2026-msvc-windows",
+      "displayName": "Visual Studio 2026 (x64)",
+      "description": "MSVC build via vcpkg, for machines with only VS 2026 installed instead of VS 2022.",
+      "generator": "Visual Studio 18 2026",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_CONFIGURATION_TYPES": "Debug;Release"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "ninja-msvc-windows",
+      "displayName": "Ninja + MSVC (x64)",
+      "description": "Faster single-config build. Run from a Developer Command Prompt / Developer PowerShell.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default-vs-msvc-windows",
+      "displayName": "Release",
+      "configurePreset": "default-vs-msvc-windows",
+      "configuration": "Release"
+    },
+    {
+      "name": "default-vs-msvc-windows-debug",
+      "displayName": "Debug",
+      "configurePreset": "default-vs-msvc-windows",
+      "configuration": "Debug"
+    },
+    {
+      "name": "default-vs-2026-msvc-windows",
+      "displayName": "Release",
+      "configurePreset": "default-vs-2026-msvc-windows",
+      "configuration": "Release"
+    },
+    {
+      "name": "ninja-msvc-windows",
+      "displayName": "Ninja Release",
+      "configurePreset": "ninja-msvc-windows"
+    }
+  ]
+}

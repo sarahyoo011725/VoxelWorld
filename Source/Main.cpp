@@ -1,9 +1,17 @@
 #include <iostream>
+#include <filesystem>
+#include <fstream>
+#include <string>
+#include <cstring>
+#include <system_error>
+#include <vector>
 #include "Screens/StartScreen.h"
 #include "Screens/GameScreen.h"
 
 using namespace std;
 using namespace glm;
+
+namespace fs = std::filesystem;
 
 //dimension of screen
 const static int width = 1200;
@@ -17,8 +25,44 @@ void process_inputs(GLFWwindow *window);
 void focus_callback(GLFWwindow* window, int focused);
 void on_window_focused(GLFWwindow* window);
 void unfocus_window(GLFWwindow* window);
+bool resolve_resource_root(const char* argv0);
+void warn_if_lfs_placeholders();
 
-int main() {
+int run_game();
+
+int main(int argc, char** argv) {
+	//everything under Resources/ is loaded through paths relative to the
+	//working directory, so point it at whichever directory holds Resources/
+	if (!resolve_resource_root(argc > 0 ? argv[0] : nullptr)) {
+		return -1;
+	}
+	warn_if_lfs_placeholders();
+
+	//shader/audio loading code throws bare int/const char*/std::exception on
+	//failure (missing file, no audio device, ...) with nothing upstream to
+	//catch it, which otherwise crashes with an opaque OS fault dialog and no
+	//indication of what went wrong.
+	try {
+		return run_game();
+	}
+	catch (const std::exception& e) {
+		cerr << "Fatal error: " << e.what() << endl;
+	}
+	catch (const char* msg) {
+		cerr << "Fatal error: " << msg << endl;
+	}
+	catch (int err) {
+		cerr << "Fatal error: errno " << err << " (" << strerror(err) << ")" << endl;
+	}
+	catch (...) {
+		cerr << "Fatal error: unknown exception" << endl;
+	}
+	cerr << "Press Enter to exit..." << endl;
+	cin.get();
+	return -1;
+}
+
+int run_game() {
 	//initializes GLFW libraries
 	glfwInit();
 
@@ -124,4 +168,70 @@ void on_window_focused(GLFWwindow* window) {
 void unfocus_window(GLFWwindow* window) {
 	window_setting.window_active = false;
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+}
+
+/*
+* sets the working directory to the directory that contains Resources/.
+* candidates, in order: the executable's directory and its parents (so the game
+* runs from build/Debug, build/Release, an install folder, ...), the current
+* working directory, and the source directory baked in at configure time.
+* returns false if Resources/ could not be found anywhere.
+*/
+bool resolve_resource_root(const char* argv0) {
+	error_code ec;
+	vector<fs::path> candidates;
+
+	if (argv0 != nullptr && *argv0 != '\0') {
+		fs::path exe = fs::weakly_canonical(fs::path(argv0), ec);
+		if (!ec) {
+			fs::path dir = exe.parent_path();
+			//the executable typically sits 1-3 levels below the project root
+			for (int i = 0; i < 5 && !dir.empty(); ++i) {
+				candidates.push_back(dir);
+				if (dir == dir.parent_path()) break;
+				dir = dir.parent_path();
+			}
+		}
+	}
+
+	fs::path cwd = fs::current_path(ec);
+	if (!ec) candidates.push_back(cwd);
+
+#ifdef VOXELWORLD_SOURCE_DIR
+	candidates.push_back(fs::path(VOXELWORLD_SOURCE_DIR));
+#endif
+
+	for (const fs::path& dir : candidates) {
+		if (fs::exists(dir / "Resources" / "Shaders", ec)) {
+			fs::current_path(dir, ec);
+			if (ec) {
+				cerr << "Failed to enter " << dir.string() << ": " << ec.message() << endl;
+				return false;
+			}
+			return true;
+		}
+	}
+
+	cerr << "Could not find the Resources folder.\n"
+		<< "Run the game from the repository root, or keep Resources/ next to the executable." << endl;
+	return false;
+}
+
+/*
+* the .wav files are stored in Git LFS. Cloning without git-lfs leaves small
+* text pointers in their place, which makes audio loading throw at startup with
+* no useful message, so check one of them up front.
+*/
+void warn_if_lfs_placeholders() {
+	const char* probe = "Resources/Musics/sweden.wav";
+	ifstream in(probe, ios::binary);
+	if (!in) return;
+
+	char header[8] = {};
+	in.read(header, sizeof(header));
+	if (in.gcount() == sizeof(header) && string(header, 7) == "version") {
+		cerr << "WARNING: audio files are Git LFS pointers, not real audio.\n"
+			<< "Run 'git lfs install' then 'git lfs pull' in the repository, "
+			<< "otherwise the game will crash when it loads sound." << endl;
+	}
 }
