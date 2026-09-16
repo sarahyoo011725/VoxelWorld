@@ -272,13 +272,13 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 	else if (is_foliage(type)) {
 		vector<vertex> verts = cw_face_map[face];
 
-		//only the top of the block sways, its base stays pinned to the ground
+		//a leaf block has no "root" side like a grass blade does, so it
+		//sways as a rigid whole - a pinned bottom would shear it into a wobbling parallelogram
 		for (int i = 0; i < verts.size(); ++i) {
 			vertex v = verts[i];
-			float sway = (v.position.y > 0.0f) ? 1.0f : 0.0f;
 			v.position += local_coord + world_position + vec3(-1, 0, -1);
 			v.texture = convert_to_uv(i, texture_coord);
-			foliage_vertices.push_back({ v.position, v.texture, sway });
+			foliage_vertices.push_back({ v.position, v.texture, 1.0f });
 		}
 		add_foliage_quad_indices();
 	}
@@ -335,6 +335,9 @@ void Chunk::build_chunk() {
 					continue;
 				}
 				bool am_i_transparent = has_transparency(current.type);
+				//foliage blocks sway independently, so a neighbor can no longer be trusted
+				//to seal a culled face - always draw a full, sealed cube for them
+				bool am_i_foliage = is_foliage(current.type);
 				ivec3 pos = ivec3(x, y, z);
 				block_type type = current.type;
 
@@ -343,28 +346,28 @@ void Chunk::build_chunk() {
 				block_type right = blocks[block_index(x + 1, y, z)].type;
 				block_type front = blocks[block_index(x, y, z + 1)].type;
 
-				if (left == none || has_transparency(left) && !am_i_transparent) {
+				if (am_i_foliage || left == none || has_transparency(left) && !am_i_transparent) {
 					add_face(Left, type, pos);
 				}
 				if (y > 0) {
 					block_type below = blocks[block_index(x, y - 1, z)].type;
-					if (below == none || has_transparency(below) && !am_i_transparent) {
+					if (am_i_foliage || below == none || has_transparency(below) && !am_i_transparent) {
 						add_face(Bottom, type, pos);
 					}
 				}
-				if (back == none || has_transparency(back) && !am_i_transparent) {
+				if (am_i_foliage || back == none || has_transparency(back) && !am_i_transparent) {
 					add_face(Back, type, pos);
 				}
-				if (right == none || has_transparency(right) && !am_i_transparent) {
+				if (am_i_foliage || right == none || has_transparency(right) && !am_i_transparent) {
 					add_face(Right, type, pos);
 				}
 				if (y < height - 1) {
 					block_type above = blocks[block_index(x, y + 1, z)].type;
-					if (above == none || has_transparency(above) && !am_i_transparent) {
+					if (am_i_foliage || above == none || has_transparency(above) && !am_i_transparent) {
 						add_face(Top, type, pos);
 					}
 				}
-				if (front == none || has_transparency(front) && !am_i_transparent) {
+				if (am_i_foliage || front == none || has_transparency(front) && !am_i_transparent) {
 					add_face(Front, type, pos);
 				}
 			}
