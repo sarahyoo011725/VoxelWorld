@@ -7,4 +7,5 @@ struct WindowSetting {
 	int width;
 	int height;
 	bool window_active;
+	double scroll_delta_y; 
 };

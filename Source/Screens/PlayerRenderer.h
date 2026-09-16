@@ -6,6 +6,7 @@
 #include "Texture/Texture.h"
 #include "Shader/ShaderManager.h"
 #include "Entity/Geometries.h"
+#include "Entity/Inventory.h"
 #include "Block/Block.h"
 #include "WindowSetting.h"
 
@@ -25,6 +26,7 @@ public:
 	void bind_shadow_fbo();
 	void unbind_shadow_fbo();
 	void draw_HUDs();
+	void draw_hotbar(const Inventory& inventory);
 	void draw_outlines(mat4 cam_matrix, Block* hovered_block);
 	void draw_sky_discs(mat4 view, mat4 projection, vec3 eye_position, vec3 to_sun);
 	void draw_sky_background(mat4 view, mat4 projection, vec3 zenith_color, vec3 horizon_color, vec3 to_sun);
@@ -43,6 +45,14 @@ private:
 	const float outline_thickness = 2.0f;
 	vec4 hovered_block_outline_color = vec4(0.0, 1.0, 1.0, 1.0); //cyan
 	vec4 crosshair_color = vec4(1.0); //white
+
+	const float hotbar_slot_size = 0.09f; //ndc half-size before aspect correction
+	const float hotbar_slot_spacing = 0.02f;
+	const float hotbar_y = -0.88f;
+	const float hotbar_icon_scale = 0.68f;
+	const vec4 hotbar_slot_color = vec4(0.15f, 0.15f, 0.15f, 0.6f);
+	const vec4 hotbar_selected_color = vec4(0.9f, 0.9f, 0.9f, 0.75f);
+	const vec4 hotbar_count_color = vec4(1.0f, 1.0f, 1.0f, 0.9f);
 
 	const float sky_disc_distance = 150.0f; //must stay under Camera's far_plane (180) or it gets clipped
 	const float sky_disc_size = 15.0f;

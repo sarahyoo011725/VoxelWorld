@@ -1,4 +1,5 @@
 #include "PlayerRenderer.h"
+#include "World/StructureGenerator.h"
 #include <glm/gtc/matrix_transform.hpp>
 
 PlayerRenderer::PlayerRenderer(WindowSetting* setting)
@@ -32,6 +33,9 @@ PlayerRenderer::PlayerRenderer(WindowSetting* setting)
 	sm.frame_buffer_shader.activate();
 	sm.frame_buffer_shader.set_uniform_1i("screen_texture", 1);
 	sm.frame_buffer_shader.set_uniform_1i("depth_texture", 3);
+
+	sm.HUD_shader.activate();
+	sm.HUD_shader.set_uniform_1i("texture1", 1);
 
 	sm.default_shader.activate();
 	sm.default_shader.set_uniform_1i("shadow_map", 4);
@@ -99,9 +103,76 @@ void PlayerRenderer::draw_HUDs() {
 	sm.HUD_shader.activate();
 	sm.HUD_shader.set_uniform_1i("use_texture", GL_FALSE);
 	sm.HUD_shader.set_uniform_4f("color", 1, crosshair_color);
+	//crosshair vertices are already baked at their final NDC position - identity transform
+	sm.HUD_shader.set_uniform_2f("offset", 1, vec2(0.0f));
+	sm.HUD_shader.set_uniform_2f("scale", 1, vec2(1.0f));
 	HUD_vao.bind();
 	glLineWidth(1.0);
 	glDrawArrays(GL_LINES, 0, 4);
+}
+
+/*
+	draws the 9-slot hotbar along the bottom of the screen: a background per slot
+	(brighter for the selected one), an item icon sampled from the same texture atlas
+	blocks use, and a small fill bar standing in for the stack count - there's no text
+	rendering in this engine yet, so an exact number isn't shown
+*/
+void PlayerRenderer::draw_hotbar(const Inventory& inventory) {
+	sm.HUD_shader.activate();
+	quad_vao.bind();
+
+	float aspect = (float)window_setting->height / (float)window_setting->width; 
+	float slot_step = hotbar_slot_size * 2.0f + hotbar_slot_spacing;
+	float total_width = Inventory::size * slot_step - hotbar_slot_spacing;
+	float start_x = -total_width / 2.0f + hotbar_slot_size;
+	vec2 slot_scale = vec2(hotbar_slot_size * aspect, hotbar_slot_size);
+
+	for (int i = 0; i < Inventory::size; ++i) {
+		vec2 offset = vec2(start_x + i * slot_step, hotbar_y);
+
+		sm.HUD_shader.set_uniform_1i("use_texture", GL_FALSE);
+		sm.HUD_shader.set_uniform_4f("color", 1, (i == inventory.selected_slot) ? hotbar_selected_color : hotbar_slot_color);
+		sm.HUD_shader.set_uniform_2f("offset", 1, offset);
+		sm.HUD_shader.set_uniform_2f("scale", 1, slot_scale);
+		sm.HUD_shader.set_uniform_2f("uv_offset", 1, vec2(0.0f));
+		sm.HUD_shader.set_uniform_2f("uv_scale", 1, vec2(1.0f));
+		glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
+
+		const item_stack& stack = inventory.slots[i];
+		if (stack.type == none) continue;
+
+		vec2 texture_coord;
+		if (is_nonblock(stack.type)) {
+			texture_coord = grass_text_coord;
+		}
+		else if (texture_map.find(stack.type) != texture_map.end()) {
+			texture_coord = texture_map[stack.type][Front];
+		}
+		else {
+			continue;
+		}
+
+		vec2 uv_min = vec2((texture_coord.x - 1.0f) / textures_columns, (texture_coord.y - 1.0f) / texture_rows);
+		vec2 uv_scale = vec2(1.0f / textures_columns, 1.0f / texture_rows);
+
+		sm.HUD_shader.set_uniform_1i("use_texture", GL_TRUE);
+		sm.HUD_shader.set_uniform_2f("scale", 1, slot_scale * hotbar_icon_scale);
+		sm.HUD_shader.set_uniform_2f("uv_offset", 1, uv_min);
+		sm.HUD_shader.set_uniform_2f("uv_scale", 1, uv_scale);
+		glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
+
+		if (stack.count > 1) {
+			float fill = std::min(stack.count, 10) / 10.0f;
+			vec2 bar_scale = vec2(slot_scale.x * fill, slot_scale.y * 0.08f);
+			vec2 bar_offset = vec2(offset.x - slot_scale.x * (1.0f - fill), offset.y - slot_scale.y * 0.8f);
+
+			sm.HUD_shader.set_uniform_1i("use_texture", GL_FALSE);
+			sm.HUD_shader.set_uniform_4f("color", 1, hotbar_count_color);
+			sm.HUD_shader.set_uniform_2f("offset", 1, bar_offset);
+			sm.HUD_shader.set_uniform_2f("scale", 1, bar_scale);
+			glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
+		}
+	}
 }
 
 /*

@@ -23,6 +23,7 @@ bool start_game = false;
 
 void resize_window(GLFWwindow *window, int width, int height);
 void process_inputs(GLFWwindow *window);
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void focus_callback(GLFWwindow* window, int focused);
 void on_window_focused(GLFWwindow* window);
 void unfocus_window(GLFWwindow* window);
@@ -83,6 +84,7 @@ int run_game() {
 	glfwFocusWindow(window);
 	glfwSetWindowFocusCallback(window, focus_callback);
 	glfwSetFramebufferSizeCallback(window, resize_window);
+	glfwSetScrollCallback(window, scroll_callback);
 	
 	gladLoadGL();
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -100,10 +102,18 @@ int run_game() {
 
 		if (start_game) {
 			game_screen.gl_settings();
-			game_screen.draw();	
+			game_screen.draw();
 		}
 		else {
-			start_screen.draw(); 
+			start_screen.draw();
+			StartScreen::Action action = start_screen.poll_buttons(&window_setting);
+			if (action == StartScreen::Action::Start) {
+				start_game = true;
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+			}
+			else if (action == StartScreen::Action::Exit) {
+				glfwSetWindowShouldClose(window, true);
+			}
 		}
 		
 		glfwSwapBuffers(window); //swap the color buffer and displays its output to the screen
@@ -135,10 +145,18 @@ void process_inputs(GLFWwindow *window) {
 	}
 	if (glfwGetKey(window, GLFW_KEY_ENTER) == GLFW_PRESS) {
 		start_game = true;
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 	}
 	if (GLFW_HOVERED && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 		on_window_focused(window);
 	}
+}
+
+/*
+* callback function for mouse scroll, used to cycle the hotbar selection
+*/
+void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
+	window_setting.scroll_delta_y += yoffset;
 }
 
 /*
@@ -156,11 +174,13 @@ void focus_callback(GLFWwindow* window, int focused) {
 }
 
 /*
-* a sub-fuction for focus_callback(). disables mouse cursor on window focused
+* a sub-fuction for focus_callback(). disables mouse cursor on window focused,
+* but only once the game has actually started - the start menu needs a visible,
+* free-moving cursor so its buttons are clickable
 */
 void on_window_focused(GLFWwindow* window) {
 	window_setting.window_active = true;
-	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+	glfwSetInputMode(window, GLFW_CURSOR, start_game ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 }
 
 /*

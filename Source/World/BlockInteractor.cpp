@@ -5,8 +5,22 @@ BlockInteractor::BlockInteractor(WindowSetting* setting)
 	: cm(ChunkManager::get_instance()), sg(StructureGenerator::get_instance()), window_setting(setting) {}
 
 void BlockInteractor::update(vec3 origin, vec3 direction) {
+	handle_scroll();
 	raycast(origin, direction);
 	interact();
+}
+
+/*
+	consumes the accumulated scroll delta to cycle the selected hotbar slot
+*/
+void BlockInteractor::handle_scroll() {
+	if (window_setting->scroll_delta_y > 0.0) {
+		inventory.scroll_select(-1);
+	}
+	else if (window_setting->scroll_delta_y < 0.0) {
+		inventory.scroll_select(1);
+	}
+	window_setting->scroll_delta_y = 0.0;
 }
 
 /*
@@ -99,6 +113,8 @@ void BlockInteractor::interact() {
 	Chunk* chunk = cm.get_chunk(hovered_block->position);
 	ivec3 local_coord = world_to_local_coord(hovered_block->position);
 
+	block_type holding_block_type = inventory.selected_type();
+
 	if (glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 		if (holding_block_type != none && hovered_block->type != holding_block_type && (hovered_block->type == none || hovered_block->type == water)) {
 			if (is_nonblock(holding_block_type)) {
@@ -111,14 +127,15 @@ void BlockInteractor::interact() {
 				}
 			}
 			else {
-				cm.set_block_manual(chunk->id, local_coord, holding_block_type); //TOOD: selection of block type, inventory
+				cm.set_block_manual(chunk->id, local_coord, holding_block_type);
 			}
+			inventory.remove_selected();
 			audio::play_block_sound_effect(holding_block_type);
 		}
 	}
 	if (glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 		if (hovered_block->type != none) {
-			holding_block_type = hovered_block->type;
+			inventory.add_item(hovered_block->type);
 			if (is_nonblock(hovered_block->type)) {
 				chunk->remove_structure(local_coord);
 			}

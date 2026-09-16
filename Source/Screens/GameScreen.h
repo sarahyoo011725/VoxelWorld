@@ -118,12 +118,13 @@ public:
 		}
 		renderer.draw_outlines(player.view_matrix(), player.hovered_block());
 		renderer.draw_HUDs();
+		renderer.draw_hotbar(player.inventory());
 
 		//second render pass: draw as normal
 		renderer.unbind_fbo();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_DEPTH_TEST);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); //the composited fullscreen quad must always be solid, even in wireframe mode
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		sm.frame_buffer_shader.activate();
 		renderer.post_process();
 	}
