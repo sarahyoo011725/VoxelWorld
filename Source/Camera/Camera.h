@@ -16,6 +16,8 @@ namespace {
 * view/projection, mouse-look, and the day/night lighting cycle - movement, physics,
 * and interaction live elsewhere
 */
+enum class TimeMode { Auto, Day, Night };
+
 class Camera
 {
 public:
@@ -27,6 +29,7 @@ public:
 	mat4 light_space_matrix = mat4(1.0f); //recomputed each frame, centered on the player, for the shadow pass
 
 	//day/night cycle state, exposed so the sun/moon discs can be drawn in the sky
+	TimeMode time_mode = TimeMode::Auto; //KEY_5 toggles Day/Night, KEY_6 resumes Auto
 	float time_of_day = 0.2f; //0 = sunrise, 0.25 = noon, 0.5 = sunset, 0.75 = midnight
 	vec3 to_sun = vec3(0.0f, 1.0f, 0.0f); //unit direction from the player toward the sun
 	vec3 sky_color = vec3(0.0f); //horizon-level sky/fog color

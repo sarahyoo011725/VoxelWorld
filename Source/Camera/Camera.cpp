@@ -74,8 +74,25 @@ void Camera::update_zoom(float dt) {
 	position by night, standing in for the moon), its color/strength, and the sky color
 */
 void Camera::update_day_night_cycle(float dt) {
-	time_of_day += dt / day_length;
-	if (time_of_day > 1.0f) time_of_day -= 1.0f;
+	//5 toggles fixed day/night, 6 goes back to the natural cycle - kept apart so
+	//"resume auto" isn't buried a step or two into the day/night toggle
+	if (glfwGetKey(window_setting->window, GLFW_KEY_5) == GLFW_PRESS) {
+		time_mode = (time_mode == TimeMode::Day) ? TimeMode::Night : TimeMode::Day;
+	}
+	if (glfwGetKey(window_setting->window, GLFW_KEY_6) == GLFW_PRESS) {
+		time_mode = TimeMode::Auto;
+	}
+
+	if (time_mode == TimeMode::Day) {
+		time_of_day = 0.25f; //noon, fixed
+	}
+	else if (time_mode == TimeMode::Night) {
+		time_of_day = 0.75f; //midnight, fixed
+	}
+	else {
+		time_of_day += dt / day_length;
+		if (time_of_day > 1.0f) time_of_day -= 1.0f;
+	}
 
 	const float two_pi = 6.28318530718f;
 	float angle = time_of_day * two_pi;
