@@ -45,11 +45,19 @@ void Camera::update() {
 
 	sm.default_shader.activate();
 	sm.default_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);
+	sm.default_shader.set_uniform_3f("cam_pos", 1, position);
+	sm.default_shader.set_uniform_3f("fog_color", 1, fog_color);
+	sm.default_shader.set_uniform_1f("fog_start", fog_start);
+	sm.default_shader.set_uniform_1f("fog_end", fog_end);
 
 	sm.wave_shader.activate();
 	sm.wave_shader.set_uniform_1f("time", frame);
 	sm.wave_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);
-	
+	sm.wave_shader.set_uniform_3f("cam_pos", 1, position);
+	sm.wave_shader.set_uniform_3f("fog_color", 1, fog_color);
+	sm.wave_shader.set_uniform_1f("fog_start", fog_start);
+	sm.wave_shader.set_uniform_1f("fog_end", fog_end);
+
 	sm.frame_buffer_shader.activate();
 	sm.frame_buffer_shader.set_uniform_1i("is_underwater", is_underwater());
 

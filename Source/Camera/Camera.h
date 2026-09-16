@@ -65,6 +65,9 @@ private:
 	const float gravity = -30.0f;
 	const float outline_thickness = 2.0f;
 	const float max_ray_length = 3.0f;
+	const vec3 fog_color = vec3(135.0f / 255, 206.0f / 255, 235.0f / 255);
+	const float fog_start = 90.0f;
+	const float fog_end = 160.0f;
 	
 	//saves the information of block interacting with
 	Chunk* current_chunk = nullptr;
@@ -81,7 +84,7 @@ private:
 	float pitch = 0.0f;
 	float fov_degrees = 45.0f;
 	float near_plane = 1.0f;
-	float far_plane = 100.0f;
+	float far_plane = 180.0f;
 	float speed = default_speed;
 
 	//non-constant boolean variables that are updated on user inputs

@@ -97,6 +97,13 @@ void Shader::set_uniform_1f(const char* uniform_name, GLfloat value) {
 }
 
 /*
+	sends one or more vec3 uniform value
+*/
+void Shader::set_uniform_3f(const char* uniform_name, GLsizei count, vec3 value) {
+	glUniform3fv(glGetUniformLocation(id, uniform_name), count, value_ptr(value));
+}
+
+/*
 	sends one or more vec4 uniform value.
 	normally used for sending a colour.
 */
