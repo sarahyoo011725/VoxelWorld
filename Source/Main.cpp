@@ -5,6 +5,7 @@
 #include <cstring>
 #include <system_error>
 #include <vector>
+#include "WindowSetting.h"
 #include "Screens/StartScreen.h"
 #include "Screens/GameScreen.h"
 

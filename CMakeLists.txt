@@ -44,8 +44,12 @@ add_executable(VoxelWorld
 	Source/Buffers/VBO.cpp
 	Source/Camera/Camera.cpp
 	Source/Chunk/Chunk.cpp
+	Source/Entity/Player.cpp
+	Source/Entity/PlayerPhysics.cpp
+	Source/Screens/PlayerRenderer.cpp
 	Source/Shader/Shader.cpp
 	Source/Texture/Texture.cpp
+	Source/World/BlockInteractor.cpp
 	Source/World/ChunkManager.cpp
 	Source/World/StructureGenerator.cpp
 	Source/World/Terrain.cpp
