@@ -165,6 +165,7 @@
     <ClInclude Include="Source\Buffers\VBO.h" />
     <ClInclude Include="Source\Camera\Camera.h" />
     <ClInclude Include="Source\Chunk\Chunk.h" />
+    <ClInclude Include="Source\Entity\Collision.h" />
     <ClInclude Include="Source\Entity\GameObject.h" />
     <ClInclude Include="Source\Entity\Geometries.h" />
     <ClInclude Include="Source\Entity\Player.h" />
@@ -211,6 +212,7 @@
     <ClCompile Include="Source\Buffers\VBO.cpp" />
     <ClCompile Include="Source\Camera\Camera.cpp" />
     <ClCompile Include="Source\Chunk\Chunk.cpp" />
+    <ClCompile Include="Source\Entity\Collision.cpp" />
     <ClCompile Include="Source\Entity\Player.cpp" />
     <ClCompile Include="Source\Entity\PlayerPhysics.cpp" />
     <ClCompile Include="Source\Main.cpp" />

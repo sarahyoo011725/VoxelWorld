@@ -44,6 +44,7 @@ add_executable(VoxelWorld
 	Source/Buffers/VBO.cpp
 	Source/Camera/Camera.cpp
 	Source/Chunk/Chunk.cpp
+	Source/Entity/Collision.cpp
 	Source/Entity/Player.cpp
 	Source/Entity/PlayerPhysics.cpp
 	Source/Screens/PlayerRenderer.cpp
