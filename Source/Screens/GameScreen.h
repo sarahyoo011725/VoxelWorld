@@ -66,6 +66,8 @@ public:
 			audio::play_random_music();
 		}
 
+		renderer.sync_fbo_size();
+
 		//first render pass: mirror texture
 		renderer.bind_fbo();
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color

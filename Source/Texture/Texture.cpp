@@ -38,6 +38,9 @@ Texture::Texture(int width, int height, GLenum slot, GLenum internal_format, GLe
 	GLenum wrap_type, GLenum min_mag_filter_type) {
 	target = GL_TEXTURE_2D;
 	this->slot = slot;
+	this->internal_format = internal_format;
+	this->format = format;
+	this->pixel_type = pixel_type;
 	glGenTextures(1, &id);
 	glActiveTexture(slot);
 	glBindTexture(GL_TEXTURE_2D, id);
@@ -46,6 +49,16 @@ Texture::Texture(int width, int height, GLenum slot, GLenum internal_format, GLe
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrap_type);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_mag_filter_type);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, min_mag_filter_type);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+/*
+	reallocates this texture's storage at a new size, keeping its id/format -
+	used to keep render targets matching the window after a resize
+*/
+void Texture::resize(int width, int height) {
+	glBindTexture(GL_TEXTURE_2D, id);
+	glTexImage2D(GL_TEXTURE_2D, 0, internal_format, width, height, 0, format, pixel_type, NULL);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 

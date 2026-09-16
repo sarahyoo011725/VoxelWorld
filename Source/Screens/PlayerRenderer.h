@@ -17,6 +17,7 @@ public:
 	PlayerRenderer(WindowSetting* setting);
 	bool enable_outline = true;
 	void update();
+	void sync_fbo_size();
 	void bind_fbo();
 	void unbind_fbo();
 	void draw_HUDs();
@@ -27,6 +28,8 @@ private:
 
 	WindowSetting* window_setting;
 	ShaderManager& sm;
+	int fbo_width;
+	int fbo_height;
 
 	const float outline_thickness = 2.0f;
 	vec4 hovered_block_outline_color = vec4(0.0, 1.0, 1.0, 1.0); //cyan

@@ -2,7 +2,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 PlayerRenderer::PlayerRenderer(WindowSetting* setting)
-	: sm(ShaderManager::get_instance()), window_setting(setting),
+	: sm(ShaderManager::get_instance()), window_setting(setting), fbo_width(setting->width), fbo_height(setting->height),
 	texture_color_buffer(setting->width, setting->height, GL_TEXTURE2, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, GL_CLAMP_TO_EDGE, GL_NEAREST),
 	depth_texture(setting->width, setting->height, GL_TEXTURE3, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, GL_CLAMP_TO_BORDER, GL_LINEAR) {
 
@@ -30,6 +30,15 @@ PlayerRenderer::PlayerRenderer(WindowSetting* setting)
 void PlayerRenderer::update() {
 	if (glfwGetKey(window_setting->window, GLFW_KEY_3) == GLFW_PRESS) {
 		enable_outline = !enable_outline;
+	}
+}
+
+void PlayerRenderer::sync_fbo_size() {
+	if (window_setting->width != fbo_width || window_setting->height != fbo_height) {
+		fbo_width = window_setting->width;
+		fbo_height = window_setting->height;
+		texture_color_buffer.resize(fbo_width, fbo_height);
+		depth_texture.resize(fbo_width, fbo_height);
 	}
 }
 
