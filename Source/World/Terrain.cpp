@@ -1,4 +1,5 @@
 #include "Terrain.h"
+#include <algorithm>
 
 Terrain::Terrain(vec3& cam_pos) : cm(ChunkManager::get_instance()), sg(StructureGenerator::get_instance()) {
 	player_pos = &cam_pos;
@@ -49,7 +50,16 @@ void Terrain::update() {
 		c->draw_opaque_blocks();
 	}
 
-	//TODO: sort transparent geometries and draw them in order from furthest to closest to player
+	//alpha blending needs back-to-front order, or a nearer chunk's transparent
+	//faces can wrongly show through a farther chunk's water/leaves
+	sort(visible_chunks.begin(), visible_chunks.end(), [this](Chunk* a, Chunk* b) {
+		vec3 a_center = a->world_position + vec3(chunk_size / 2.0f, 0.0f, chunk_size / 2.0f);
+		vec3 b_center = b->world_position + vec3(chunk_size / 2.0f, 0.0f, chunk_size / 2.0f);
+		float a_dist = distance(vec2(a_center.x, a_center.z), vec2(player_pos->x, player_pos->z));
+		float b_dist = distance(vec2(b_center.x, b_center.z), vec2(player_pos->x, player_pos->z));
+		return a_dist > b_dist;
+	});
+
 	for (Chunk* c : visible_chunks) {
 		c->draw_transparent_blocks();
 		c->draw_water();
