@@ -64,8 +64,15 @@ void Camera::update_zoom(float dt) {
 	shadow map keeps reasonable detail instead of covering the whole render distance
 */
 void Camera::update_light_space_matrix(vec3 eye_position) {
-	vec3 light_pos = eye_position - sun_direction * 150.0f;
-	mat4 light_view = lookAt(light_pos, eye_position, vec3(0.0f, 1.0f, 0.0f));
+	mat4 light_view_at_origin = lookAt(vec3(0.0f), sun_direction, vec3(0.0f, 1.0f, 0.0f));
+	float texel_size = (shadow_extent * 2.0f) / shadow_resolution;
+	vec3 eye_light_space = vec3(light_view_at_origin * vec4(eye_position, 1.0f));
+	eye_light_space.x = floor(eye_light_space.x / texel_size) * texel_size;
+	eye_light_space.y = floor(eye_light_space.y / texel_size) * texel_size;
+	vec3 snapped_center = vec3(inverse(light_view_at_origin) * vec4(eye_light_space, 1.0f));
+
+	vec3 light_pos = snapped_center - sun_direction * 150.0f;
+	mat4 light_view = lookAt(light_pos, snapped_center, vec3(0.0f, 1.0f, 0.0f));
 	mat4 light_projection = ortho(-shadow_extent, shadow_extent, -shadow_extent, shadow_extent, 1.0f, 300.0f);
 	light_space_matrix = light_projection * light_view;
 }

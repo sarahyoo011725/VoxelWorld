@@ -21,7 +21,7 @@ public:
 	Camera(WindowSetting* setting);
 	mat4 mat = mat4(0.0f);
 	vec3 direction = vec3(0.0f, 0.0f, -1.0f);
-	mat4 light_space_matrix = mat4(1.0f); //recomputed each frame, centered on the player, for the shadow pass
+	mat4 light_space_matrix = mat4(1.0f); 
 	void update(vec3 eye_position);
 private:
 	void update_mouse();
@@ -39,9 +39,9 @@ private:
 	const float fog_start = 90.0f;
 	const float fog_end = 160.0f;
 
-	//fixed directional sun, no day/night cycle - points down and to a side
 	const vec3 sun_direction = normalize(vec3(-0.4f, -1.0f, -0.3f));
-	const float shadow_extent = 60.0f; //half-width of the shadow-covered area around the player
+	const float shadow_extent = 60.0f; 
+	const float shadow_resolution = 2048.0f; 
 
 	double mouse_xpos, mouse_ypos;
 	double last_xpos, last_ypos;

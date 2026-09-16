@@ -80,6 +80,7 @@ public:
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		sm.shadow_shader.activate();
 		sm.shadow_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, player.camera.light_space_matrix);
+		sm.shadow_shader.set_uniform_1f("time", (float)glfwGetTime());
 		terrain.draw_shadow_casters();
 		renderer.unbind_shadow_fbo();
 		glViewport(0, 0, window_setting->width, window_setting->height);

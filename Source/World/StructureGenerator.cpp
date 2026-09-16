@@ -36,13 +36,15 @@ void StructureGenerator::spawn_grass(vec3 world_coord) {
 
 		vector<foliage_vertex> transformed_vertices;
 		for (vector<vertex> face : grass_face_vertices) {
+			vec3 edge1 = face[1].position - face[0].position;
+			vec3 edge2 = face[2].position - face[0].position;
+			vec3 plane_normal = normalize(cross(edge2, edge1));
+
 			for (int i = 0; i < face.size(); ++i) {
 				vec3 position = face[i].position + world_coord;
 				vec2 uv_coord = convert_to_uv(i, grass_text_coord);
 				float sway = (face[i].position.y > 0.0f) ? 1.0f : 0.0f; //base stays pinned to the ground
-				//grass is a thin double-sided cross-plane, not axis-aligned - approximate its
-				//normal as straight up rather than computing a true per-face normal
-				transformed_vertices.push_back({ position, uv_coord, vec3(0.0f, 1.0f, 0.0f), sway });
+				transformed_vertices.push_back({ position, uv_coord, plane_normal, sway });
 			}
 		}
 		chunk->add_nonblock_structure_vertices(local_coord, transformed_vertices);
