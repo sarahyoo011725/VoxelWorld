@@ -68,14 +68,21 @@ float aabb::get_collision_time(const GameObject& a, const GameObject& b, vec3& n
 	float first_entry_time = std::max(entry_time.x, std::max(entry_time.y, entry_time.z));
 	float last_exit_time = std::min(exit_time.x, std::min(exit_time.y, exit_time.z));
 
-	if (first_entry_time > last_exit_time || first_entry_time < 0.0f || first_entry_time > 1.0f) {
+	//resting contact after a previous collision often lands a hair inside the
+	//other box due to float rounding, giving a tiny negative entry_time - treat
+	//that as "already touching" (time 0) instead of rejecting the collision
+	const float penetration_tolerance = 0.001f;
+	if (first_entry_time > last_exit_time || first_entry_time < -penetration_tolerance || first_entry_time > 1.0f) {
 		normal = vec3(0.0f);
 		return 1.0f;
 	}
 
-	normal.x = (first_entry_time == entry_time.x) ? -sign(entry_dist.x) : 0.0f;
-	normal.y = (first_entry_time == entry_time.y) ? -sign(entry_dist.y) : 0.0f;
-	normal.z = (first_entry_time == entry_time.z) ? -sign(entry_dist.z) : 0.0f;
+	//sign comes from the direction of travel, not entry_dist - entry_dist
+	//flips sign right at the point of contact, which is unstable once
+	//penetration_tolerance allows slightly-negative entry times through
+	normal.x = (first_entry_time == entry_time.x) ? -sign(displacement.x) : 0.0f;
+	normal.y = (first_entry_time == entry_time.y) ? -sign(displacement.y) : 0.0f;
+	normal.z = (first_entry_time == entry_time.z) ? -sign(displacement.z) : 0.0f;
 
-	return first_entry_time;
+	return std::max(first_entry_time, 0.0f);
 }
