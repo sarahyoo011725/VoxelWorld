@@ -58,28 +58,32 @@ float aabb::get_collision_time(const GameObject& a, const GameObject& b, vec3& n
 		exit_dist.z = (b.position.z - b_half.z) - (a.position.z + a_half.z);
 	}
 
-	vec3 entry_time = vec3(-numeric_limits<float>::infinity());
-	vec3 exit_time = vec3(numeric_limits<float>::infinity());
+	bool overlap_x = (a.position.x - a_half.x) < (b.position.x + b_half.x) && (a.position.x + a_half.x) > (b.position.x - b_half.x);
+	bool overlap_y = (a.position.y - a_half.y) < (b.position.y + b_half.y) && (a.position.y + a_half.y) > (b.position.y - b_half.y);
+	bool overlap_z = (a.position.z - a_half.z) < (b.position.z + b_half.z) && (a.position.z + a_half.z) > (b.position.z - b_half.z);
 
-	if (displacement.x != 0) { entry_time.x = entry_dist.x / displacement.x; exit_time.x = exit_dist.x / displacement.x; }
-	if (displacement.y != 0) { entry_time.y = entry_dist.y / displacement.y; exit_time.y = exit_dist.y / displacement.y; }
-	if (displacement.z != 0) { entry_time.z = entry_dist.z / displacement.z; exit_time.z = exit_dist.z / displacement.z; }
+	vec3 entry_time, exit_time;
+	if (overlap_x) { entry_time.x = -numeric_limits<float>::infinity(); exit_time.x = numeric_limits<float>::infinity(); }
+	else if (displacement.x != 0) { entry_time.x = entry_dist.x / displacement.x; exit_time.x = exit_dist.x / displacement.x; }
+	else { entry_time.x = numeric_limits<float>::infinity(); exit_time.x = -numeric_limits<float>::infinity(); }
+
+	if (overlap_y) { entry_time.y = -numeric_limits<float>::infinity(); exit_time.y = numeric_limits<float>::infinity(); }
+	else if (displacement.y != 0) { entry_time.y = entry_dist.y / displacement.y; exit_time.y = exit_dist.y / displacement.y; }
+	else { entry_time.y = numeric_limits<float>::infinity(); exit_time.y = -numeric_limits<float>::infinity(); }
+
+	if (overlap_z) { entry_time.z = -numeric_limits<float>::infinity(); exit_time.z = numeric_limits<float>::infinity(); }
+	else if (displacement.z != 0) { entry_time.z = entry_dist.z / displacement.z; exit_time.z = exit_dist.z / displacement.z; }
+	else { entry_time.z = numeric_limits<float>::infinity(); exit_time.z = -numeric_limits<float>::infinity(); }
 
 	float first_entry_time = std::max(entry_time.x, std::max(entry_time.y, entry_time.z));
 	float last_exit_time = std::min(exit_time.x, std::min(exit_time.y, exit_time.z));
 
-	//resting contact after a previous collision often lands a hair inside the
-	//other box due to float rounding, giving a tiny negative entry_time - treat
-	//that as "already touching" (time 0) instead of rejecting the collision
 	const float penetration_tolerance = 0.001f;
 	if (first_entry_time > last_exit_time || first_entry_time < -penetration_tolerance || first_entry_time > 1.0f) {
 		normal = vec3(0.0f);
 		return 1.0f;
 	}
 
-	//sign comes from the direction of travel, not entry_dist - entry_dist
-	//flips sign right at the point of contact, which is unstable once
-	//penetration_tolerance allows slightly-negative entry times through
 	normal.x = (first_entry_time == entry_time.x) ? -sign(displacement.x) : 0.0f;
 	normal.y = (first_entry_time == entry_time.y) ? -sign(displacement.y) : 0.0f;
 	normal.z = (first_entry_time == entry_time.z) ? -sign(displacement.z) : 0.0f;

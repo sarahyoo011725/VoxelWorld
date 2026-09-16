@@ -3,6 +3,7 @@
 #include "Collision.h"
 #include "World/ChunkManager.h"
 #include <vector>
+#include <algorithm>
 
 /*
 * gravity, swept AABB collision, and world queries (ground/underwater) for a GameObject
