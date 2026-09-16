@@ -16,6 +16,7 @@ void Camera::update(vec3 eye_position) {
 	update_mouse();
 	update_zoom(dt);
 	update_matrix(eye_position);
+	update_light_space_matrix(eye_position);
 
 	sm.default_shader.activate();
 	sm.default_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);
@@ -23,6 +24,8 @@ void Camera::update(vec3 eye_position) {
 	sm.default_shader.set_uniform_3f("fog_color", 1, fog_color);
 	sm.default_shader.set_uniform_1f("fog_start", fog_start);
 	sm.default_shader.set_uniform_1f("fog_end", fog_end);
+	sm.default_shader.set_uniform_3f("sun_direction", 1, sun_direction);
+	sm.default_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, light_space_matrix);
 
 	sm.wave_shader.activate();
 	sm.wave_shader.set_uniform_1f("time", frame);
@@ -31,6 +34,8 @@ void Camera::update(vec3 eye_position) {
 	sm.wave_shader.set_uniform_3f("fog_color", 1, fog_color);
 	sm.wave_shader.set_uniform_1f("fog_start", fog_start);
 	sm.wave_shader.set_uniform_1f("fog_end", fog_end);
+	sm.wave_shader.set_uniform_3f("sun_direction", 1, sun_direction);
+	sm.wave_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, light_space_matrix);
 
 	sm.foliage_shader.activate();
 	sm.foliage_shader.set_uniform_1f("time", frame);
@@ -39,6 +44,8 @@ void Camera::update(vec3 eye_position) {
 	sm.foliage_shader.set_uniform_3f("fog_color", 1, fog_color);
 	sm.foliage_shader.set_uniform_1f("fog_start", fog_start);
 	sm.foliage_shader.set_uniform_1f("fog_end", fog_end);
+	sm.foliage_shader.set_uniform_3f("sun_direction", 1, sun_direction);
+	sm.foliage_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, light_space_matrix);
 }
 
 void Camera::update_zoom(float dt) {
@@ -50,6 +57,17 @@ void Camera::update_zoom(float dt) {
 	else {
 		fov_degrees = 45.0f;
 	}
+}
+
+/*
+	sizes and centers the sun's ortho projection on the player, so a fixed-resolution
+	shadow map keeps reasonable detail instead of covering the whole render distance
+*/
+void Camera::update_light_space_matrix(vec3 eye_position) {
+	vec3 light_pos = eye_position - sun_direction * 150.0f;
+	mat4 light_view = lookAt(light_pos, eye_position, vec3(0.0f, 1.0f, 0.0f));
+	mat4 light_projection = ortho(-shadow_extent, shadow_extent, -shadow_extent, shadow_extent, 1.0f, 300.0f);
+	light_space_matrix = light_projection * light_view;
 }
 
 void Camera::update_matrix(vec3 eye_position) {

@@ -6,10 +6,11 @@ Terrain::Terrain(vec3& cam_pos) : cm(ChunkManager::get_instance()), sg(Structure
 }
 
 /*
-	creates and draw chunks within a render distance.
-	this must be called every frame
+	streams chunks around the player up to the render distance, building/rebuilding
+	as needed, and populates visible_chunks. must be called once per frame, before
+	draw_shadow_casters()/draw() - both consume visible_chunks and draw() clears it.
 */
-void Terrain::update() {
+void Terrain::update_chunks() {
 	//player's pos in chunk space
 	origin = {
 		floor(player_pos->x / chunk_size),
@@ -22,8 +23,8 @@ void Terrain::update() {
 			ivec2 chunk_id = { x, z };
 			Chunk* chunk = cm.get_chunk(chunk_id);
 			if (!chunk) {
-				chunk = cm.create_chunk(chunk_id);	
-				
+				chunk = cm.create_chunk(chunk_id);
+
 				auto unloaded_c = cm.unloaded_blocks.find(chunk_id);
 				if (unloaded_c != cm.unloaded_blocks.end()) {
 					for (const block_data& b : unloaded_c->second) {
@@ -45,7 +46,23 @@ void Terrain::update() {
 			c->rebuild_chunk();
 		}
 	}
+}
 
+/*
+	depth-only draw of shadow-casting geometry (opaque terrain + foliage) for the
+	shadow map pass. the shadow shader is activated once by the caller beforehand.
+*/
+void Terrain::draw_shadow_casters() {
+	for (Chunk* c : visible_chunks) {
+		c->draw_opaque_depth();
+		c->draw_foliage_depth();
+	}
+}
+
+/*
+	draws the chunks streamed by update_chunks() and clears visible_chunks
+*/
+void Terrain::draw() {
 	for (Chunk* c : visible_chunks) {
 		c->draw_opaque_blocks();
 	}

@@ -81,6 +81,8 @@ public:
 	void draw_transparent_blocks();
 	void draw_water();
 	void draw_foliage();
+	void draw_opaque_depth();
+	void draw_foliage_depth();
 	Block* get_block(ivec3 local_coord);
 	void set_block(ivec3 local_coord, block_type type);
 	void add_nonblock_structure_vertices(ivec3 local_coord, vector<foliage_vertex> vertices);

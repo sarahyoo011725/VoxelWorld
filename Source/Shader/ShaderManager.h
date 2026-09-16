@@ -17,4 +17,5 @@ public:
 	Shader wave_shader = Shader("Resources/Shaders/wave.vert", "Resources/Shaders/wave.frag");
 	Shader foliage_shader = Shader("Resources/Shaders/foliage.vert", "Resources/Shaders/foliage.frag");
 	Shader frame_buffer_shader = Shader("Resources/Shaders/framebuffer.vert", "Resources/Shaders/framebuffer.frag");
+	Shader shadow_shader = Shader("Resources/Shaders/shadow.vert", "Resources/Shaders/shadow.frag");
 };

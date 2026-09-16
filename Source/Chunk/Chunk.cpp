@@ -47,19 +47,23 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	opaque_vao.bind();
 	opaque_vao.link_attrib(opaque_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0); //vertex positions coords
 	opaque_vao.link_attrib(opaque_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float))); //vertex texture coords
+	opaque_vao.link_attrib(opaque_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float))); //vertex normal
 
 	transp_vao.bind();
 	transp_vao.link_attrib(transp_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 	transp_vao.link_attrib(transp_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
+	transp_vao.link_attrib(transp_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float)));
 
 	water_vao.bind();
 	water_vao.link_attrib(water_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 	water_vao.link_attrib(water_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
+	water_vao.link_attrib(water_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float)));
 
 	foliage_vao.bind();
 	foliage_vao.link_attrib(foliage_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)0);
 	foliage_vao.link_attrib(foliage_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(3 * sizeof(float)));
-	foliage_vao.link_attrib(foliage_vbo, 2, 1, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(5 * sizeof(float)));
+	foliage_vao.link_attrib(foliage_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(5 * sizeof(float)));
+	foliage_vao.link_attrib(foliage_vbo, 3, 1, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(8 * sizeof(float)));
 }
 
 /*
@@ -127,6 +131,20 @@ void Chunk::draw_water() {
 
 void Chunk::draw_foliage() {
 	sm.foliage_shader.activate();
+	foliage_vao.bind();
+	foliage_ebo.bind();
+	glDrawElements(GL_TRIANGLES, foliage_indices.size(), GL_UNSIGNED_INT, 0);
+}
+
+//depth-only draws for the shadow map pass - the shadow shader is activated
+//once by the caller, not per chunk, so these don't switch shaders themselves
+void Chunk::draw_opaque_depth() {
+	opaque_vao.bind();
+	opaque_ebo.bind();
+	glDrawElements(GL_TRIANGLES, opaque_indices.size(), GL_UNSIGNED_INT, 0);
+}
+
+void Chunk::draw_foliage_depth() {
 	foliage_vao.bind();
 	foliage_ebo.bind();
 	glDrawElements(GL_TRIANGLES, foliage_indices.size(), GL_UNSIGNED_INT, 0);
@@ -250,12 +268,15 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 	if (texture_map.find(type) == texture_map.end()) return; //a type is not in texture map if it is a structure that is not cube i.e. grass
 	vec2 texture_coord = texture_map[type][face];
 
+	vec3 normal = face_normal(face);
+
 	if (type == water) {
 		vector<vertex> cw_verts = cw_face_map[face];
 		for (int i = 0; i < cw_verts.size(); ++i) {
 			vertex v = cw_verts[i];
-			v.position += local_coord + world_position + vec3(-1, 0, -1); 
+			v.position += local_coord + world_position + vec3(-1, 0, -1);
 			v.texture = convert_to_uv(i, texture_coord);
+			v.normal = normal;
 			water_vertices.push_back(v);
 		}
 		update_face_indices(true, true);
@@ -263,8 +284,9 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 		vector<vertex> ccw_verts = ccw_face_map[face];
 		for (int i = 0; i < ccw_verts.size(); ++i) {
 			vertex v = ccw_verts[i];
-			v.position += local_coord + world_position + vec3(-1, 0, -1); 
+			v.position += local_coord + world_position + vec3(-1, 0, -1);
 			v.texture = convert_to_uv(i, texture_coord);
+			v.normal = -normal;
 			water_vertices.push_back(v);
 		}
 		update_face_indices(true, true);
@@ -278,7 +300,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 			vertex v = verts[i];
 			v.position += local_coord + world_position + vec3(-1, 0, -1);
 			v.texture = convert_to_uv(i, texture_coord);
-			foliage_vertices.push_back({ v.position, v.texture, 1.0f });
+			foliage_vertices.push_back({ v.position, v.texture, normal, 1.0f });
 		}
 		add_foliage_quad_indices();
 	}
@@ -291,6 +313,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 			vertex v = verts[i];
 			v.position += local_coord + world_position + vec3(-1, 0, -1); //subtract 1 to adjust chunk position due to boundaries
 			v.texture = convert_to_uv(i, texture_coord);
+			v.normal = normal;
 			if (transparency) {
 				transp_vertices.push_back(v);
 

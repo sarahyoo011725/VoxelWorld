@@ -4,7 +4,8 @@
 PlayerRenderer::PlayerRenderer(WindowSetting* setting)
 	: sm(ShaderManager::get_instance()), window_setting(setting), fbo_width(setting->width), fbo_height(setting->height),
 	texture_color_buffer(setting->width, setting->height, GL_TEXTURE2, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE, GL_CLAMP_TO_EDGE, GL_NEAREST),
-	depth_texture(setting->width, setting->height, GL_TEXTURE3, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, GL_CLAMP_TO_BORDER, GL_LINEAR) {
+	depth_texture(setting->width, setting->height, GL_TEXTURE3, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, GL_CLAMP_TO_BORDER, GL_LINEAR),
+	shadow_map(shadow_resolution, shadow_resolution, GL_TEXTURE4, GL_DEPTH_COMPONENT, GL_DEPTH_COMPONENT, GL_FLOAT, GL_CLAMP_TO_BORDER, GL_LINEAR) {
 
 	outline_vao.bind();
 	outline_vao.link_attrib(outline_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vec3), (void*)0);
@@ -21,10 +22,30 @@ PlayerRenderer::PlayerRenderer(WindowSetting* setting)
 	sm.frame_buffer_shader.set_uniform_1i("screen_texture", 1);
 	sm.frame_buffer_shader.set_uniform_1i("depth_texture", 3);
 
+	sm.default_shader.activate();
+	sm.default_shader.set_uniform_1i("shadow_map", 4);
+	sm.wave_shader.activate();
+	sm.wave_shader.set_uniform_1i("shadow_map", 4);
+	sm.foliage_shader.activate();
+	sm.foliage_shader.set_uniform_1i("shadow_map", 4);
+
 	fbo.bind();
 	fbo.attach_texture(GL_COLOR_ATTACHMENT0, texture_color_buffer.get_id());
 	fbo.attach_texture(GL_DEPTH_ATTACHMENT, depth_texture.get_id());
 	fbo.unbind();
+
+	//sampling outside the shadow map's coverage should read as "fully lit" (max depth),
+	//not "fully shadowed" - clamp-to-border with a white (1.0 depth) border achieves that
+	glBindTexture(GL_TEXTURE_2D, shadow_map.get_id());
+	float border_color[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_color);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	shadow_fbo.bind();
+	shadow_fbo.attach_texture(GL_DEPTH_ATTACHMENT, shadow_map.get_id());
+	glDrawBuffer(GL_NONE); //depth-only framebuffer, no color attachment
+	glReadBuffer(GL_NONE);
+	shadow_fbo.unbind();
 }
 
 void PlayerRenderer::update() {
@@ -44,10 +65,20 @@ void PlayerRenderer::sync_fbo_size() {
 
 void PlayerRenderer::bind_fbo() {
 	fbo.bind();
+	shadow_map.activate();
+	shadow_map.bind();
 }
 
 void PlayerRenderer::unbind_fbo() {
 	fbo.unbind();
+}
+
+void PlayerRenderer::bind_shadow_fbo() {
+	shadow_fbo.bind();
+}
+
+void PlayerRenderer::unbind_shadow_fbo() {
+	shadow_fbo.unbind();
 }
 
 /*

@@ -13,12 +13,14 @@ using namespace glm;
 struct vertex {
 	vec3 position;
 	vec2 texture;
+	vec3 normal;
 };
 
 //a vertex for wind-swayed geometry (leaves, grass). sway is 0 at a pinned base and 1 at a freely swaying tip
 struct foliage_vertex {
 	vec3 position;
 	vec2 texture;
+	vec3 normal;
 	float sway;
 };
 
@@ -89,6 +91,19 @@ namespace {
 			return true;
 		}
 		return false;
+	}
+
+	//the outward-facing unit normal of a cube face, for lighting
+	vec3 face_normal(block_face face) {
+		switch (face) {
+		case Top: return vec3(0.0f, 1.0f, 0.0f);
+		case Bottom: return vec3(0.0f, -1.0f, 0.0f);
+		case Left: return vec3(-1.0f, 0.0f, 0.0f);
+		case Right: return vec3(1.0f, 0.0f, 0.0f);
+		case Front: return vec3(0.0f, 0.0f, 1.0f);
+		case Back: return vec3(0.0f, 0.0f, -1.0f);
+		}
+		return vec3(0.0f, 1.0f, 0.0f);
 	}
 
 	//checks if a block type can be created underwater

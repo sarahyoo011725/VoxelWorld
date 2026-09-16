@@ -70,6 +70,20 @@ public:
 
 		renderer.sync_fbo_size();
 
+		terrain.update_chunks();
+
+		//shadow pass: render opaque + foliage geometry depth-only from the sun's POV
+		renderer.bind_shadow_fbo();
+		glViewport(0, 0, renderer.shadow_resolution, renderer.shadow_resolution);
+		glClear(GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		sm.shadow_shader.activate();
+		sm.shadow_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, player.camera.light_space_matrix);
+		terrain.draw_shadow_casters();
+		renderer.unbind_shadow_fbo();
+		glViewport(0, 0, window_setting->width, window_setting->height);
+
 		//first render pass: mirror texture
 		renderer.bind_fbo();
 		glClearColor((GLfloat)135/255, (GLfloat)206/255, (GLfloat)235/255, 1.0); //add sky color
@@ -86,7 +100,7 @@ public:
 		sm.default_shader.activate();
 		texture.activate();
 		texture.bind();
-		terrain.update();
+		terrain.draw();
 		if (window_setting->window_active) {
 			player.update();
 			renderer.update();

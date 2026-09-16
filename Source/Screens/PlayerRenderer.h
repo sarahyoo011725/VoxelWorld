@@ -16,10 +16,13 @@ class PlayerRenderer
 public:
 	PlayerRenderer(WindowSetting* setting);
 	bool enable_outline = true;
+	const int shadow_resolution = 2048;
 	void update();
 	void sync_fbo_size();
 	void bind_fbo();
 	void unbind_fbo();
+	void bind_shadow_fbo();
+	void unbind_shadow_fbo();
 	void draw_HUDs();
 	void draw_outlines(mat4 cam_matrix, Block* hovered_block);
 	void post_process();
@@ -44,4 +47,7 @@ private:
 	FBO fbo = FBO();
 	Texture texture_color_buffer;
 	Texture depth_texture;
+
+	FBO shadow_fbo = FBO();
+	Texture shadow_map;
 };
