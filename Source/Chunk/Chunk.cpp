@@ -13,14 +13,7 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	height = 50;
 	length = chunk_size + 2;
 
-	//TODO: optimize blocks initialization
-	blocks = new Block * *[width];
-	for (int x = 0; x < width; ++x) {
-		blocks[x] = new Block * [height];
-		for (int y = 0; y < height; ++y) {
-			blocks[x][y] = new Block[length];
-		}
-	}
+	blocks.resize(static_cast<size_t>(width) * height * length);
 
 	//define block types
 	height_map = get_heightmap();
@@ -28,7 +21,7 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 		for (int z = 0; z < length; ++z) {
 			for (int y = 0; y < height; ++y) {
 				block_type type = none;
-				int h = height_map[x][z];
+				int h = get_height(x, z);
 				if (y > h && y <= water_level) {
 					type = water;
 				}
@@ -44,8 +37,9 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 				if (y <= h && y >= h - 2 && y + 1 < height && y + 1 <= water_level) {
 					type = sand;
 				}
-				blocks[x][y][z].type = type;
-				blocks[x][y][z].position = world_position + vec3(x - 1, y, z - 1); //needed for collision check
+				Block& block = blocks[block_index(x, y, z)];
+				block.type = type;
+				block.position = world_position + vec3(x - 1, y, z - 1); //needed for collision check
 			}
 		}
 	}
@@ -61,16 +55,18 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	water_vao.bind();
 	water_vao.link_attrib(water_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 	water_vao.link_attrib(water_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
+
+	foliage_vao.bind();
+	foliage_vao.link_attrib(foliage_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)0);
+	foliage_vao.link_attrib(foliage_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(3 * sizeof(float)));
+	foliage_vao.link_attrib(foliage_vbo, 2, 1, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(5 * sizeof(float)));
 }
 
 /*
 	generate a height map from a block's world coordinate
 */
-int** Chunk::get_heightmap() {
-	int** map = new int *[width];
-	for (int x = 0; x < width; ++x) {
-		map[x] = new int[length];
-	}
+vector<int> Chunk::get_heightmap() {
+	vector<int> map(static_cast<size_t>(width) * length);
 
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
@@ -79,7 +75,7 @@ int** Chunk::get_heightmap() {
 			int z_pos = world_position.z + z - 1;
 			int height_val = abs(static_cast<int> (get_noise(x_pos, z_pos) * 20)) + 4;
 			if (height_val > height) height_val = height;
-			map[x][z] = height_val;
+			map[height_index(x, z)] = height_val;
 		}
 	}
 	return map;
@@ -96,6 +92,8 @@ void Chunk::update_buffers_data() {
 	transp_ebo.reset_indices(transp_indices.data(), sizeof(GLuint) * transp_indices.size(), GL_STATIC_DRAW);
 	water_vbo.reset_vertices(water_vertices.data(), sizeof(vertex) * water_vertices.size(), GL_STATIC_DRAW);
 	water_ebo.reset_indices(water_indices.data(), sizeof(GLuint) * water_indices.size(), GL_STATIC_DRAW);
+	foliage_vbo.reset_vertices(foliage_vertices.data(), sizeof(foliage_vertex) * foliage_vertices.size(), GL_STATIC_DRAW);
+	foliage_ebo.reset_indices(foliage_indices.data(), sizeof(GLuint) * foliage_indices.size(), GL_STATIC_DRAW);
 }
 
 /*
@@ -127,6 +125,13 @@ void Chunk::draw_water() {
 	glDrawElements(GL_TRIANGLES, water_indices.size(), GL_UNSIGNED_INT, 0);
 }
 
+void Chunk::draw_foliage() {
+	sm.foliage_shader.activate();
+	foliage_vao.bind();
+	foliage_ebo.bind();
+	glDrawElements(GL_TRIANGLES, foliage_indices.size(), GL_UNSIGNED_INT, 0);
+}
+
 /*
 	gets block pointer with a local coordinate
 */
@@ -138,7 +143,7 @@ Block* Chunk::get_block(ivec3 local_coord) {
 		//cout << "provided local coord is invalid" << endl;
 		return nullptr;
 	}
-	return &blocks[x][y][z];
+	return &blocks[block_index(x, y, z)];
 }
 
 /*
@@ -154,7 +159,7 @@ void Chunk::set_block(ivec3 local_coord, block_type type) {
 		//cout << "provided local coord is invalid" << endl;
 		return;
 	}
-	blocks[x][y][z].type = type;
+	blocks[block_index(x, y, z)].type = type;
 }
 
 /*
@@ -162,7 +167,7 @@ void Chunk::set_block(ivec3 local_coord, block_type type) {
 	non-block structures are drawn after all blocks are drawn.
 	To efficiently add/remove non-block structures, use the local coordinate as the structure's unique ID within a chunk.
 */
-void Chunk::add_nonblock_structure_vertices(ivec3 local_coord, vector<vertex> vertices) {
+void Chunk::add_nonblock_structure_vertices(ivec3 local_coord, vector<foliage_vertex> vertices) {
 	const auto& structure = nonblock_structure_vertices.find(local_coord);
 	if (structure == nonblock_structure_vertices.end()) {
 		nonblock_structure_vertices.insert({ local_coord, vertices });
@@ -183,9 +188,9 @@ void Chunk::remove_structure(ivec3 local_coord) {
 void Chunk::update_nonblock_structure_vertices_and_indices() {
 	for (const auto &e : nonblock_structure_vertices) {
 		for (int i = 1; i <= e.second.size(); ++i) {
-			transp_vertices.push_back(e.second[i - 1]);
+			foliage_vertices.push_back(e.second[i - 1]);
 			if (i > 1 && i % 4 == 0) {
-				update_face_indices(true, false);
+				add_foliage_quad_indices();
 			}
 		}
 	}
@@ -227,6 +232,16 @@ void Chunk::update_face_indices(bool has_transparency, bool is_water) {
 	}
 }
 
+void Chunk::add_foliage_quad_indices() {
+	GLuint base_index = foliage_vertices.size() - 4;
+	foliage_indices.push_back(base_index);
+	foliage_indices.push_back(base_index + 1);
+	foliage_indices.push_back(base_index + 2);
+	foliage_indices.push_back(base_index + 2);
+	foliage_indices.push_back(base_index + 3);
+	foliage_indices.push_back(base_index);
+}
+
 /*
 	used to construct a chunk mesh and only for block type objects.
 	pushes the new vertices to opaque or transparent vertices based on the block type's transparency
@@ -254,6 +269,19 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 		}
 		update_face_indices(true, true);
 	}
+	else if (is_foliage(type)) {
+		vector<vertex> verts = cw_face_map[face];
+
+		//a leaf block has no "root" side like a grass blade does, so it
+		//sways as a rigid whole - a pinned bottom would shear it into a wobbling parallelogram
+		for (int i = 0; i < verts.size(); ++i) {
+			vertex v = verts[i];
+			v.position += local_coord + world_position + vec3(-1, 0, -1);
+			v.texture = convert_to_uv(i, texture_coord);
+			foliage_vertices.push_back({ v.position, v.texture, 1.0f });
+		}
+		add_foliage_quad_indices();
+	}
 	else {
 		vector<vertex> verts = cw_face_map[face];
 		bool transparency = has_transparency(type);
@@ -265,7 +293,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 			v.texture = convert_to_uv(i, texture_coord);
 			if (transparency) {
 				transp_vertices.push_back(v);
-				
+
 			}
 			else {
 				opaque_vertices.push_back(v);
@@ -285,6 +313,8 @@ void Chunk::rebuild_chunk() {
 	transp_indices.clear();
 	water_vertices.clear();
 	water_indices.clear();
+	foliage_vertices.clear();
+	foliage_indices.clear();
 
 	build_chunk();
 	should_rebuild = false;
@@ -300,31 +330,44 @@ void Chunk::build_chunk() {
 	for (int x = 1; x < width - 1; ++x) {
 		for (int z = 1; z < length - 1; ++z) {
 			for (int y = 0; y < height; ++y) {
-				const Block &current = blocks[x][y][z];
+				const Block &current = blocks[block_index(x, y, z)];
 				if (current.type == none) {
 					continue;
 				}
-				int h = height_map[x][z];
 				bool am_i_transparent = has_transparency(current.type);
+				//foliage blocks sway independently, so a neighbor can no longer be trusted
+				//to seal a culled face - always draw a full, sealed cube for them
+				bool am_i_foliage = is_foliage(current.type);
 				ivec3 pos = ivec3(x, y, z);
 				block_type type = current.type;
 
-				if (blocks[x - 1][y][z].type == none || has_transparency(blocks[x - 1][y][z].type) && !am_i_transparent) {
+				block_type left = blocks[block_index(x - 1, y, z)].type;
+				block_type back = blocks[block_index(x, y, z - 1)].type;
+				block_type right = blocks[block_index(x + 1, y, z)].type;
+				block_type front = blocks[block_index(x, y, z + 1)].type;
+
+				if (am_i_foliage || left == none || has_transparency(left) && !am_i_transparent) {
 					add_face(Left, type, pos);
 				}
-				if (y > 0 && (blocks[x][y - 1][z].type == none || has_transparency(blocks[x][y - 1][z].type) && !am_i_transparent)) {
-					add_face(Bottom, type, pos);
+				if (y > 0) {
+					block_type below = blocks[block_index(x, y - 1, z)].type;
+					if (am_i_foliage || below == none || has_transparency(below) && !am_i_transparent) {
+						add_face(Bottom, type, pos);
+					}
 				}
-				if (blocks[x][y][z - 1].type == none || has_transparency(blocks[x][y][z - 1].type) && !am_i_transparent) {
+				if (am_i_foliage || back == none || has_transparency(back) && !am_i_transparent) {
 					add_face(Back, type, pos);
 				}
-				if (blocks[x + 1][y][z].type == none || has_transparency(blocks[x + 1][y][z].type) && !am_i_transparent) {
+				if (am_i_foliage || right == none || has_transparency(right) && !am_i_transparent) {
 					add_face(Right, type, pos);
 				}
-				if (y < height - 1 && (blocks[x][y + 1][z].type == none || has_transparency(blocks[x][y + 1][z].type) && !am_i_transparent)) {
-					add_face(Top, type, pos);
+				if (y < height - 1) {
+					block_type above = blocks[block_index(x, y + 1, z)].type;
+					if (am_i_foliage || above == none || has_transparency(above) && !am_i_transparent) {
+						add_face(Top, type, pos);
+					}
 				}
-				if (blocks[x][y][z + 1].type == none || has_transparency(blocks[x][y][z + 1].type) && !am_i_transparent) {
+				if (am_i_foliage || front == none || has_transparency(front) && !am_i_transparent) {
 					add_face(Front, type, pos);
 				}
 			}
@@ -336,15 +379,3 @@ void Chunk::build_chunk() {
 	has_built = true;
 }
 
-Chunk::~Chunk() {
-	//TODO: deleting blocks array causes an issue.
-	/*
-	for (int x = 0; x < width; ++x) {
-		for (int y = 0; y < height; ++y) {
-			delete[] blocks[x][y];
-		}
-		delete[] blocks[x];
-	}
-	delete[] blocks;
-	*/
-}

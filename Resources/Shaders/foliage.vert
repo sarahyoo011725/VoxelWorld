@@ -2,8 +2,10 @@
 
 layout (location = 0) in vec3 vertex_pos;
 layout (location = 1) in vec2 texture_coord;
+layout (location = 2) in float sway;
 
-uniform mat4 cam_matrix; //projection * view
+uniform mat4 cam_matrix;
+uniform float time;
 uniform vec3 cam_pos;
 uniform float fog_start;
 uniform float fog_end;
@@ -12,9 +14,12 @@ out vec2 tex_coord;
 out float fog_factor;
 
 void main() {
-	//gl_Position must always be this order: projection * view * model * vec4(vertex_pos, 1.0)
-	gl_Position = cam_matrix * vec4(vertex_pos, 1.0);
+	vec3 pos = vertex_pos;
+	float wind = sin(time * 1.5 + pos.x * 0.8 + pos.z * 0.8) * 0.08;
+	pos.x += wind * sway;
+	pos.z += wind * sway;
+	gl_Position = cam_matrix * vec4(pos, 1.0);
 	tex_coord = texture_coord;
-	float dist = distance(vertex_pos, cam_pos);
+	float dist = distance(pos, cam_pos);
 	fog_factor = clamp((fog_end - dist) / (fog_end - fog_start), 0.0, 1.0);
 }

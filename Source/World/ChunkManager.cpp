@@ -8,11 +8,13 @@ bool ChunkManager::chunk_exists(ivec2 chunk_id) {
 }
 
 /*
-	creates a new chunk, providing it with an id
+	creates a new chunk, providing it with an id.
+	constructs the Chunk directly inside the map (try_emplace) instead of
+	building a temporary and copying it in - Chunk owns raw block/height-map
+	storage and GL buffer handles that a shallow copy would alias, not duplicate.
 */
 Chunk* ChunkManager::create_chunk(ivec2 chunk_id) {
-	Chunk new_chunk = Chunk(chunk_id);
-	auto inserted = chunks.insert({ chunk_id, new_chunk });
+	auto inserted = chunks.try_emplace(chunk_id, chunk_id);
 	return &(inserted.first->second);
 }
 

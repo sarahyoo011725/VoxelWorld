@@ -1,4 +1,5 @@
 #include "Terrain.h"
+#include <algorithm>
 
 Terrain::Terrain(vec3& cam_pos) : cm(ChunkManager::get_instance()), sg(StructureGenerator::get_instance()) {
 	player_pos = &cam_pos;
@@ -49,9 +50,19 @@ void Terrain::update() {
 		c->draw_opaque_blocks();
 	}
 
-	//TODO: sort transparent geometries and draw them in order from furthest to closest to player
+	//alpha blending needs back-to-front order, or a nearer chunk's transparent
+	//faces can wrongly show through a farther chunk's water/leaves
+	sort(visible_chunks.begin(), visible_chunks.end(), [this](Chunk* a, Chunk* b) {
+		vec3 a_center = a->world_position + vec3(chunk_size / 2.0f, 0.0f, chunk_size / 2.0f);
+		vec3 b_center = b->world_position + vec3(chunk_size / 2.0f, 0.0f, chunk_size / 2.0f);
+		float a_dist = distance(vec2(a_center.x, a_center.z), vec2(player_pos->x, player_pos->z));
+		float b_dist = distance(vec2(b_center.x, b_center.z), vec2(player_pos->x, player_pos->z));
+		return a_dist > b_dist;
+	});
+
 	for (Chunk* c : visible_chunks) {
 		c->draw_transparent_blocks();
+		c->draw_foliage();
 		c->draw_water();
 	}
 
@@ -67,18 +78,15 @@ void Terrain::spawn_structures(Chunk* chunk) {
 			//convert local coords into world coord
 			int wx = chunk->world_position.x + x - 1;
 			int wz = chunk->world_position.z + z - 1;
-			int h = chunk->height_map[x][z];
+			int h = chunk->get_height(x, z);
 
 			//do not spawn anything in water
 			if (h <= water_level) continue;
 
-			int n_tree = rand() % 60;
-			int n_grass = rand() % 10;
-			if (n_tree == 0) {
-				sg.spawn_tree(vec3(wx, h + 1, wz));
-			}
-			if (n_grass == 0) {
-				sg.spawn_grass(vec3(wx, h + 1, wz));
+			for (const structure_rule& rule : sg.terrain_structures) {
+				if (rand() % rule.spawn_chance == 0) {
+					rule.spawn(vec3(wx, h + 1, wz));
+				}
 			}
 		}
 	}

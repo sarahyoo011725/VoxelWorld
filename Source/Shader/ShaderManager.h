@@ -15,5 +15,6 @@ public:
 	Shader outline_shader = Shader("Resources/Shaders/outline.vert", "Resources/Shaders/outline.frag");
 	Shader HUD_shader = Shader("Resources/Shaders/2d_component.vert", "Resources/Shaders/2d_component.frag");
 	Shader wave_shader = Shader("Resources/Shaders/wave.vert", "Resources/Shaders/wave.frag");
+	Shader foliage_shader = Shader("Resources/Shaders/foliage.vert", "Resources/Shaders/foliage.frag");
 	Shader frame_buffer_shader = Shader("Resources/Shaders/framebuffer.vert", "Resources/Shaders/framebuffer.frag");
 };

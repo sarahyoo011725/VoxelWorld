@@ -5,7 +5,6 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "BlockType.h"
-#include "Entity/GameObject.h"
 
 using namespace std;
 using namespace glm;
@@ -16,15 +15,22 @@ struct vertex {
 	vec2 texture;
 };
 
+//a vertex for wind-swayed geometry (leaves, grass). sway is 0 at a pinned base and 1 at a freely swaying tip
+struct foliage_vertex {
+	vec3 position;
+	vec2 texture;
+	float sway;
+};
+
 /*
-	a game object that stores information of block's size, position, and type
+	a single voxel's data: its world position and type.
+	deliberately not a GameObject - blocks are static, so a velocity/hitbox_margin
+	per voxel would just be dead weight multiplied by thousands of blocks per chunk.
 */
-class Block: public GameObject
+class Block
 {
 public:
-	Block() {
-		size = vec3(1, 1, 1);
-	};
+	vec3 position = vec3(0.0f);
 	block_type type = none;
 };
 
@@ -67,6 +73,18 @@ namespace {
 	//checks if a block type is non-block geometry
 	bool is_nonblock(block_type type) {
 		switch (type) {
+		case grass:
+			return true;
+		}
+		return false;
+	}
+
+	//checks if a block type should wave in the wind
+	bool is_foliage(block_type type) {
+		switch (type) {
+		case leaf_red:
+		case leaf_yellow:
+		case leaf_transp:
 		case grass:
 			return true;
 		}

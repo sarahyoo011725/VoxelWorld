@@ -1,14 +1,23 @@
 #include "StructureGenerator.h"
 #include "Chunk/Chunk.h"
 
+StructureGenerator::StructureGenerator() : chunk_manager(ChunkManager::get_instance()) {
+	terrain_structures = {
+		{ 60, [this](vec3 c) { spawn_tree(c); } },
+		{ 10, [this](vec3 c) { spawn_grass(c); } },
+	};
+	placeable_structures = {
+		{ grass, [this](vec3 c) { spawn_grass(c); } },
+	};
+}
+
 /*
-	checks the block type and creates a non-block structure
+	looks up the structure registered for a block type and spawns it
 */
 void StructureGenerator::spawn_nonblock_structure(block_type type, vec3 world_coord) {
-	switch (type) {
-	case grass:
-		spawn_grass(world_coord);
-		return;
+	const auto& rule = placeable_structures.find(type);
+	if (rule != placeable_structures.end()) {
+		rule->second(world_coord);
 	}
 }
 
@@ -25,15 +34,16 @@ void StructureGenerator::spawn_grass(vec3 world_coord) {
 		Block* block = chunk->get_block(local_coord);
 		if (block == nullptr || block != nullptr && block->type != none) return; //spawn grass only if there is no structure
 
-		vector<vertex> transformed_vertices;
+		vector<foliage_vertex> transformed_vertices;
 		for (vector<vertex> face : grass_face_vertices) {
 			for (int i = 0; i < face.size(); ++i) {
 				vec3 position = face[i].position + world_coord;
 				vec2 uv_coord = convert_to_uv(i, grass_text_coord);
-				transformed_vertices.push_back({ position, uv_coord });
+				float sway = (face[i].position.y > 0.0f) ? 1.0f : 0.0f; //base stays pinned to the ground
+				transformed_vertices.push_back({ position, uv_coord, sway });
 			}
 		}
-		chunk->add_nonblock_structure_vertices(local_coord, transformed_vertices); //grass has transparency
+		chunk->add_nonblock_structure_vertices(local_coord, transformed_vertices);
 		chunk->set_block(local_coord, grass);
 	}
 }
@@ -55,23 +65,32 @@ void StructureGenerator::spawn_tree(vec3 world_coord) {
 		}
 	}
 
-	//make a stem of height 5
-	for (int h = 0; h < 5; ++h) {
+	//make a stem, height varies a bit so trees aren't all identical
+	int trunk_height = 4 + rand() % 3;
+	for (int h = 0; h < trunk_height; ++h) {
 		chunk_manager.set_block_worldspace(vec3(world_coord.x, world_coord.y + h, world_coord.z), wood);
 	}
 
 	//add leaves
 	int r = rand() % 2;
 	block_type leaf_type = (r == 0) ? leaf_red : leaf_yellow;
+	float layer_radius[4] = { 2.2f, 2.2f, 2.0f, 1.6f };
 	for (int dx = -2; dx <= 2; ++dx) {
 		for (int dz = -2; dz <= 2; ++dz) {
 			for (int dy = 0; dy < 4; ++dy) {
 				if (dx == 0 && dz == 0 && dy < 2) continue;
+
+				float dist = sqrt((float)(dx * dx + dz * dz));
+				if (dist > layer_radius[dy]) continue;
+				if (dist > layer_radius[dy] - 0.5f && rand() % 5 == 0) continue;
+
 				int wx = world_coord.x + dx;
-				int wy = world_coord.y + 3 + dy; //add leaves 3 trunks above
+				int wy = world_coord.y + trunk_height - 2 + dy;
 				int wz = world_coord.z + dz;
 				chunk_manager.set_block_worldspace(vec3(wx, wy, wz), leaf_type);
 			}
 		}
 	}
+
+	chunk_manager.set_block_worldspace(vec3(world_coord.x, world_coord.y + trunk_height - 2 + 4, world_coord.z), leaf_type);
 }

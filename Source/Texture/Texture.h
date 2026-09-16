@@ -19,6 +19,9 @@ private:
 	GLuint id;
 	GLenum target;
 	GLenum slot;
+	GLenum internal_format = 0;
+	GLenum format = 0;
+	GLenum pixel_type = 0;
 public:
 	Texture(const char* texture_path, GLenum slot, GLenum texture_target, GLenum internal_format, GLenum format, GLenum pixel_type);
 	Texture(int width, int height, GLenum slot, GLenum internal_format, GLenum format, GLenum pixel_type,
@@ -28,5 +31,6 @@ public:
 	void bind();
 	void unbind();
 	void set_slot(GLint slot);
+	void resize(int width, int height);
 	void destroy();
 };
