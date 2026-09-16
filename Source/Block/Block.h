@@ -15,6 +15,13 @@ struct vertex {
 	vec2 texture;
 };
 
+//a vertex for wind-swayed geometry (leaves, grass). sway is 0 at a pinned base and 1 at a freely swaying tip
+struct foliage_vertex {
+	vec3 position;
+	vec2 texture;
+	float sway;
+};
+
 /*
 	a single voxel's data: its world position and type.
 	deliberately not a GameObject - blocks are static, so a velocity/hitbox_margin
@@ -66,6 +73,18 @@ namespace {
 	//checks if a block type is non-block geometry
 	bool is_nonblock(block_type type) {
 		switch (type) {
+		case grass:
+			return true;
+		}
+		return false;
+	}
+
+	//checks if a block type should wave in the wind
+	bool is_foliage(block_type type) {
+		switch (type) {
+		case leaf_red:
+		case leaf_yellow:
+		case leaf_transp:
 		case grass:
 			return true;
 		}

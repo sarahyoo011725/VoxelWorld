@@ -55,6 +55,11 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	water_vao.bind();
 	water_vao.link_attrib(water_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 	water_vao.link_attrib(water_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
+
+	foliage_vao.bind();
+	foliage_vao.link_attrib(foliage_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)0);
+	foliage_vao.link_attrib(foliage_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(3 * sizeof(float)));
+	foliage_vao.link_attrib(foliage_vbo, 2, 1, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(5 * sizeof(float)));
 }
 
 /*
@@ -87,6 +92,8 @@ void Chunk::update_buffers_data() {
 	transp_ebo.reset_indices(transp_indices.data(), sizeof(GLuint) * transp_indices.size(), GL_STATIC_DRAW);
 	water_vbo.reset_vertices(water_vertices.data(), sizeof(vertex) * water_vertices.size(), GL_STATIC_DRAW);
 	water_ebo.reset_indices(water_indices.data(), sizeof(GLuint) * water_indices.size(), GL_STATIC_DRAW);
+	foliage_vbo.reset_vertices(foliage_vertices.data(), sizeof(foliage_vertex) * foliage_vertices.size(), GL_STATIC_DRAW);
+	foliage_ebo.reset_indices(foliage_indices.data(), sizeof(GLuint) * foliage_indices.size(), GL_STATIC_DRAW);
 }
 
 /*
@@ -116,6 +123,13 @@ void Chunk::draw_water() {
 	water_vao.bind();
 	water_ebo.bind();
 	glDrawElements(GL_TRIANGLES, water_indices.size(), GL_UNSIGNED_INT, 0);
+}
+
+void Chunk::draw_foliage() {
+	sm.foliage_shader.activate();
+	foliage_vao.bind();
+	foliage_ebo.bind();
+	glDrawElements(GL_TRIANGLES, foliage_indices.size(), GL_UNSIGNED_INT, 0);
 }
 
 /*
@@ -153,7 +167,7 @@ void Chunk::set_block(ivec3 local_coord, block_type type) {
 	non-block structures are drawn after all blocks are drawn.
 	To efficiently add/remove non-block structures, use the local coordinate as the structure's unique ID within a chunk.
 */
-void Chunk::add_nonblock_structure_vertices(ivec3 local_coord, vector<vertex> vertices) {
+void Chunk::add_nonblock_structure_vertices(ivec3 local_coord, vector<foliage_vertex> vertices) {
 	const auto& structure = nonblock_structure_vertices.find(local_coord);
 	if (structure == nonblock_structure_vertices.end()) {
 		nonblock_structure_vertices.insert({ local_coord, vertices });
@@ -174,9 +188,9 @@ void Chunk::remove_structure(ivec3 local_coord) {
 void Chunk::update_nonblock_structure_vertices_and_indices() {
 	for (const auto &e : nonblock_structure_vertices) {
 		for (int i = 1; i <= e.second.size(); ++i) {
-			transp_vertices.push_back(e.second[i - 1]);
+			foliage_vertices.push_back(e.second[i - 1]);
 			if (i > 1 && i % 4 == 0) {
-				update_face_indices(true, false);
+				add_foliage_quad_indices();
 			}
 		}
 	}
@@ -218,6 +232,16 @@ void Chunk::update_face_indices(bool has_transparency, bool is_water) {
 	}
 }
 
+void Chunk::add_foliage_quad_indices() {
+	GLuint base_index = foliage_vertices.size() - 4;
+	foliage_indices.push_back(base_index);
+	foliage_indices.push_back(base_index + 1);
+	foliage_indices.push_back(base_index + 2);
+	foliage_indices.push_back(base_index + 2);
+	foliage_indices.push_back(base_index + 3);
+	foliage_indices.push_back(base_index);
+}
+
 /*
 	used to construct a chunk mesh and only for block type objects.
 	pushes the new vertices to opaque or transparent vertices based on the block type's transparency
@@ -245,6 +269,19 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 		}
 		update_face_indices(true, true);
 	}
+	else if (is_foliage(type)) {
+		vector<vertex> verts = cw_face_map[face];
+
+		//only the top of the block sways, its base stays pinned to the ground
+		for (int i = 0; i < verts.size(); ++i) {
+			vertex v = verts[i];
+			float sway = (v.position.y > 0.0f) ? 1.0f : 0.0f;
+			v.position += local_coord + world_position + vec3(-1, 0, -1);
+			v.texture = convert_to_uv(i, texture_coord);
+			foliage_vertices.push_back({ v.position, v.texture, sway });
+		}
+		add_foliage_quad_indices();
+	}
 	else {
 		vector<vertex> verts = cw_face_map[face];
 		bool transparency = has_transparency(type);
@@ -256,7 +293,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 			v.texture = convert_to_uv(i, texture_coord);
 			if (transparency) {
 				transp_vertices.push_back(v);
-				
+
 			}
 			else {
 				opaque_vertices.push_back(v);
@@ -276,6 +313,8 @@ void Chunk::rebuild_chunk() {
 	transp_indices.clear();
 	water_vertices.clear();
 	water_indices.clear();
+	foliage_vertices.clear();
+	foliage_indices.clear();
 
 	build_chunk();
 	should_rebuild = false;

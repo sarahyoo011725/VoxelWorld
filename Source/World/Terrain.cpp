@@ -62,6 +62,7 @@ void Terrain::update() {
 
 	for (Chunk* c : visible_chunks) {
 		c->draw_transparent_blocks();
+		c->draw_foliage();
 		c->draw_water();
 	}
 

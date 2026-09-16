@@ -34,15 +34,16 @@ void StructureGenerator::spawn_grass(vec3 world_coord) {
 		Block* block = chunk->get_block(local_coord);
 		if (block == nullptr || block != nullptr && block->type != none) return; //spawn grass only if there is no structure
 
-		vector<vertex> transformed_vertices;
+		vector<foliage_vertex> transformed_vertices;
 		for (vector<vertex> face : grass_face_vertices) {
 			for (int i = 0; i < face.size(); ++i) {
 				vec3 position = face[i].position + world_coord;
 				vec2 uv_coord = convert_to_uv(i, grass_text_coord);
-				transformed_vertices.push_back({ position, uv_coord });
+				float sway = (face[i].position.y > 0.0f) ? 1.0f : 0.0f; //base stays pinned to the ground
+				transformed_vertices.push_back({ position, uv_coord, sway });
 			}
 		}
-		chunk->add_nonblock_structure_vertices(local_coord, transformed_vertices); //grass has transparency
+		chunk->add_nonblock_structure_vertices(local_coord, transformed_vertices);
 		chunk->set_block(local_coord, grass);
 	}
 }

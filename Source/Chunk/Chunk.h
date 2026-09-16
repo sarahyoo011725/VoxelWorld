@@ -33,7 +33,6 @@ private:
 	EBO opaque_ebo = EBO(nullptr, sizeof(GLuint) * 0, GL_STATIC_DRAW);
 
 	//for transparent geometry
-	unordered_map<ivec3, vector<vertex>> nonblock_structure_vertices; //all nonblock structure texture like grass has transparency
 	vector<vertex> transp_vertices;
 	vector<GLuint> transp_indices;
 	VAO transp_vao = VAO();
@@ -46,6 +45,14 @@ private:
 	VBO water_vbo = VBO(nullptr, sizeof(vertex) * 0, GL_STATIC_DRAW);
 	EBO water_ebo = EBO(nullptr, sizeof(GLuint) * 0, GL_STATIC_DRAW);
 
+	//for wind-swayed geometry (leaves, grass)
+	unordered_map<ivec3, vector<foliage_vertex>> nonblock_structure_vertices; //all nonblock structure geometry like grass is foliage
+	vector<foliage_vertex> foliage_vertices;
+	vector<GLuint> foliage_indices;
+	VAO foliage_vao = VAO();
+	VBO foliage_vbo = VBO(nullptr, sizeof(foliage_vertex) * 0, GL_STATIC_DRAW);
+	EBO foliage_ebo = EBO(nullptr, sizeof(GLuint) * 0, GL_STATIC_DRAW);
+
 	vector<Block> blocks;
 	vector<int> height_map;
 	inline size_t block_index(int x, int y, int z) const { return (static_cast<size_t>(x) * height + y) * length + z; }
@@ -53,6 +60,7 @@ private:
 	vector<int> get_heightmap();
 	void add_face(block_face face, block_type type, vec3 local_coord);
 	void update_face_indices(bool has_transparency, bool is_water);
+	void add_foliage_quad_indices();
 	void update_nonblock_structure_vertices_and_indices();
 	void update_buffers_data();
 public:
@@ -72,8 +80,9 @@ public:
 	void draw_opaque_blocks();
 	void draw_transparent_blocks();
 	void draw_water();
+	void draw_foliage();
 	Block* get_block(ivec3 local_coord);
 	void set_block(ivec3 local_coord, block_type type);
-	void add_nonblock_structure_vertices(ivec3 local_coord, vector<vertex> vertices);
+	void add_nonblock_structure_vertices(ivec3 local_coord, vector<foliage_vertex> vertices);
 	void remove_structure(ivec3 local_coord);
 };

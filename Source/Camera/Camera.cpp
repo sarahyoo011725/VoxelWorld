@@ -31,6 +31,14 @@ void Camera::update(vec3 eye_position) {
 	sm.wave_shader.set_uniform_3f("fog_color", 1, fog_color);
 	sm.wave_shader.set_uniform_1f("fog_start", fog_start);
 	sm.wave_shader.set_uniform_1f("fog_end", fog_end);
+
+	sm.foliage_shader.activate();
+	sm.foliage_shader.set_uniform_1f("time", frame);
+	sm.foliage_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);
+	sm.foliage_shader.set_uniform_3f("cam_pos", 1, eye_position);
+	sm.foliage_shader.set_uniform_3f("fog_color", 1, fog_color);
+	sm.foliage_shader.set_uniform_1f("fog_start", fog_start);
+	sm.foliage_shader.set_uniform_1f("fog_end", fog_end);
 }
 
 void Camera::update_zoom(float dt) {

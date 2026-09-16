@@ -32,6 +32,8 @@ public:
 		sm.default_shader.set_uniform_1i("texture1", 1);
 		sm.wave_shader.activate();
 		sm.wave_shader.set_uniform_1i("texture1", 1);
+		sm.foliage_shader.activate();
+		sm.foliage_shader.set_uniform_1i("texture1", 1);
 	}
 
 	void gl_settings() {
