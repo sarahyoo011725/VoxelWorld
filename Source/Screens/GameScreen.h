@@ -100,6 +100,7 @@ public:
 		renderer.unbind_fbo();
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_DEPTH_TEST);
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); //the composited fullscreen quad must always be solid, even in wireframe mode
 		sm.frame_buffer_shader.activate();
 		renderer.post_process();
 	}
