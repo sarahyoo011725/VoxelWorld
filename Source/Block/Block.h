@@ -5,7 +5,6 @@
 #include <vector>
 #include <glm/glm.hpp>
 #include "BlockType.h"
-#include "Entity/GameObject.h"
 
 using namespace std;
 using namespace glm;
@@ -17,14 +16,14 @@ struct vertex {
 };
 
 /*
-	a game object that stores information of block's size, position, and type
+	a single voxel's data: its world position and type.
+	deliberately not a GameObject - blocks are static, so a velocity/hitbox_margin
+	per voxel would just be dead weight multiplied by thousands of blocks per chunk.
 */
-class Block: public GameObject
+class Block
 {
 public:
-	Block() {
-		size = vec3(1, 1, 1);
-	};
+	vec3 position = vec3(0.0f);
 	block_type type = none;
 };
 
