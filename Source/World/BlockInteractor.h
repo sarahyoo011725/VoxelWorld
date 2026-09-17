@@ -11,13 +11,15 @@ class BlockInteractor
 {
 public:
 	BlockInteractor(WindowSetting* setting);
-	Block* hovered_block = nullptr;
+	Block* hovered_block = nullptr; 
+	Block* placement_block = nullptr; 
 	Inventory inventory;
 	void update(vec3 origin, vec3 direction);
 private:
 	void raycast(vec3 origin, vec3 direction);
 	void interact();
 	void handle_scroll();
+	void handle_drop();
 
 	ChunkManager& cm;
 	StructureGenerator& sg;

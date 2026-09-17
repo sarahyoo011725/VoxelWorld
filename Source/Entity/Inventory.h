@@ -3,12 +3,12 @@
 
 struct item_stack {
 	block_type type = none;
-	int count = 0;
 };
 
 /*
-* the player's hotbar - stacks of blocks picked up by breaking terrain, one of
-* which is selected at a time for placing
+* the player's hotbar - whichever slot is selected holds the last block broken
+* while it was selected, and can be placed as many times as wanted until a
+* different block is broken into that slot or it's dropped
 */
 class Inventory
 {
@@ -17,30 +17,14 @@ public:
 	item_stack slots[size];
 	int selected_slot = 0;
 
-	//stacks onto an existing slot of the same type, otherwise fills the first empty
-	//slot. silently dropped if the inventory is full - there's no ground-item system
+	//breaking a block always replaces the selected slot's content with it
 	void add_item(block_type type) {
-		for (int i = 0; i < size; ++i) {
-			if (slots[i].type == type) {
-				slots[i].count++;
-				return;
-			}
-		}
-		for (int i = 0; i < size; ++i) {
-			if (slots[i].type == none) {
-				slots[i] = { type, 1 };
-				return;
-			}
-		}
+		slots[selected_slot] = { type };
 	}
 
-	//consumes one of the selected slot's item; false if there was nothing to consume
-	bool remove_selected() {
-		item_stack& slot = slots[selected_slot];
-		if (slot.type == none || slot.count <= 0) return false;
-		slot.count--;
-		if (slot.count == 0) slot.type = none;
-		return true;
+	//clears the selected slot (Q to drop)
+	void drop_selected() {
+		slots[selected_slot] = { none };
 	}
 
 	block_type selected_type() const {

@@ -52,7 +52,6 @@ private:
 	const float hotbar_icon_scale = 0.68f;
 	const vec4 hotbar_slot_color = vec4(0.15f, 0.15f, 0.15f, 0.6f);
 	const vec4 hotbar_selected_color = vec4(0.9f, 0.9f, 0.9f, 0.75f);
-	const vec4 hotbar_count_color = vec4(1.0f, 1.0f, 1.0f, 0.9f);
 
 	const float sky_disc_distance = 150.0f; //must stay under Camera's far_plane (180) or it gets clipped
 	const float sky_disc_size = 15.0f;

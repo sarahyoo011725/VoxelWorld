@@ -113,15 +113,17 @@ void PlayerRenderer::draw_HUDs() {
 
 /*
 	draws the 9-slot hotbar along the bottom of the screen: a background per slot
-	(brighter for the selected one), an item icon sampled from the same texture atlas
-	blocks use, and a small fill bar standing in for the stack count - there's no text
-	rendering in this engine yet, so an exact number isn't shown
+	(brighter for the selected one) and an item icon sampled from the same texture
+	atlas blocks use
 */
 void PlayerRenderer::draw_hotbar(const Inventory& inventory) {
 	sm.HUD_shader.activate();
+	sm.HUD_shader.set_uniform_1i("texture1", 1);
 	quad_vao.bind();
 
-	float aspect = (float)window_setting->height / (float)window_setting->width; 
+	glDisable(GL_DEPTH_TEST);
+
+	float aspect = (float)window_setting->height / (float)window_setting->width;
 	float slot_step = hotbar_slot_size * 2.0f + hotbar_slot_spacing;
 	float total_width = Inventory::size * slot_step - hotbar_slot_spacing;
 	float start_x = -total_width / 2.0f + hotbar_slot_size;
@@ -156,23 +158,14 @@ void PlayerRenderer::draw_hotbar(const Inventory& inventory) {
 		vec2 uv_scale = vec2(1.0f / textures_columns, 1.0f / texture_rows);
 
 		sm.HUD_shader.set_uniform_1i("use_texture", GL_TRUE);
+		sm.HUD_shader.set_uniform_2f("offset", 1, offset);
 		sm.HUD_shader.set_uniform_2f("scale", 1, slot_scale * hotbar_icon_scale);
 		sm.HUD_shader.set_uniform_2f("uv_offset", 1, uv_min);
 		sm.HUD_shader.set_uniform_2f("uv_scale", 1, uv_scale);
 		glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
-
-		if (stack.count > 1) {
-			float fill = std::min(stack.count, 10) / 10.0f;
-			vec2 bar_scale = vec2(slot_scale.x * fill, slot_scale.y * 0.08f);
-			vec2 bar_offset = vec2(offset.x - slot_scale.x * (1.0f - fill), offset.y - slot_scale.y * 0.8f);
-
-			sm.HUD_shader.set_uniform_1i("use_texture", GL_FALSE);
-			sm.HUD_shader.set_uniform_4f("color", 1, hotbar_count_color);
-			sm.HUD_shader.set_uniform_2f("offset", 1, bar_offset);
-			sm.HUD_shader.set_uniform_2f("scale", 1, bar_scale);
-			glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
-		}
 	}
+
+	glEnable(GL_DEPTH_TEST);
 }
 
 /*

@@ -6,6 +6,7 @@ BlockInteractor::BlockInteractor(WindowSetting* setting)
 
 void BlockInteractor::update(vec3 origin, vec3 direction) {
 	handle_scroll();
+	handle_drop();
 	raycast(origin, direction);
 	interact();
 }
@@ -24,7 +25,19 @@ void BlockInteractor::handle_scroll() {
 }
 
 /*
-	casts a ray to detect a block, updating hovered_block
+	Q clears the selected slot
+*/
+void BlockInteractor::handle_drop() {
+	if (glfwGetKey(window_setting->window, GLFW_KEY_Q) == GLFW_PRESS) {
+		inventory.drop_selected();
+	}
+}
+
+/*
+	casts a ray to detect a block, updating hovered_block (the solid block hit, for
+	breaking) and placement_block (the empty cell just before it, for placing - a
+	solid hovered_block almost never has type none/water itself, so placement must
+	target its neighbor, not the hit block)
 */
 void BlockInteractor::raycast(vec3 world_origin, vec3 direction) {
 	//blocks are centered on integer coords; get_block_worldspace() floors raw world coords
@@ -63,13 +76,16 @@ void BlockInteractor::raycast(vec3 world_origin, vec3 direction) {
 	}
 
 	float dist = 0.0f;
+	Block* previous = nullptr;
 	while (dist < max_ray_length) {
 		Block* block = cm.get_block_worldspace(current);
 		if (block != nullptr) {
 			hovered_block = block;
 			if (block->type != none) {
+				placement_block = previous;
 				return;
 			}
+			previous = block;
 		}
 
 		//increment in the direction that ray_length is shorter
@@ -102,6 +118,7 @@ void BlockInteractor::raycast(vec3 world_origin, vec3 direction) {
 			}
 		}
 	}
+	placement_block = nullptr; //nothing solid within reach to place against
 }
 
 /*
@@ -116,20 +133,24 @@ void BlockInteractor::interact() {
 	block_type holding_block_type = inventory.selected_type();
 
 	if (glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-		if (holding_block_type != none && hovered_block->type != holding_block_type && (hovered_block->type == none || hovered_block->type == water)) {
+		Block* target = (hovered_block->type == water) ? hovered_block : placement_block;
+
+		if (target != nullptr && holding_block_type != none && target->type != holding_block_type) {
+			Chunk* target_chunk = cm.get_chunk(target->position);
+			ivec3 target_local_coord = world_to_local_coord(target->position);
+
 			if (is_nonblock(holding_block_type)) {
-				if (hovered_block->type == water && !can_be_placed_underwater(holding_block_type)) {
+				if (target->type == water && !can_be_placed_underwater(holding_block_type)) {
 					return;
 				}
 				else {
-					sg.spawn_nonblock_structure(holding_block_type, hovered_block->position);
-					chunk->should_rebuild = true;
+					sg.spawn_nonblock_structure(holding_block_type, target->position);
+					target_chunk->should_rebuild = true;
 				}
 			}
 			else {
-				cm.set_block_manual(chunk->id, local_coord, holding_block_type);
+				cm.set_block_manual(target_chunk->id, target_local_coord, holding_block_type);
 			}
-			inventory.remove_selected();
 			audio::play_block_sound_effect(holding_block_type);
 		}
 	}
