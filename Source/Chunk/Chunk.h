@@ -76,9 +76,11 @@ public:
 	ivec2 id = ivec2(0);
 
 	Chunk(ivec2 chunk_origin);
+	//never copied or moved: it owns GL handles that a shallow copy would alias
+	//and the destructor would then free twice
 	Chunk(const Chunk&) = delete;
 	Chunk& operator=(const Chunk&) = delete;
-	~Chunk() = default;
+	~Chunk();
 	int get_height(int x, int z) const { return height_map[height_index(x, z)]; }
 
 	/*

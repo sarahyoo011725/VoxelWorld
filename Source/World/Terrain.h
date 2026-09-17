@@ -21,9 +21,13 @@ private:
 	ThreadPool pool = ThreadPool(std::max(1u, thread::hardware_concurrency() - 1));
 	void spawn_structures(Chunk* chunk);
 	void build_pending_chunks();
+	void unload_distant_chunks();
 	bool is_chunk_visible(Chunk* chunk, const Frustum& frustum) const;
 public:
 	int render_dist = 9;
+	//kept beyond render_dist so that stepping back and forth over a chunk
+	//border doesn't repeatedly discard and regenerate the same chunks
+	int keep_dist = 12;
 	float build_budget_ms = 3.0f; //per-frame ceiling on new chunk building
 	PerfStats stats;
 	vec3* player_pos;

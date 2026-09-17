@@ -65,6 +65,29 @@ void Terrain::update_chunks() {
 	}
 
 	build_pending_chunks();
+	unload_distant_chunks();
+}
+
+/*
+	drops chunks that have drifted well outside the render distance. nothing ever
+	removed them before, so walking in one direction grew the chunk map without
+	bound. erasing runs the Chunk destructor, which frees its GL buffers too.
+
+	safe only because keep_dist exceeds render_dist: visible_chunks holds raw
+	pointers into this map and is still read by draw() later in the frame, so
+	nothing within render distance may be erased here.
+*/
+void Terrain::unload_distant_chunks() {
+	for (auto it = cm.chunks.begin(); it != cm.chunks.end(); ) {
+		ivec2 id = it->first;
+		if (abs(id.x - origin.x) > keep_dist || abs(id.y - origin.y) > keep_dist) {
+			it = cm.chunks.erase(it);
+		}
+		else {
+			++it;
+		}
+	}
+	stats.chunks_loaded = (int)cm.chunks.size();
 }
 
 /*

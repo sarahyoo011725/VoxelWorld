@@ -39,6 +39,25 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 }
 
 /*
+	releases the chunk's GL buffers. without this, unloading a distant chunk
+	would free its block data but leak every VAO/VBO/EBO it owns
+*/
+Chunk::~Chunk() {
+	opaque_vao.destroy();
+	opaque_vbo.destroy();
+	opaque_ebo.destroy();
+	transp_vao.destroy();
+	transp_vbo.destroy();
+	transp_ebo.destroy();
+	water_vao.destroy();
+	water_vbo.destroy();
+	water_ebo.destroy();
+	foliage_vao.destroy();
+	foliage_vbo.destroy();
+	foliage_ebo.destroy();
+}
+
+/*
 	fills the block array from the terrain generator. touches no GL state and
 	only this chunk's own storage, so it is safe to run on a worker thread.
 */
