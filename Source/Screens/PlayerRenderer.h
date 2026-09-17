@@ -9,6 +9,8 @@
 #include "Entity/Inventory.h"
 #include "Block/Block.h"
 #include "WindowSetting.h"
+#include "BitmapFont.h"
+#include "World/PerfStats.h"
 
 /*
 * renders the crosshair/HUD, hovered-block outline, and post-process pass
@@ -31,8 +33,10 @@ public:
 	void draw_sky_discs(mat4 view, mat4 projection, vec3 eye_position, vec3 to_sun);
 	void draw_sky_background(mat4 view, mat4 projection, vec3 zenith_color, vec3 horizon_color, vec3 to_sun);
 	void draw_clouds(mat4 cam_matrix, vec2 player_xz, float time, vec3 light_color);
+	void draw_perf_overlay(const PerfStats& stats);
 	void post_process();
 private:
+	void draw_text(const string& text, vec2 top_left, float pixel_size, vec4 color);
 	void outline_hovered_cube(Block* hovered_block);
 	void generate_cloud_mesh(vec2 center);
 	void add_cloud_face(block_face face, vec3 center, float half_x, float half_z, float half_y);
@@ -45,6 +49,8 @@ private:
 	const float outline_thickness = 2.0f;
 	vec4 hovered_block_outline_color = vec4(0.0, 1.0, 1.0, 1.0); //cyan
 	vec4 crosshair_color = vec4(1.0); //white
+
+	const float overlay_pixel_size = 0.009f; //one dot of the 5x7 font, in ndc
 
 	const float hotbar_slot_size = 0.09f; //ndc half-size before aspect correction
 	const float hotbar_slot_spacing = 0.02f;

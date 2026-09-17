@@ -1,5 +1,6 @@
 #pragma once
 #include "World/ChunkManager.h"
+#include "World/WorldRandom.h"
 #include "Entity/Geometries.h"
 #include "Block/BlockType.h"
 #include <functional>
@@ -14,6 +15,10 @@ struct structure_rule {
 	int spawn_chance; //1 in N chance per terrain column
 	function<void(vec3)> spawn;
 };
+
+//keeps a structure's own randomness on a different stream from the per-column
+//roll that decided to spawn it
+const static uint32_t tree_salt = 0x7EE5;
 
 /*
 	a singleton class that creates structures across chunks.

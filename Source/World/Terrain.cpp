@@ -1,5 +1,6 @@
 #include "Terrain.h"
 #include <algorithm>
+#include <chrono>
 
 Terrain::Terrain(vec3& cam_pos) : cm(ChunkManager::get_instance()), sg(StructureGenerator::get_instance()) {
 	player_pos = &cam_pos;
@@ -37,15 +38,60 @@ void Terrain::update_chunks() {
 		}
 	}
 
+	//rebuilds come from the player breaking/placing a block, so they run
+	//immediately - deferring them would show a stale chunk for a frame
 	for (Chunk* c : visible_chunks) {
-		if (!c->has_built) {
-			spawn_structures(c);
-			c->build_chunk();
-		}
-		else if (c->should_rebuild) {
+		if (c->has_built && c->should_rebuild) {
 			c->rebuild_chunk();
 		}
 	}
+
+	build_pending_chunks();
+}
+
+/*
+	builds newly streamed chunks under a per-frame time budget. crossing a chunk
+	boundary queues a whole row of them at once (2 * render_dist + 1), which is
+	far more than one frame can absorb, so they are spread over several frames
+	instead. an unbuilt chunk simply draws nothing until its turn comes.
+*/
+void Terrain::build_pending_chunks() {
+	stats.chunks_built = 0;
+	stats.chunk_build_ms = 0.0f;
+	stats.chunks_visible = (int)visible_chunks.size();
+	stats.chunks_loaded = (int)cm.chunks.size();
+
+	vector<Chunk*> pending;
+	for (Chunk* c : visible_chunks) {
+		if (!c->has_built) pending.push_back(c);
+	}
+	stats.chunks_pending = (int)pending.size();
+	if (pending.empty()) return;
+
+	//nearest first, so the world fills in outward from the player
+	auto dist_sq = [this](Chunk* c) {
+		float dx = c->world_position.x - player_pos->x;
+		float dz = c->world_position.z - player_pos->z;
+		return dx * dx + dz * dz;
+	};
+	sort(pending.begin(), pending.end(), [&](Chunk* a, Chunk* b) {
+		return dist_sq(a) < dist_sq(b);
+	});
+
+	//budget is checked after each chunk, so at least one always makes progress
+	auto start = chrono::steady_clock::now();
+	for (Chunk* c : pending) {
+		spawn_structures(c);
+		c->build_chunk();
+		++stats.chunks_built;
+
+		float elapsed_ms = chrono::duration<float, milli>(chrono::steady_clock::now() - start).count();
+		if (elapsed_ms >= build_budget_ms) {
+			stats.chunk_build_ms = elapsed_ms;
+			return;
+		}
+	}
+	stats.chunk_build_ms = chrono::duration<float, milli>(chrono::steady_clock::now() - start).count();
 }
 
 /*
@@ -100,8 +146,9 @@ void Terrain::spawn_structures(Chunk* chunk) {
 			//do not spawn anything in water
 			if (h <= water_level) continue;
 
+			WorldRandom rng(get_terrain_generator().config.world_seed, wx, wz);
 			for (const structure_rule& rule : sg.terrain_structures) {
-				if (rand() % rule.spawn_chance == 0) {
+				if (rng.next_int(rule.spawn_chance) == 0) {
 					rule.spawn(vec3(wx, h + 1, wz));
 				}
 			}

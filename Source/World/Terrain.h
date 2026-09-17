@@ -1,6 +1,8 @@
 #pragma once
 #include "ChunkManager.h"
 #include "StructureGenerator.h"
+#include "WorldRandom.h"
+#include "PerfStats.h"
 
 using namespace std;
 using namespace glm;
@@ -14,8 +16,11 @@ private:
 	ChunkManager& cm;
 	StructureGenerator& sg;
 	void spawn_structures(Chunk* chunk);
+	void build_pending_chunks();
 public:
 	int render_dist = 9;
+	float build_budget_ms = 3.0f; //per-frame ceiling on new chunk building
+	PerfStats stats;
 	vec3* player_pos;
 	ivec2 origin = ivec2(0); //player's pos converted into chunk coord. it is the origin of player's render range.
 	vector<Chunk*> visible_chunks;

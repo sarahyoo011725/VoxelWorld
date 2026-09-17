@@ -23,6 +23,10 @@ private:
 	bool enable_music = true;
 	bool gl_setting_done = false;
 	bool debug_export_key_was_down = false;
+	bool show_perf_overlay = false;
+	bool perf_key_was_down = false;
+	double last_frame_time = 0.0;
+	float smoothed_frame_ms = 16.7f;
 public:
 	/*
 	* initializes GL settings for the game. This must be called only once before drawing the screen
@@ -64,6 +68,20 @@ public:
 				audio::current_music->stop();
 			}
 		}
+		bool perf_key_down = glfwGetKey(window_setting->window, GLFW_KEY_F3) == GLFW_PRESS;
+		if (perf_key_down && !perf_key_was_down) {
+			show_perf_overlay = !show_perf_overlay;
+		}
+		perf_key_was_down = perf_key_down;
+
+		//smoothed so the readout is legible instead of flickering every frame
+		double now = glfwGetTime();
+		if (last_frame_time > 0.0) {
+			float dt_ms = (float)((now - last_frame_time) * 1000.0);
+			smoothed_frame_ms = smoothed_frame_ms * 0.9f + dt_ms * 0.1f;
+		}
+		last_frame_time = now;
+
 		//edge-detected, unlike the toggles above: this writes files to disk
 		bool debug_export_key_down = glfwGetKey(window_setting->window, GLFW_KEY_9) == GLFW_PRESS;
 		if (debug_export_key_down && !debug_export_key_was_down) {
@@ -127,6 +145,15 @@ public:
 		renderer.draw_outlines(player.view_matrix(), player.hovered_block());
 		renderer.draw_HUDs();
 		renderer.draw_hotbar(player.inventory());
+
+		if (show_perf_overlay) {
+			terrain.stats.frame_ms = smoothed_frame_ms;
+			terrain.stats.fps = smoothed_frame_ms > 0.0f ? 1000.0f / smoothed_frame_ms : 0.0f;
+			terrain.stats.player_x = (int)player.position.x;
+			terrain.stats.player_y = (int)player.position.y;
+			terrain.stats.player_z = (int)player.position.z;
+			renderer.draw_perf_overlay(terrain.stats);
+		}
 
 		//second render pass: draw as normal
 		renderer.unbind_fbo();

@@ -169,6 +169,74 @@ void PlayerRenderer::draw_hotbar(const Inventory& inventory) {
 }
 
 /*
+	draws a string as one small quad per lit bit of the 5x7 font, growing right
+	and down from top_left. the caller is expected to have activated HUD_shader,
+	bound quad_vao, set use_texture to false, and disabled depth testing
+*/
+void PlayerRenderer::draw_text(const string& text, vec2 top_left, float pixel_size, vec4 color) {
+	float aspect = (float)window_setting->height / (float)window_setting->width;
+	float advance = (bitmap_font::glyph_width + 1) * pixel_size;
+
+	sm.HUD_shader.set_uniform_4f("color", 1, color);
+	sm.HUD_shader.set_uniform_2f("uv_offset", 1, vec2(0.0f));
+	sm.HUD_shader.set_uniform_2f("uv_scale", 1, vec2(1.0f));
+
+	for (size_t ci = 0; ci < text.size(); ++ci) {
+		auto glyph = bitmap_font::glyphs.find(text[ci]);
+		if (glyph == bitmap_font::glyphs.end()) continue;
+		float glyph_x = top_left.x + ci * advance * aspect;
+
+		for (int row = 0; row < bitmap_font::glyph_height; ++row) {
+			for (int col = 0; col < bitmap_font::glyph_width; ++col) {
+				if (!(glyph->second[row] & (1 << (bitmap_font::glyph_width - 1 - col)))) continue;
+				vec2 center = vec2(
+					glyph_x + (col + 0.5f) * pixel_size * aspect,
+					top_left.y - (row + 0.5f) * pixel_size
+				);
+				sm.HUD_shader.set_uniform_2f("offset", 1, center);
+				sm.HUD_shader.set_uniform_2f("scale", 1, vec2(pixel_size * 0.5f * aspect, pixel_size * 0.5f));
+				glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
+			}
+		}
+	}
+}
+
+/*
+	draws the F3 performance overlay in the top-left corner
+*/
+void PlayerRenderer::draw_perf_overlay(const PerfStats& stats) {
+	sm.HUD_shader.activate();
+	sm.HUD_shader.set_uniform_1i("use_texture", GL_FALSE);
+	quad_vao.bind();
+	glDisable(GL_DEPTH_TEST);
+
+	auto num = [](float v, int decimals) {
+		char buf[32];
+		snprintf(buf, sizeof(buf), "%.*f", decimals, v);
+		return string(buf);
+	};
+
+	vector<string> lines = {
+		"FPS " + num(stats.fps, 0) + "  FRAME " + num(stats.frame_ms, 1) + " MS",
+		"BUILD " + num(stats.chunk_build_ms, 1) + " MS  BUILT " + num((float)stats.chunks_built, 0),
+		"QUEUED " + num((float)stats.chunks_pending, 0) + "  VISIBLE " + num((float)stats.chunks_visible, 0),
+		"LOADED " + num((float)stats.chunks_loaded, 0),
+		"XYZ " + num((float)stats.player_x, 0) + " " + num((float)stats.player_y, 0) + " " + num((float)stats.player_z, 0),
+	};
+
+	//budget overruns are the thing worth noticing, so flag them in the text color
+	bool over_budget = stats.frame_ms > 16.7f;
+	vec4 color = over_budget ? vec4(1.0f, 0.6f, 0.4f, 1.0f) : vec4(0.85f, 1.0f, 0.85f, 1.0f);
+
+	float line_step = (bitmap_font::glyph_height + 2) * overlay_pixel_size;
+	for (size_t i = 0; i < lines.size(); ++i) {
+		draw_text(lines[i], vec2(-0.98f, 0.95f - i * line_step), overlay_pixel_size, color);
+	}
+
+	glEnable(GL_DEPTH_TEST);
+}
+
+/*
 	draws outlined objects
 */
 void PlayerRenderer::draw_outlines(mat4 cam_matrix, Block* hovered_block) {

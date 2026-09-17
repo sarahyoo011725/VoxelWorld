@@ -7,26 +7,10 @@
 #include "Entity/Geometries.h"
 #include "Audio/AudioManager.h"
 #include "WindowSetting.h"
+#include "BitmapFont.h"
 #include <vector>
-#include <map>
-#include <array>
 
 using namespace std;
-
-namespace {
-	//a tiny hand-authored 5x7 dot-matrix font, just the letters needed to spell
-	//START/EXIT - there's no real text-rendering system in this engine, so button
-	//labels are drawn as a grid of small quads instead of sampled glyphs
-	const static map<char, array<int, 7>> menu_font_glyphs = {
-		{'S', {0b01111, 0b10000, 0b10000, 0b01110, 0b00001, 0b00001, 0b11110}},
-		{'T', {0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100}},
-		{'A', {0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001}},
-		{'R', {0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b10001}},
-		{'E', {0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111}},
-		{'X', {0b10001, 0b10001, 0b01010, 0b00100, 0b01010, 0b10001, 0b10001}},
-		{'I', {0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b11111}},
-	};
-}
 
 /*
 * a screen displaying the start menu, with mouse-clickable start/exit buttons
@@ -159,8 +143,8 @@ private:
 		sm.HUD_shader.set_uniform_4f("color", 1, color);
 
 		for (size_t li = 0; li < text.size(); ++li) {
-			auto it = menu_font_glyphs.find(text[li]);
-			if (it == menu_font_glyphs.end()) continue;
+			auto it = bitmap_font::glyphs.find(text[li]);
+			if (it == bitmap_font::glyphs.end()) continue;
 			float letter_x = start_x + li * (glyph_w + glyph_gap) * aspect;
 
 			for (int row = 0; row < 7; ++row) {
