@@ -136,7 +136,14 @@ void BlockInteractor::interact() {
 
 	block_type holding_block_type = inventory.selected_type();
 
-	if (glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+	bool left_click_down = glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+	bool right_click_down = glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+	bool right_clicked = right_click_down && !right_click_was_down;
+	bool left_clicked = left_click_down && !left_click_was_down;
+	right_click_was_down = right_click_down;
+	left_click_was_down = left_click_down;
+
+	if (right_clicked) {
 		bool target_is_hovered = hovered_block->type == water;
 		Block* target = target_is_hovered ? hovered_block : placement_block;
 		vec3 target_position = target_is_hovered ? hovered_position : placement_position;
@@ -161,7 +168,7 @@ void BlockInteractor::interact() {
 			audio::play_block_sound_effect(holding_block_type);
 		}
 	}
-	if (glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+	if (left_clicked) {
 		if (hovered_block->type != none) {
 			inventory.add_item(hovered_block->type);
 			if (is_nonblock(hovered_block->type)) {

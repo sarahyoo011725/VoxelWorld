@@ -13,7 +13,6 @@ public:
 	BlockInteractor(WindowSetting* setting);
 	Block* hovered_block = nullptr;
 	Block* placement_block = nullptr;
-	//the world coords the raycast found them at - a Block no longer stores its own
 	vec3 hovered_position = vec3(0.0f);
 	vec3 placement_position = vec3(0.0f);
 	Inventory inventory;
@@ -27,5 +26,8 @@ private:
 	ChunkManager& cm;
 	StructureGenerator& sg;
 	WindowSetting* window_setting;
-	const float max_ray_length = 3.0f;
+	const float max_ray_length = 4.5f;
+
+	bool left_click_was_down = false;
+	bool right_click_was_down = false;
 };
