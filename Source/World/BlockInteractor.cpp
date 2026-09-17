@@ -122,7 +122,8 @@ void BlockInteractor::raycast(vec3 world_origin, vec3 direction) {
 			}
 		}
 	}
-	placement_block = nullptr; //nothing solid within reach to place against
+	hovered_block = nullptr;
+	placement_block = nullptr;
 }
 
 /*
