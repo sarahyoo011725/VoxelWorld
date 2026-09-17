@@ -107,7 +107,7 @@ public:
 		sm.shadow_shader.activate();
 		sm.shadow_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, player.camera.light_space_matrix);
 		sm.shadow_shader.set_uniform_1f("time", (float)glfwGetTime());
-		terrain.draw_shadow_casters();
+		terrain.draw_shadow_casters(player.camera.light_space_matrix);
 		renderer.unbind_shadow_fbo();
 		glViewport(0, 0, window_setting->width, window_setting->height);
 
@@ -135,7 +135,7 @@ public:
 		sm.default_shader.activate();
 		texture.activate();
 		texture.bind();
-		terrain.draw();
+		terrain.draw(player.camera.mat);
 		if (window_setting->window_active) {
 			player.update();
 			renderer.update();

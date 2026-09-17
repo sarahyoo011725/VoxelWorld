@@ -15,6 +15,7 @@ struct PerfStats {
 	int chunks_generated = 0;
 	int chunks_pending = 0;
 	int chunks_visible = 0;
+	int chunks_drawn = 0;
 	int chunks_loaded = 0;
 	int player_x = 0;
 	int player_y = 0;

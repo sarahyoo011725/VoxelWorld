@@ -133,25 +133,55 @@ void Terrain::build_pending_chunks() {
 /*
 	depth-only draw of shadow-casting geometry (opaque terrain + foliage) for the
 	shadow map pass. the shadow shader is activated once by the caller beforehand.
+	culled against the light's frustum rather than the camera's - geometry behind
+	the player can still cast a shadow into view, so culling it by what the camera
+	sees would make shadows pop in and out.
 */
-void Terrain::draw_shadow_casters() {
+void Terrain::draw_shadow_casters(const mat4& light_space_matrix) {
+	Frustum light_frustum;
+	light_frustum.from_matrix(light_space_matrix);
+
 	for (Chunk* c : visible_chunks) {
+		if (!is_chunk_visible(c, light_frustum)) continue;
 		c->draw_opaque_depth();
 		c->draw_foliage_depth();
 	}
 }
 
 /*
-	draws the chunks streamed by update_chunks() and clears visible_chunks
+	tests a chunk's bounding box against a frustum. the box is deliberately a
+	little larger than the chunk so that block faces and swaying foliage on the
+	boundary cannot be clipped away early
 */
-void Terrain::draw() {
+bool Terrain::is_chunk_visible(Chunk* chunk, const Frustum& frustum) const {
+	vec3 min_corner = chunk->world_position + vec3(-1.0f, -1.0f, -1.0f);
+	vec3 max_corner = chunk->world_position + vec3(chunk_size + 1.0f, chunk->height + 1.0f, chunk_size + 1.0f);
+	return frustum.intersects_aabb(min_corner, max_corner);
+}
+
+/*
+	draws the chunks streamed by update_chunks() and clears visible_chunks.
+	chunks outside the camera frustum are skipped, which also keeps them out of
+	the transparency sort below
+*/
+void Terrain::draw(const mat4& view_projection) {
+	Frustum camera_frustum;
+	camera_frustum.from_matrix(view_projection);
+
+	vector<Chunk*> drawn;
+	drawn.reserve(visible_chunks.size());
 	for (Chunk* c : visible_chunks) {
+		if (is_chunk_visible(c, camera_frustum)) drawn.push_back(c);
+	}
+	stats.chunks_drawn = (int)drawn.size();
+
+	for (Chunk* c : drawn) {
 		c->draw_opaque_blocks();
 	}
 
 	//alpha blending needs back-to-front order, or a nearer chunk's transparent
 	//faces can wrongly show through a farther chunk's water/leaves
-	sort(visible_chunks.begin(), visible_chunks.end(), [this](Chunk* a, Chunk* b) {
+	sort(drawn.begin(), drawn.end(), [this](Chunk* a, Chunk* b) {
 		vec3 a_center = a->world_position + vec3(chunk_size / 2.0f, 0.0f, chunk_size / 2.0f);
 		vec3 b_center = b->world_position + vec3(chunk_size / 2.0f, 0.0f, chunk_size / 2.0f);
 		float a_dist = distance(vec2(a_center.x, a_center.z), vec2(player_pos->x, player_pos->z));
@@ -159,7 +189,7 @@ void Terrain::draw() {
 		return a_dist > b_dist;
 	});
 
-	for (Chunk* c : visible_chunks) {
+	for (Chunk* c : drawn) {
 		c->draw_transparent_blocks();
 		c->draw_foliage();
 		c->draw_water();

@@ -4,6 +4,7 @@
 #include "WorldRandom.h"
 #include "PerfStats.h"
 #include "ThreadPool.h"
+#include "Camera/Frustum.h"
 
 using namespace std;
 using namespace glm;
@@ -20,6 +21,7 @@ private:
 	ThreadPool pool = ThreadPool(std::max(1u, thread::hardware_concurrency() - 1));
 	void spawn_structures(Chunk* chunk);
 	void build_pending_chunks();
+	bool is_chunk_visible(Chunk* chunk, const Frustum& frustum) const;
 public:
 	int render_dist = 9;
 	float build_budget_ms = 3.0f; //per-frame ceiling on new chunk building
@@ -29,6 +31,6 @@ public:
 	vector<Chunk*> visible_chunks;
 	Terrain(vec3& cam_pos);
 	void update_chunks();
-	void draw_shadow_casters();
-	void draw();
+	void draw_shadow_casters(const mat4& light_space_matrix);
+	void draw(const mat4& view_projection);
 };
