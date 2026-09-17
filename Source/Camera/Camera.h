@@ -27,6 +27,8 @@ public:
 	mat4 projection = mat4(0.0f);
 	vec3 direction = vec3(0.0f, 0.0f, -1.0f);
 	mat4 light_space_matrix = mat4(1.0f); //recomputed each frame, centered on the player, for the shadow pass
+	mat4 shadow_matrix = mat4(1.0f);
+	void commit_shadow_matrix() { shadow_matrix = light_space_matrix; }
 
 	//day/night cycle state, exposed so the sun/moon discs can be drawn in the sky
 	TimeMode time_mode = TimeMode::Auto; //KEY_5 toggles Day/Night, KEY_6 resumes Auto

@@ -26,7 +26,6 @@ void Camera::update(vec3 eye_position) {
 	sm.default_shader.set_uniform_1f("fog_start", fog_start);
 	sm.default_shader.set_uniform_1f("fog_end", fog_end);
 	sm.default_shader.set_uniform_3f("sun_direction", 1, sun_direction);
-	sm.default_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, light_space_matrix);
 	sm.default_shader.set_uniform_3f("light_color", 1, light_color);
 	sm.default_shader.set_uniform_1f("ambient_strength", ambient_strength);
 	sm.default_shader.set_uniform_1f("diffuse_strength", diffuse_strength);
@@ -39,7 +38,6 @@ void Camera::update(vec3 eye_position) {
 	sm.wave_shader.set_uniform_1f("fog_start", fog_start);
 	sm.wave_shader.set_uniform_1f("fog_end", fog_end);
 	sm.wave_shader.set_uniform_3f("sun_direction", 1, sun_direction);
-	sm.wave_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, light_space_matrix);
 	sm.wave_shader.set_uniform_3f("light_color", 1, light_color);
 	sm.wave_shader.set_uniform_1f("ambient_strength", ambient_strength);
 	sm.wave_shader.set_uniform_1f("diffuse_strength", diffuse_strength);
@@ -52,7 +50,6 @@ void Camera::update(vec3 eye_position) {
 	sm.foliage_shader.set_uniform_1f("fog_start", fog_start);
 	sm.foliage_shader.set_uniform_1f("fog_end", fog_end);
 	sm.foliage_shader.set_uniform_3f("sun_direction", 1, sun_direction);
-	sm.foliage_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, light_space_matrix);
 	sm.foliage_shader.set_uniform_3f("light_color", 1, light_color);
 	sm.foliage_shader.set_uniform_1f("ambient_strength", ambient_strength);
 	sm.foliage_shader.set_uniform_1f("diffuse_strength", diffuse_strength);

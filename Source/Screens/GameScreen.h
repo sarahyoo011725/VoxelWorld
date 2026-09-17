@@ -27,6 +27,8 @@ private:
 	bool perf_key_was_down = false;
 	double last_frame_time = 0.0;
 	float smoothed_frame_ms = 16.7f;
+	int frames_since_shadow_update = 1000;
+	const int shadow_update_interval = 3;
 public:
 	/*
 	* initializes GL settings for the game. This must be called only once before drawing the screen
@@ -98,18 +100,35 @@ public:
 
 		terrain.update_chunks();
 
-		//shadow pass: render opaque + foliage geometry depth-only from the sun's POV
-		renderer.bind_shadow_fbo();
-		glViewport(0, 0, renderer.shadow_resolution, renderer.shadow_resolution);
-		glClear(GL_DEPTH_BUFFER_BIT);
-		glEnable(GL_DEPTH_TEST);
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-		sm.shadow_shader.activate();
-		sm.shadow_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, player.camera.light_space_matrix);
-		sm.shadow_shader.set_uniform_1f("time", (float)glfwGetTime());
-		terrain.draw_shadow_casters(player.camera.light_space_matrix);
-		renderer.unbind_shadow_fbo();
-		glViewport(0, 0, window_setting->width, window_setting->height);
+		//shadow pass: render opaque + foliage geometry depth-only from the sun's POV.
+		//refreshed on an interval, or immediately when geometry changed
+		bool geometry_changed = terrain.stats.chunks_built > 0;
+		if (++frames_since_shadow_update >= shadow_update_interval || geometry_changed) {
+			frames_since_shadow_update = 0;
+			player.camera.commit_shadow_matrix();
+
+			//push the committed matrix to everything that samples the map, so the
+			//map and the matrix reading it always describe the same light view
+			mat4 shadow_matrix = player.camera.shadow_matrix;
+			sm.default_shader.activate();
+			sm.default_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shadow_matrix);
+			sm.wave_shader.activate();
+			sm.wave_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shadow_matrix);
+			sm.foliage_shader.activate();
+			sm.foliage_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shadow_matrix);
+
+			renderer.bind_shadow_fbo();
+			glViewport(0, 0, renderer.shadow_resolution, renderer.shadow_resolution);
+			glClear(GL_DEPTH_BUFFER_BIT);
+			glEnable(GL_DEPTH_TEST);
+			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+			sm.shadow_shader.activate();
+			sm.shadow_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shadow_matrix);
+			sm.shadow_shader.set_uniform_1f("time", (float)glfwGetTime());
+			terrain.draw_shadow_casters(shadow_matrix);
+			renderer.unbind_shadow_fbo();
+			glViewport(0, 0, window_setting->width, window_setting->height);
+		}
 
 		//first render pass: mirror texture
 		renderer.bind_fbo();
