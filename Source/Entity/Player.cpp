@@ -28,9 +28,10 @@ void Player::update() {
 	handles physical movements of the player
 */
 void Player::update_movement(float dt) {
-	vec3 direction = camera.direction;
+	vec3 look = camera.direction;
+	vec3 direction = enable_physics ? normalize(vec3(look.x, 0.0f, look.z)) : look;
 	vec3 right = normalize(cross(direction, vec3(0.0, 1.0, 0.0)));
-	vec3 up = normalize(cross(right, direction));
+	vec3 up = enable_physics ? vec3(0.0f, 1.0f, 0.0f) : normalize(cross(right, direction));
 	vec3 input_dir = vec3(0.0);
 
 	if (glfwGetKey(window_setting->window, GLFW_KEY_W) == GLFW_PRESS) {
