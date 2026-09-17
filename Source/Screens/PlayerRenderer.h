@@ -29,7 +29,7 @@ public:
 	void unbind_shadow_fbo();
 	void draw_HUDs();
 	void draw_hotbar(const Inventory& inventory);
-	void draw_outlines(mat4 cam_matrix, Block* hovered_block);
+	void draw_outlines(mat4 cam_matrix, Block* hovered_block, vec3 hovered_position);
 	void draw_sky_discs(mat4 view, mat4 projection, vec3 eye_position, vec3 to_sun);
 	void draw_sky_background(mat4 view, mat4 projection, vec3 zenith_color, vec3 horizon_color, vec3 to_sun);
 	void draw_clouds(mat4 cam_matrix, vec2 player_xz, float time, vec3 light_color);
@@ -37,7 +37,7 @@ public:
 	void post_process();
 private:
 	void draw_text(const string& text, vec2 top_left, float pixel_size, vec4 color);
-	void outline_hovered_cube(Block* hovered_block);
+	void outline_hovered_cube(Block* hovered_block, vec3 hovered_position);
 	void generate_cloud_mesh(vec2 center);
 	void add_cloud_face(block_face face, vec3 center, float half_x, float half_z, float half_y);
 

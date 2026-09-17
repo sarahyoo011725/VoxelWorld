@@ -240,12 +240,12 @@ void PlayerRenderer::draw_perf_overlay(const PerfStats& stats) {
 /*
 	draws outlined objects
 */
-void PlayerRenderer::draw_outlines(mat4 cam_matrix, Block* hovered_block) {
+void PlayerRenderer::draw_outlines(mat4 cam_matrix, Block* hovered_block, vec3 hovered_position) {
 	if (!enable_outline) return;
 	sm.outline_shader.activate();
 	sm.outline_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, cam_matrix);
 	outline_vao.bind();
-	outline_hovered_cube(hovered_block);
+	outline_hovered_cube(hovered_block, hovered_position);
 }
 
 /*
@@ -424,9 +424,9 @@ void PlayerRenderer::post_process() {
 /*
 	draws outline of a hovered block
 */
-void PlayerRenderer::outline_hovered_cube(Block* hovered_block) {
+void PlayerRenderer::outline_hovered_cube(Block* hovered_block, vec3 hovered_position) {
 	if (hovered_block == nullptr) return;
-	mat4 cube_model = translate(mat4(1.0), hovered_block->position);
+	mat4 cube_model = translate(mat4(1.0), hovered_position);
 	sm.outline_shader.set_uniform_mat4f("cube_model", 1, GL_FALSE, cube_model);
 	sm.outline_shader.set_uniform_4f("color", 1, hovered_block_outline_color);
 	glDisable(GL_DEPTH_TEST); //keeps the cube outline visible

@@ -142,7 +142,7 @@ public:
 			sm.frame_buffer_shader.activate();
 			sm.frame_buffer_shader.set_uniform_1i("is_underwater", player.is_underwater());
 		}
-		renderer.draw_outlines(player.view_matrix(), player.hovered_block());
+		renderer.draw_outlines(player.view_matrix(), player.hovered_block(), player.hovered_position());
 		renderer.draw_HUDs();
 		renderer.draw_hotbar(player.inventory());
 

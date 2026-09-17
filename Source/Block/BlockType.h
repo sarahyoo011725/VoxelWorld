@@ -5,8 +5,9 @@
 using namespace std;
 using namespace glm;
 
-//names block types
-enum block_type {
+//names block types. explicitly one byte: there is one of these per voxel, so
+//the default int width would cost 4x the memory for 12 values
+enum block_type : unsigned char {
 	none,
 	dirt,
 	dirt_grass,

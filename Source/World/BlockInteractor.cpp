@@ -77,15 +77,19 @@ void BlockInteractor::raycast(vec3 world_origin, vec3 direction) {
 
 	float dist = 0.0f;
 	Block* previous = nullptr;
+	vec3 previous_position = vec3(0.0f);
 	while (dist < max_ray_length) {
 		Block* block = cm.get_block_worldspace(current);
 		if (block != nullptr) {
 			hovered_block = block;
+			hovered_position = floor(current);
 			if (block->type != none) {
 				placement_block = previous;
+				placement_position = previous_position;
 				return;
 			}
 			previous = block;
+			previous_position = floor(current);
 		}
 
 		//increment in the direction that ray_length is shorter
@@ -127,24 +131,26 @@ void BlockInteractor::raycast(vec3 world_origin, vec3 direction) {
 void BlockInteractor::interact() {
 	if (hovered_block == nullptr) return;
 
-	Chunk* chunk = cm.get_chunk(hovered_block->position);
-	ivec3 local_coord = world_to_local_coord(hovered_block->position);
+	Chunk* chunk = cm.get_chunk(hovered_position);
+	ivec3 local_coord = world_to_local_coord(hovered_position);
 
 	block_type holding_block_type = inventory.selected_type();
 
 	if (glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
-		Block* target = (hovered_block->type == water) ? hovered_block : placement_block;
+		bool target_is_hovered = hovered_block->type == water;
+		Block* target = target_is_hovered ? hovered_block : placement_block;
+		vec3 target_position = target_is_hovered ? hovered_position : placement_position;
 
 		if (target != nullptr && holding_block_type != none && target->type != holding_block_type) {
-			Chunk* target_chunk = cm.get_chunk(target->position);
-			ivec3 target_local_coord = world_to_local_coord(target->position);
+			Chunk* target_chunk = cm.get_chunk(target_position);
+			ivec3 target_local_coord = world_to_local_coord(target_position);
 
 			if (is_nonblock(holding_block_type)) {
 				if (target->type == water && !can_be_placed_underwater(holding_block_type)) {
 					return;
 				}
 				else {
-					sg.spawn_nonblock_structure(holding_block_type, target->position);
+					sg.spawn_nonblock_structure(holding_block_type, target_position);
 					target_chunk->should_rebuild = true;
 				}
 			}

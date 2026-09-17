@@ -76,9 +76,7 @@ void Chunk::generate_terrain() {
 				if (y <= h && y >= h - 2 && y + 1 < height && y + 1 <= water_level) {
 					type = sand;
 				}
-				Block& block = blocks[block_index(x, y, z)];
-				block.type = type;
-				block.position = world_position + vec3(x - 1, y, z - 1); //needed for collision check
+				blocks[block_index(x, y, z)].type = type;
 			}
 		}
 	}

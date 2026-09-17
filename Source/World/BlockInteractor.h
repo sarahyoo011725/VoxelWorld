@@ -11,8 +11,11 @@ class BlockInteractor
 {
 public:
 	BlockInteractor(WindowSetting* setting);
-	Block* hovered_block = nullptr; 
-	Block* placement_block = nullptr; 
+	Block* hovered_block = nullptr;
+	Block* placement_block = nullptr;
+	//the world coords the raycast found them at - a Block no longer stores its own
+	vec3 hovered_position = vec3(0.0f);
+	vec3 placement_position = vec3(0.0f);
 	Inventory inventory;
 	void update(vec3 origin, vec3 direction);
 private:
