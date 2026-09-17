@@ -22,6 +22,7 @@ private:
 	void spawn_structures(Chunk* chunk);
 	void build_pending_chunks();
 	void unload_distant_chunks();
+	void restore_player_edits(Chunk* chunk);
 	bool is_chunk_visible(Chunk* chunk, const Frustum& frustum) const;
 public:
 	int render_dist = 9;

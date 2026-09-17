@@ -151,11 +151,12 @@ void BlockInteractor::interact() {
 				}
 				else {
 					sg.spawn_nonblock_structure(holding_block_type, target_position);
+					cm.record_player_edit(target_chunk->id, target_local_coord, holding_block_type);
 					target_chunk->should_rebuild = true;
 				}
 			}
 			else {
-				cm.set_block_manual(target_chunk->id, target_local_coord, holding_block_type);
+				cm.set_block_manual(target_chunk->id, target_local_coord, holding_block_type, true);
 			}
 			audio::play_block_sound_effect(holding_block_type);
 		}
@@ -167,7 +168,7 @@ void BlockInteractor::interact() {
 				chunk->remove_structure(local_coord);
 			}
 			audio::play_block_sound_effect(hovered_block->type);
-			cm.set_block_manual(chunk->id, local_coord, none);
+			cm.set_block_manual(chunk->id, local_coord, none, true);
 		}
 	}
 }

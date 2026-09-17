@@ -43,8 +43,20 @@ public:
 	}
 	unordered_map<ivec2, vector<block_data>> unloaded_blocks;
 	unordered_map<ivec2, Chunk> chunks;
-	bool set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_type type);
-	bool set_block_worldspace(vec3 world_coord, block_type type);
+
+	/*
+		every block the player has changed, by chunk then local coord. terrain is
+		regenerated from noise whenever a chunk is streamed back in, so without
+		this an edit would silently disappear the moment its chunk unloaded.
+		keyed by coord rather than appended to, so repeatedly editing one block
+		overwrites instead of growing. only player actions land here - generated
+		structures are reproducible from the seed and would just bloat it.
+	*/
+	unordered_map<ivec2, unordered_map<ivec3, block_type>> player_edits;
+	void record_player_edit(ivec2 chunk_id, ivec3 local_coord, block_type type);
+
+	bool set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_type type, bool player_edit = false);
+	bool set_block_worldspace(vec3 world_coord, block_type type, bool player_edit = false);
 	Block* get_block_worldspace(vec3 world_coord);
 	Chunk* get_chunk(vec3 world_coord);
 	Chunk* get_chunk(ivec2 chunk_id);

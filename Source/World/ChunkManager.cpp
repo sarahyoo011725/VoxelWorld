@@ -40,17 +40,27 @@ Chunk* ChunkManager::get_chunk(ivec2 chunk_id) {
 /*
 	sets the type of a block at a world coordinate
 */
-bool ChunkManager::set_block_worldspace(vec3 world_coord, block_type type) {
+bool ChunkManager::set_block_worldspace(vec3 world_coord, block_type type, bool player_edit) {
 	ivec2 chunk_id = get_chunk_origin(world_coord);
 	ivec3 local_coord = world_to_local_coord(world_coord);
-	return set_block_manual(chunk_id, local_coord, type);
+	return set_block_manual(chunk_id, local_coord, type, player_edit);
+}
+
+/*
+	remembers a change so it can be replayed if the chunk is unloaded and later
+	regenerated from noise
+*/
+void ChunkManager::record_player_edit(ivec2 chunk_id, ivec3 local_coord, block_type type) {
+	player_edits[chunk_id][local_coord] = type;
 }
 
 /*
 	sets the type of a block at a local coord in a chunk of provided id
 */
-bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_type type) {
+bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_type type, bool player_edit) {
 	Chunk* chunk = get_chunk(chunk_id);
+
+	if (player_edit) record_player_edit(chunk_id, local_coord, type);
 
 	if (chunk == nullptr) {
 		//draw the block later once the chunk is created
@@ -76,6 +86,11 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 		ivec3 adj_local_coord = local_coord;
 		adj_local_coord.x = (local_coord.x == 1) ? 17 : 0;
 
+		//the neighbour keeps a copy of this block in its border column for
+		//meshing, so the edit has to be remembered there too, or a seam
+		//appears when only one of the two chunks is regenerated
+		if (player_edit) record_player_edit(adj_id, adj_local_coord, type);
+
 		auto adj = chunks.find(adj_id);
 		if (adj != chunks.end()) {
 			adj->second.set_block(adj_local_coord, type);
@@ -94,6 +109,8 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 
 		ivec3 adj_local_coord = local_coord;
 		adj_local_coord.z = (local_coord.z == 1) ? 17 : 0;
+
+		if (player_edit) record_player_edit(adj_id, adj_local_coord, type);
 
 		auto adj = chunks.find(adj_id);
 		if (adj != chunks.end()) {

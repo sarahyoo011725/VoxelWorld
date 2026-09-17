@@ -91,6 +91,35 @@ void Terrain::unload_distant_chunks() {
 }
 
 /*
+	replays the player's changes over freshly generated terrain. a chunk that was
+	unloaded and streamed back in is rebuilt from noise alone, so without this it
+	would silently revert to its original state.
+*/
+void Terrain::restore_player_edits(Chunk* chunk) {
+	auto edits = cm.player_edits.find(chunk->id);
+	if (edits == cm.player_edits.end()) return;
+
+	for (const auto& edit : edits->second) {
+		ivec3 local_coord = edit.first;
+		block_type type = edit.second;
+
+		//grass and the like are geometry, not just a block type, so they have to
+		//go back through the structure generator to get their vertices rebuilt
+		if (is_nonblock(type)) {
+			vec3 world_coord = vec3(
+				chunk->id.x * chunk_size + local_coord.x - 1,
+				local_coord.y,
+				chunk->id.y * chunk_size + local_coord.z - 1
+			);
+			sg.spawn_nonblock_structure(type, world_coord);
+		}
+		else {
+			chunk->set_block(local_coord, type);
+		}
+	}
+}
+
+/*
 	builds newly streamed chunks under a per-frame time budget. crossing a chunk
 	boundary queues a whole row of them at once (2 * render_dist + 1), which is
 	far more than one frame can absorb, so they are spread over several frames
@@ -132,6 +161,9 @@ void Terrain::build_pending_chunks() {
 	vector<Chunk*> batch;
 	for (Chunk* c : pending) {
 		spawn_structures(c);
+		//after structures, never before: a regenerated tree would otherwise
+		//overwrite a block the player had already broken
+		restore_player_edits(c);
 		batch.push_back(c);
 
 		float elapsed_ms = chrono::duration<float, milli>(chrono::steady_clock::now() - start).count();
