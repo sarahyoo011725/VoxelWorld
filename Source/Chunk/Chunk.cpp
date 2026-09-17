@@ -1,4 +1,5 @@
 #include "Chunk.h"
+#include <algorithm>
 #include "World/ChunkManager.h"
 #include "World/StructureGenerator.h"
 
@@ -46,6 +47,14 @@ void Chunk::generate_terrain() {
 
 	blocks.resize(static_cast<size_t>(width) * height * length);
 	height_map = get_heightmap();
+
+	//water fills to water_level even where the ground is lower, so the top of
+	//the terrain alone is not the top of the solid geometry
+	int highest = water_level;
+	for (int h : height_map) {
+		if (h > highest) highest = h;
+	}
+	max_occupied_y = std::min(highest, height - 1);
 
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
@@ -190,6 +199,7 @@ void Chunk::set_block(ivec3 local_coord, block_type type) {
 		return;
 	}
 	blocks[block_index(x, y, z)].type = type;
+	if (y > max_occupied_y) max_occupied_y = y;
 }
 
 /*
@@ -382,9 +392,10 @@ void Chunk::build_mesh() {
 	foliage_indices.clear();
 
 	//check x and z from 1 to 16 (boundaries at 0 and 17)
+	int top = std::min(max_occupied_y + 1, height);
 	for (int x = 1; x < width - 1; ++x) {
 		for (int z = 1; z < length - 1; ++z) {
-			for (int y = 0; y < height; ++y) {
+			for (int y = 0; y < top; ++y) {
 				const Block &current = blocks[block_index(x, y, z)];
 				if (current.type == none) {
 					continue;

@@ -68,6 +68,9 @@ public:
 	bool has_built = false;
 	bool has_generated = false;
 	bool mesh_ready = false;
+	//highest y that can hold a block. everything above is air, so meshing stops
+	//there instead of scanning the ~65% of each chunk that is empty sky
+	int max_occupied_y = 0;
 	int width, length, height;
 	vec3 world_position = vec3(0.0f);
 	ivec2 id = ivec2(0);
