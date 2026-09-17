@@ -3,6 +3,7 @@
 #include "StructureGenerator.h"
 #include "WorldRandom.h"
 #include "PerfStats.h"
+#include "ThreadPool.h"
 
 using namespace std;
 using namespace glm;
@@ -15,6 +16,8 @@ class Terrain
 private:
 	ChunkManager& cm;
 	StructureGenerator& sg;
+	//one worker per spare core - the calling thread takes items too
+	ThreadPool pool = ThreadPool(std::max(1u, thread::hardware_concurrency() - 1));
 	void spawn_structures(Chunk* chunk);
 	void build_pending_chunks();
 public:

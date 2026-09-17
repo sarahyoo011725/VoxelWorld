@@ -10,7 +10,9 @@ struct PerfStats {
 	float frame_ms = 0.0f;
 	float fps = 0.0f;
 	float chunk_build_ms = 0.0f;
+	float generate_ms = 0.0f;
 	int chunks_built = 0;
+	int chunks_generated = 0;
 	int chunks_pending = 0;
 	int chunks_visible = 0;
 	int chunks_loaded = 0;

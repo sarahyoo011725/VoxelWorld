@@ -3,7 +3,9 @@
 #include "World/StructureGenerator.h"
 
 /*
-	initializes blocks array, define block types based on noise height map, and links VBOs attributes to VAOs
+	sets up the chunk's dimensions and GL buffer objects. deliberately does no
+	terrain generation - that lives in generate_terrain() so it can be moved off
+	the main thread, while the GL objects created here cannot be.
 */
 Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManager::get_instance()) {
 	//add 1 to width and length to store neighbor chunks' block data in their edge
@@ -13,10 +15,38 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	height = 80; //tall enough to leave headroom above rare extreme-peak mountains
 	length = chunk_size + 2;
 
-	blocks.resize(static_cast<size_t>(width) * height * length);
+	opaque_vao.bind();
+	opaque_vao.link_attrib(opaque_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0); //vertex positions coords
+	opaque_vao.link_attrib(opaque_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float))); //vertex texture coords
+	opaque_vao.link_attrib(opaque_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float))); //vertex normal
 
-	//define block types
+	transp_vao.bind();
+	transp_vao.link_attrib(transp_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
+	transp_vao.link_attrib(transp_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
+	transp_vao.link_attrib(transp_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float)));
+
+	water_vao.bind();
+	water_vao.link_attrib(water_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
+	water_vao.link_attrib(water_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
+	water_vao.link_attrib(water_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float)));
+
+	foliage_vao.bind();
+	foliage_vao.link_attrib(foliage_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)0);
+	foliage_vao.link_attrib(foliage_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(3 * sizeof(float)));
+	foliage_vao.link_attrib(foliage_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(5 * sizeof(float)));
+	foliage_vao.link_attrib(foliage_vbo, 3, 1, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(8 * sizeof(float)));
+}
+
+/*
+	fills the block array from the terrain generator. touches no GL state and
+	only this chunk's own storage, so it is safe to run on a worker thread.
+*/
+void Chunk::generate_terrain() {
+	if (has_generated) return;
+
+	blocks.resize(static_cast<size_t>(width) * height * length);
 	height_map = get_heightmap();
+
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
 			for (int y = 0; y < height; ++y) {
@@ -44,26 +74,7 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 		}
 	}
 
-	opaque_vao.bind();
-	opaque_vao.link_attrib(opaque_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0); //vertex positions coords
-	opaque_vao.link_attrib(opaque_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float))); //vertex texture coords
-	opaque_vao.link_attrib(opaque_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float))); //vertex normal
-
-	transp_vao.bind();
-	transp_vao.link_attrib(transp_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
-	transp_vao.link_attrib(transp_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
-	transp_vao.link_attrib(transp_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float)));
-
-	water_vao.bind();
-	water_vao.link_attrib(water_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
-	water_vao.link_attrib(water_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
-	water_vao.link_attrib(water_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float)));
-
-	foliage_vao.bind();
-	foliage_vao.link_attrib(foliage_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)0);
-	foliage_vao.link_attrib(foliage_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(3 * sizeof(float)));
-	foliage_vao.link_attrib(foliage_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(5 * sizeof(float)));
-	foliage_vao.link_attrib(foliage_vbo, 3, 1, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(8 * sizeof(float)));
+	has_generated = true;
 }
 
 /*
@@ -328,9 +339,39 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 }
 
 /*
-	rebuilds chunk, emptying all vertices and indices of chunk
+	regenerates the mesh and re-uploads it. used when a block changed
 */
 void Chunk::rebuild_chunk() {
+	build_mesh();
+	upload_mesh();
+	should_rebuild = false;
+}
+
+/*
+	generates the mesh and uploads it in one step, for callers on the GL thread
+*/
+void Chunk::build_chunk() {
+	build_mesh();
+	upload_mesh();
+}
+
+/*
+	hands the built mesh to the GL buffers. the only phase that touches GL, so
+	it must run on the thread owning the context
+*/
+void Chunk::upload_mesh() {
+	update_buffers_data();
+	mesh_ready = false;
+	has_built = true;
+}
+
+/*
+	constructs a chunk mesh, adding only the visible faces, then appends
+	non-block structure geometry. reads this chunk's blocks and writes only its
+	own vertex/index buffers, so it is safe to run on a worker thread - but the
+	caller must ensure no neighbour is still spawning structures into it.
+*/
+void Chunk::build_mesh() {
 	opaque_vertices.clear();
 	opaque_indices.clear();
 	transp_vertices.clear();
@@ -340,16 +381,6 @@ void Chunk::rebuild_chunk() {
 	foliage_vertices.clear();
 	foliage_indices.clear();
 
-	build_chunk();
-	should_rebuild = false;
-}
-
-/*
-	constructs a chunk mesh, adding only the visible faces.
-	once the chunk meshing is done, adds non-block structures, updating VAOs and EBOs.
-	lastly sets has_built to be true.
-*/
-void Chunk::build_chunk() {
 	//check x and z from 1 to 16 (boundaries at 0 and 17)
 	for (int x = 1; x < width - 1; ++x) {
 		for (int z = 1; z < length - 1; ++z) {
@@ -399,7 +430,6 @@ void Chunk::build_chunk() {
 	}
 
 	update_nonblock_structure_vertices_and_indices(); //must be called after spawn_structures() is called in Terrain
-	update_buffers_data();
-	has_built = true;
+	mesh_ready = true;
 }
 

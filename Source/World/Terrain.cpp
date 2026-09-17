@@ -19,22 +19,40 @@ void Terrain::update_chunks() {
 	};
 
 	//render chunks around player's pos up to the render dist
+	vector<Chunk*> new_chunks;
 	for (int x = origin.x - render_dist; x <= origin.x + render_dist; ++x) {
 		for (int z = origin.y - render_dist; z <= origin.y + render_dist; ++z) {
 			ivec2 chunk_id = { x, z };
 			Chunk* chunk = cm.get_chunk(chunk_id);
 			if (!chunk) {
 				chunk = cm.create_chunk(chunk_id);
-
-				auto unloaded_c = cm.unloaded_blocks.find(chunk_id);
-				if (unloaded_c != cm.unloaded_blocks.end()) {
-					for (const block_data& b : unloaded_c->second) {
-						chunk->set_block(b.local_coord, b.type);
-					}
-					cm.unloaded_blocks.erase(chunk->id);
-				}
+				new_chunks.push_back(chunk);
 			}
 			visible_chunks.push_back(chunk);
+		}
+	}
+
+	//each chunk's blocks are a pure function of world position - including its
+	//one-block border - so generation needs no neighbour and no shared state,
+	//which makes this the one phase that parallelises cleanly
+	auto gen_start = chrono::steady_clock::now();
+	if (!new_chunks.empty()) {
+		pool.parallel_for((int)new_chunks.size(), [&new_chunks](int i) {
+			new_chunks[i]->generate_terrain();
+		});
+	}
+	stats.generate_ms = chrono::duration<float, milli>(chrono::steady_clock::now() - gen_start).count();
+	stats.chunks_generated = (int)new_chunks.size();
+
+	//block edits made while the chunk didn't exist yet. must come after
+	//generation, since set_block indexes into the block array it allocates
+	for (Chunk* chunk : new_chunks) {
+		auto unloaded_c = cm.unloaded_blocks.find(chunk->id);
+		if (unloaded_c != cm.unloaded_blocks.end()) {
+			for (const block_data& b : unloaded_c->second) {
+				chunk->set_block(b.local_coord, b.type);
+			}
+			cm.unloaded_blocks.erase(chunk->id);
 		}
 	}
 
@@ -78,19 +96,37 @@ void Terrain::build_pending_chunks() {
 		return dist_sq(a) < dist_sq(b);
 	});
 
-	//budget is checked after each chunk, so at least one always makes progress
 	auto start = chrono::steady_clock::now();
+
+	/*
+		structures run first for the whole batch, and serially: spawn_tree writes
+		through ChunkManager into neighbouring chunks, so it is neither
+		thread-safe nor confined to the chunk being built. doing the whole batch
+		up front also means a tree crossing into another chunk of the same batch
+		lands before that chunk is meshed, instead of forcing it to rebuild.
+		the budget is checked after each one, so at least one always progresses.
+	*/
+	vector<Chunk*> batch;
 	for (Chunk* c : pending) {
 		spawn_structures(c);
-		c->build_chunk();
-		++stats.chunks_built;
+		batch.push_back(c);
 
 		float elapsed_ms = chrono::duration<float, milli>(chrono::steady_clock::now() - start).count();
-		if (elapsed_ms >= build_budget_ms) {
-			stats.chunk_build_ms = elapsed_ms;
-			return;
-		}
+		if (elapsed_ms >= build_budget_ms) break;
 	}
+
+	//meshing only reads its own chunk's blocks and writes its own vertex
+	//buffers, so it parallelises now that every structure write is done
+	pool.parallel_for((int)batch.size(), [&batch](int i) {
+		batch[i]->build_mesh();
+	});
+
+	//uploads touch GL, so they stay on this thread
+	for (Chunk* c : batch) {
+		c->upload_mesh();
+	}
+
+	stats.chunks_built = (int)batch.size();
 	stats.chunk_build_ms = chrono::duration<float, milli>(chrono::steady_clock::now() - start).count();
 }
 

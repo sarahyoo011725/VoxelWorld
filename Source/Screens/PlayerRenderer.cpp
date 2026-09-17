@@ -219,6 +219,7 @@ void PlayerRenderer::draw_perf_overlay(const PerfStats& stats) {
 	vector<string> lines = {
 		"FPS " + num(stats.fps, 0) + "  FRAME " + num(stats.frame_ms, 1) + " MS",
 		"BUILD " + num(stats.chunk_build_ms, 1) + " MS  BUILT " + num((float)stats.chunks_built, 0),
+		"GEN " + num(stats.generate_ms, 1) + " MS  NEW " + num((float)stats.chunks_generated, 0),
 		"QUEUED " + num((float)stats.chunks_pending, 0) + "  VISIBLE " + num((float)stats.chunks_visible, 0),
 		"LOADED " + num((float)stats.chunks_loaded, 0),
 		"XYZ " + num((float)stats.player_x, 0) + " " + num((float)stats.player_y, 0) + " " + num((float)stats.player_z, 0),

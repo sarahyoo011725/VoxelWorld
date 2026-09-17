@@ -66,6 +66,8 @@ private:
 public:
 	bool should_rebuild = false;
 	bool has_built = false;
+	bool has_generated = false;
+	bool mesh_ready = false;
 	int width, length, height;
 	vec3 world_position = vec3(0.0f);
 	ivec2 id = ivec2(0);
@@ -75,6 +77,17 @@ public:
 	Chunk& operator=(const Chunk&) = delete;
 	~Chunk() = default;
 	int get_height(int x, int z) const { return height_map[height_index(x, z)]; }
+
+	/*
+		the chunk pipeline is split into three phases so the expensive ones can
+		move onto a worker thread later: generate_terrain() and build_mesh()
+		touch no GL state and only this chunk's own storage, while upload_mesh()
+		is the only phase that must run on the thread owning the GL context.
+	*/
+	void generate_terrain();
+	void build_mesh();
+	void upload_mesh();
+
 	void build_chunk();
 	void rebuild_chunk();
 	void draw_opaque_blocks();

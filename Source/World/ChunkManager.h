@@ -49,6 +49,9 @@ public:
 	Chunk* get_chunk(vec3 world_coord);
 	Chunk* get_chunk(ivec2 chunk_id);
 	bool chunk_exists(ivec2 chunk_id);
+	//returns an empty chunk - the caller must call generate_terrain() on it
+	//before anything reads its blocks. kept separate so a batch of new chunks
+	//can be generated in parallel (see Terrain::update_chunks)
 	Chunk* create_chunk(ivec2 chunk_id);
 };
 
