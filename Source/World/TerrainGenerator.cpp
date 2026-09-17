@@ -90,25 +90,25 @@ TerrainGenerator::elevation_result TerrainGenerator::compute_elevation(int x, in
 	bool is_ocean = ocean_t < 0.5f;
 	if (is_ocean) feature = terrain_feature::ocean;
 
-	//zero-crossings of a noise field sampled at the SAME warped coordinates as
-	//the mountains, so a river is geometrically tied to the range that fed it
-	if (!is_ocean && height > (float)config.sea_level && height < config.river_source_elevation) {
+	float river_strength = 1.0f - smoothstep(
+		config.river_source_elevation - config.river_fade_range,
+		config.river_source_elevation, height);
+
+	if (!is_ocean && height > (float)config.sea_level && river_strength > 0.0f) {
 		float river_v = river_noise.GetNoise(mx, mz);
-		//the un-clamped continent value stands in for "how far inland" - far
-		//cheaper than a real distance-to-coast field, but only locally accurate
 		float coastal_proximity = 1.0f - clamp((continent - config.coast_outer_edge) / 0.5f, 0.0f, 1.0f);
 		float half_width = config.river_min_length * (1.0f + coastal_proximity * config.river_mouth_widening);
 		float river_t = clamp(std::abs(river_v) / half_width, 0.0f, 1.0f);
-		if (river_t < 1.0f) {
+		float carve = (1.0f - river_t) * river_strength;
+		if (carve > 0.0f) {
 			float river_bed = (float)config.sea_level - 1.0f;
-			height = mix(river_bed, height, river_t);
-			feature = terrain_feature::river;
+			height = mix(height, river_bed, carve);
+			//only call it a river where the channel actually formed, so a faint
+			//edge carve does not get classified as water
+			if (carve > 0.5f) feature = terrain_feature::river;
 		}
 	}
 
-	//a dedicated basin mask rather than comparing height against a smoothed
-	//trend: ordinary hill noise dips several blocks below any trend that
-	//doesn't contain those same hills, so every rolling dip became a lake
 	if (feature == terrain_feature::land) {
 		float basin = lake_basin_noise.GetNoise(fx, fz) * 0.5f + 0.5f;
 		float basin_t = clamp((basin - config.lake_density) / (1.0f - config.lake_density), 0.0f, 1.0f);

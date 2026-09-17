@@ -34,7 +34,8 @@ struct TerrainConfig {
 
 	float river_density = 0.02f;
 	float river_min_length = 0.028f; //half-width of the carved channel at its narrowest
-	float river_source_elevation = 40.0f; //rivers don't carve above this
+	float river_source_elevation = 20.0f;
+	float river_fade_range = 8.0f;
 	float river_mouth_widening = 2.5f;
 
 	float lake_basin_frequency = 0.004f;
