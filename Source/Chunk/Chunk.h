@@ -59,6 +59,9 @@ private:
 	inline size_t height_index(int x, int z) const { return static_cast<size_t>(x) * length + z; }
 	vector<int> get_heightmap();
 	void add_face(block_face face, block_type type, vec3 local_coord);
+	void build_opaque_mesh();
+	void add_merged_quad(block_face face, block_type type, ivec3 base_block, int run_u, int run_v);
+	bool opaque_face_visible(int x, int y, int z, block_face face) const;
 	void update_face_indices(bool has_transparency, bool is_water);
 	void add_foliage_quad_indices();
 	void update_nonblock_structure_vertices_and_indices();

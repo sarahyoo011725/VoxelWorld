@@ -3,6 +3,7 @@
 out vec4 FragColor;
 
 in vec2 tex_coord;
+in vec2 tile_origin;
 in float fog_factor;
 in vec3 world_pos;
 in vec3 normal;
@@ -35,8 +36,15 @@ float calculate_shadow(vec3 n) {
 	return shadow / 9.0;
 }
 
+//one cell of the 16x16 atlas
+const float tile_size = 1.0 / 16.0;
+
 void main() {
-	vec4 tex_color = texture(texture1, tex_coord);
+	//wrap the tiled coordinate back into this quad's atlas cell, so one merged
+	//quad repeats its texture instead of stretching it. safe with GL_NEAREST and
+	//no mip sampling - a fragment centre never lands exactly on a tile boundary
+	vec2 atlas_uv = tile_origin + fract(tex_coord) * tile_size;
+	vec4 tex_color = texture(texture1, atlas_uv);
 	if (tex_color.a < 0.1) discard;
 
 	vec3 n = normalize(normal);

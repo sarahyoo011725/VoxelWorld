@@ -14,6 +14,7 @@ struct vertex {
 	vec3 position;
 	vec2 texture;
 	vec3 normal;
+	vec2 tile_origin;
 };
 
 //a vertex for wind-swayed geometry (leaves, grass). sway is 0 at a pinned base and 1 at a freely swaying tip
