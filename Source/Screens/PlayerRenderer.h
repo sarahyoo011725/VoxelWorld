@@ -19,9 +19,7 @@ class PlayerRenderer
 {
 public:
 	PlayerRenderer(WindowSetting* setting);
-	bool enable_outline = true;
 	const int shadow_resolution = 2048;
-	void update();
 	void sync_fbo_size();
 	void bind_fbo();
 	void unbind_fbo();
@@ -47,7 +45,7 @@ private:
 	int fbo_height;
 
 	const float outline_thickness = 2.0f;
-	vec4 hovered_block_outline_color = vec4(0.0, 1.0, 1.0, 1.0); //cyan
+	vec4 hovered_block_outline_color = vec4(0.0f, 0.0f, 0.0f, 0.4f); 
 	vec4 crosshair_color = vec4(1.0); //white
 
 	const float overlay_pixel_size = 0.009f; //one dot of the 5x7 font, in ndc

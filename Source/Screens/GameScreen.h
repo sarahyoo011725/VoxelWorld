@@ -157,7 +157,6 @@ public:
 		terrain.draw(player.camera.mat);
 		if (window_setting->window_active) {
 			player.update();
-			renderer.update();
 			sm.frame_buffer_shader.activate();
 			sm.frame_buffer_shader.set_uniform_1i("is_underwater", player.is_underwater());
 		}

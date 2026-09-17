@@ -63,12 +63,6 @@ PlayerRenderer::PlayerRenderer(WindowSetting* setting)
 	shadow_fbo.unbind();
 }
 
-void PlayerRenderer::update() {
-	if (glfwGetKey(window_setting->window, GLFW_KEY_3) == GLFW_PRESS) {
-		enable_outline = !enable_outline;
-	}
-}
-
 void PlayerRenderer::sync_fbo_size() {
 	if (window_setting->width != fbo_width || window_setting->height != fbo_height) {
 		fbo_width = window_setting->width;
@@ -241,7 +235,6 @@ void PlayerRenderer::draw_perf_overlay(const PerfStats& stats) {
 	draws outlined objects
 */
 void PlayerRenderer::draw_outlines(mat4 cam_matrix, Block* hovered_block, vec3 hovered_position) {
-	if (!enable_outline) return;
 	sm.outline_shader.activate();
 	sm.outline_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, cam_matrix);
 	outline_vao.bind();
@@ -426,11 +419,9 @@ void PlayerRenderer::post_process() {
 */
 void PlayerRenderer::outline_hovered_cube(Block* hovered_block, vec3 hovered_position) {
 	if (hovered_block == nullptr) return;
-	mat4 cube_model = translate(mat4(1.0), hovered_position);
+	mat4 cube_model = scale(translate(mat4(1.0), hovered_position), vec3(1.002f));
 	sm.outline_shader.set_uniform_mat4f("cube_model", 1, GL_FALSE, cube_model);
 	sm.outline_shader.set_uniform_4f("color", 1, hovered_block_outline_color);
-	glDisable(GL_DEPTH_TEST); //keeps the cube outline visible
 	glLineWidth(outline_thickness);
 	glDrawArrays(GL_LINES, 0, cube_edges.size());
-	glEnable(GL_DEPTH_TEST);
 }
