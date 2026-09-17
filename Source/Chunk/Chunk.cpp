@@ -143,7 +143,8 @@ void Chunk::update_buffers_data() {
 	Opaque objects must be drawn before transparent objects 
 */
 void Chunk::draw_opaque_blocks() {
-	sm.default_shader.activate();
+	if (opaque_indices.empty()) return;
+	//the shader is activated once by the caller for the whole pass, not per chunk
 	opaque_vao.bind();
 	opaque_ebo.bind();
 	glDrawElements(GL_TRIANGLES, opaque_indices.size(), GL_UNSIGNED_INT, 0);
@@ -154,6 +155,7 @@ void Chunk::draw_opaque_blocks() {
 	Transparent objects must be drawn after opaque objects
 */
 void Chunk::draw_transparent_blocks() {
+	if (transp_indices.empty()) return;
 	sm.default_shader.activate();
 	transp_vao.bind();
 	transp_ebo.bind();
@@ -161,6 +163,7 @@ void Chunk::draw_transparent_blocks() {
 }
 
 void Chunk::draw_water() {
+	if (water_indices.empty()) return;
 	sm.wave_shader.activate();
 	water_vao.bind();
 	water_ebo.bind();
@@ -168,6 +171,7 @@ void Chunk::draw_water() {
 }
 
 void Chunk::draw_foliage() {
+	if (foliage_indices.empty()) return;
 	sm.foliage_shader.activate();
 	foliage_vao.bind();
 	foliage_ebo.bind();
@@ -177,12 +181,14 @@ void Chunk::draw_foliage() {
 //depth-only draws for the shadow map pass - the shadow shader is activated
 //once by the caller, not per chunk, so these don't switch shaders themselves
 void Chunk::draw_opaque_depth() {
+	if (opaque_indices.empty()) return;
 	opaque_vao.bind();
 	opaque_ebo.bind();
 	glDrawElements(GL_TRIANGLES, opaque_indices.size(), GL_UNSIGNED_INT, 0);
 }
 
 void Chunk::draw_foliage_depth() {
+	if (foliage_indices.empty()) return;
 	foliage_vao.bind();
 	foliage_ebo.bind();
 	glDrawElements(GL_TRIANGLES, foliage_indices.size(), GL_UNSIGNED_INT, 0);

@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <chrono>
 
-Terrain::Terrain(vec3& cam_pos) : cm(ChunkManager::get_instance()), sg(StructureGenerator::get_instance()) {
+Terrain::Terrain(vec3& cam_pos) : cm(ChunkManager::get_instance()), sg(StructureGenerator::get_instance()), sm(ShaderManager::get_instance()) {
 	player_pos = &cam_pos;
 }
 
@@ -230,6 +230,8 @@ void Terrain::draw(const mat4& view_projection) {
 	}
 	stats.chunks_drawn = (int)drawn.size();
 
+	//one shader bind for the whole opaque pass instead of one per chunk
+	sm.default_shader.activate();
 	for (Chunk* c : drawn) {
 		c->draw_opaque_blocks();
 	}
