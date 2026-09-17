@@ -10,7 +10,7 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	id = chunk_id;
 	world_position = vec3(chunk_id.x * chunk_size, 0, chunk_id.y * chunk_size);
 	width = chunk_size + 2;
-	height = 50;
+	height = 80; //tall enough to leave headroom above rare extreme-peak mountains
 	length = chunk_size + 2;
 
 	blocks.resize(static_cast<size_t>(width) * height * length);
@@ -77,8 +77,9 @@ vector<int> Chunk::get_heightmap() {
 			//get a block's world coords
 			int x_pos = world_position.x + x - 1;
 			int z_pos = world_position.z + z - 1;
-			int height_val = abs(static_cast<int> (get_noise(x_pos, z_pos) * 20)) + 4;
+			int height_val = get_noise(x_pos, z_pos);
 			if (height_val > height) height_val = height;
+			if (height_val < 0) height_val = 0;
 			map[height_index(x, z)] = height_val;
 		}
 	}

@@ -22,12 +22,13 @@ private:
 	bool wireframe = false;
 	bool enable_music = true;
 	bool gl_setting_done = false;
+	bool debug_export_key_was_down = false;
 public:
 	/*
 	* initializes GL settings for the game. This must be called only once before drawing the screen
 	*/
 	GameScreen(WindowSetting *setting)
-	: sm(ShaderManager::get_instance()), window_setting(setting), player(setting, vec3(0, 60, 0)), terrain(player.position), renderer(setting) {
+	: sm(ShaderManager::get_instance()), window_setting(setting), player(setting, vec3(0, 90, 0)), terrain(player.position), renderer(setting) {
 		sm.default_shader.activate();
 		sm.default_shader.set_uniform_1i("texture1", 1);
 		sm.wave_shader.activate();
@@ -63,6 +64,13 @@ public:
 				audio::current_music->stop();
 			}
 		}
+		//edge-detected, unlike the toggles above: this writes files to disk
+		bool debug_export_key_down = glfwGetKey(window_setting->window, GLFW_KEY_9) == GLFW_PRESS;
+		if (debug_export_key_down && !debug_export_key_was_down) {
+			ivec3 p = ivec3(player.position);
+			get_terrain_generator().export_debug_maps("terrain_debug", p.x, p.z, 512);
+		}
+		debug_export_key_was_down = debug_export_key_down;
 
 		if (enable_music) {
 			audio::play_random_music();

@@ -2,10 +2,10 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/glm.hpp>
 #include <glm/gtx/hash.hpp>
-#include <FastNoise/FastNoiseLite.h>
 #include "unordered_map"
 #include "Chunk/Chunk.h"
 #include "Block/Block.h"
+#include "World/TerrainGenerator.h"
 
 using namespace std;
 using namespace glm;
@@ -53,15 +53,20 @@ public:
 };
 
 namespace {
-	static FastNoiseLite m_noise;
 	const static int chunk_size = 16;
-	const static int water_level = 10;
 
-	//get height noise value at (x, z) in world space
-	float get_noise(int x, int z) {
-		return m_noise.GetNoise((float)x, (float)z);
+	//derived from TerrainConfig so sea level has a single source of truth
+	const static int water_level = TerrainConfig().sea_level;
+
+	static TerrainGenerator& get_terrain_generator() {
+		static TerrainGenerator instance;
+		return instance;
 	}
-	
+
+	int get_noise(int x, int z) {
+		return get_terrain_generator().sample_height(x, z);
+	}
+
 	//formats a world space coordinate into a chunk ID
 	ivec2 get_chunk_origin(vec3 world_coord) {
 		ivec2 chunk_origin = {

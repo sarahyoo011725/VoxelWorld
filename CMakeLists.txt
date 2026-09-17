@@ -54,6 +54,7 @@ add_executable(VoxelWorld
 	Source/World/ChunkManager.cpp
 	Source/World/StructureGenerator.cpp
 	Source/World/Terrain.cpp
+	Source/World/TerrainGenerator.cpp
 )
 
 # Source/ so that includes like <Shader/Shader.h> resolve; Libraries/include for
