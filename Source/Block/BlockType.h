@@ -21,6 +21,10 @@ enum block_type : unsigned char {
 	glass,
 	grass,
 	snow,
+	flower_red,
+	flower_yellow,
+	flower_purple,
+	flower_white,
 };
 
 //names block faces
@@ -42,12 +46,24 @@ namespace {
 
 	static vec2 grass_text_coord = vec2(8, 3);
 
+	//plants are cross-plane geometry rather than cubes, so they sit outside
+	//texture_map and name their tile here instead
+	inline vec2 plant_texture_coord(block_type type) {
+		switch (type) {
+		case flower_red: return vec2(5, 23);
+		case flower_yellow: return vec2(8, 21);
+		case flower_purple: return vec2(1, 23);
+		case flower_white: return vec2(4, 23);
+		}
+		return grass_text_coord;
+	}
+
 	//grass and leaf tiles are greyscale so a biome colour can be multiplied in
 	//(see Biome.h); everything else is used at its authored colour
 	inline bool is_biome_tinted(block_type type) {
 		switch (type) {
 		case dirt_grass:
-		case grass:
+		case grass: //greyscale; flowers are not, so they keep their own colour
 		case leaf_transp:
 		case leaf_red:
 		case leaf_yellow:

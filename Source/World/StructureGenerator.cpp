@@ -25,6 +25,16 @@ void StructureGenerator::spawn_nonblock_structure(block_type type, vec3 world_co
 	spawns grass at a world coordinate.
 	grass is non-block geometry
 */
+/*
+	the biome at a world coordinate, or plains where that chunk isn't loaded
+*/
+const BiomeDefinition& StructureGenerator::biome_at(vec3 world_coord) {
+	Chunk* chunk = chunk_manager.get_chunk(get_chunk_origin(world_coord));
+	if (chunk == nullptr) return biome_of(biome_id::plains);
+	ivec3 local = world_to_local_coord(world_coord);
+	return biome_of(chunk->get_biome(local.x, local.z));
+}
+
 void StructureGenerator::spawn_grass(vec3 world_coord) {
 	//draw grass
 	ivec2 chunk_id = get_chunk_origin(world_coord);
@@ -84,8 +94,9 @@ void StructureGenerator::spawn_tree(vec3 world_coord) {
 		chunk_manager.set_block_worldspace(vec3(world_coord.x, world_coord.y + h, world_coord.z), wood);
 	}
 
-	//add leaves
-	block_type leaf_type = (rng.next_int(2) == 0) ? leaf_red : leaf_yellow;
+	//add leaves. which greyscale tile is the biome's choice - the red/yellow/green
+	//look comes from that biome's foliage tint, applied in the shader
+	block_type leaf_type = biome_at(world_coord).leaf_type;
 	float layer_radius[4] = { 2.2f, 2.2f, 2.0f, 1.6f };
 	for (int dx = -2; dx <= 2; ++dx) {
 		for (int dz = -2; dz <= 2; ++dz) {

@@ -43,6 +43,7 @@ TerrainGenerator::TerrainGenerator(const TerrainConfig& cfg) : config(cfg) {
 	configure(detail_noise, config.world_seed + 7, config.terrain_detail_frequency, 1);
 	configure(river_noise, config.world_seed + 8, config.river_density, 2);
 	configure(lake_basin_noise, config.world_seed + 12, config.lake_basin_frequency, 2);
+	configure(variation_noise, config.world_seed + 13, config.variation_frequency, 2);
 	configure(moisture_noise, config.world_seed + 9, config.moisture_frequency, 3);
 	configure(temperature_noise, config.world_seed + 10, config.temperature_frequency, 2);
 }
@@ -147,6 +148,7 @@ ClimateSample TerrainGenerator::sample_climate(int x, int z) const {
 	//needing a separate mask for it
 	float altitude_above_sea = glm::max(0.0f, e.height - (float)config.sea_level);
 	c.temperature = glm::clamp(temperature_noise.GetNoise(fx, fz) * 0.5f + 0.5f - altitude_above_sea * 0.01f, 0.0f, 1.0f);
+	c.variation = variation_noise.GetNoise(fx, fz) * 0.5f + 0.5f;
 	return c;
 }
 
@@ -197,7 +199,9 @@ void TerrainGenerator::export_debug_maps(const std::string& path_prefix, int cen
 		{232, 214, 150}, //beach
 		{224, 196,  92}, //desert
 		{124, 192,  76}, //plains
+		{198, 186,  74}, //savanna
 		{ 44, 118,  48}, //forest
+		{176,  84,  40}, //autumn forest
 		{ 70,  92,  56}, //swamp
 		{ 56, 116,  92}, //taiga
 		{206, 222, 220}, //tundra

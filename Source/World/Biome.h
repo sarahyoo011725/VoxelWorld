@@ -18,7 +18,9 @@ enum class biome_id {
 	beach,
 	desert,
 	plains,
+	savanna,
 	forest,
+	autumn_forest,
 	swamp,
 	taiga,
 	tundra,
@@ -35,6 +37,9 @@ enum class biome_id {
 struct ClimateSample {
 	float temperature = 0.5f; //0 = polar, 1 = tropical
 	float moisture = 0.5f;    //0 = arid, 1 = swamp
+	//a second, unrelated field so two biomes can share one climate cell -
+	//forest and autumn forest sit in the same temperature/moisture box
+	float variation = 0.5f;
 	int elevation = 0;
 	/*
 		elevation with the fine hill/detail noise and river carving left out, so
@@ -57,6 +62,7 @@ struct BiomeDefinition {
 	block_type surface = dirt_grass;    //the top block
 	block_type subsurface = dirt;       //the few blocks under it
 	int subsurface_depth = 4;
+	block_type leaf_type = leaf_red;    //which greyscale leaf tile this biome's trees use
 
 	//multiplied onto the greyscale grass/leaf tiles. non-tinted blocks ignore it
 	vec3 grass_tint = vec3(0.45f, 0.72f, 0.31f);
@@ -65,6 +71,8 @@ struct BiomeDefinition {
 	//1 in N per column, 0 = never. indexes match StructureGenerator's registry
 	int tree_chance = 0;
 	int ground_cover_chance = 0;
+	int flower_chance = 0;
+	block_type flower = flower_red; //which flower grows here
 };
 
 //the definition for a biome, by id

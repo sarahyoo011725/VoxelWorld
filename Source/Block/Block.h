@@ -48,6 +48,10 @@ namespace {
 		case glass:
 		case leaf_transp:
 		case grass:
+		case flower_red:
+		case flower_yellow:
+		case flower_purple:
+		case flower_white:
 			return true;
 		}
 		return false;
@@ -65,6 +69,10 @@ namespace {
 		case none:
 		case water:
 		case grass:
+		case flower_red:
+		case flower_yellow:
+		case flower_purple:
+		case flower_white:
 			return false;
 		}
 		return true;
@@ -80,6 +88,10 @@ namespace {
 	bool is_nonblock(block_type type) {
 		switch (type) {
 		case grass:
+		case flower_red:
+		case flower_yellow:
+		case flower_purple:
+		case flower_white:
 			return true;
 		}
 		return false;
@@ -92,6 +104,10 @@ namespace {
 		case leaf_yellow:
 		case leaf_transp:
 		case grass:
+		case flower_red:
+		case flower_yellow:
+		case flower_purple:
+		case flower_white:
 			return true;
 		}
 		return false;
@@ -114,6 +130,10 @@ namespace {
 	bool can_be_placed_underwater(block_type type) {
 		switch (type) {
 		case grass:
+		case flower_red:
+		case flower_yellow:
+		case flower_purple:
+		case flower_white:
 			return false;
 		}
 		return true;

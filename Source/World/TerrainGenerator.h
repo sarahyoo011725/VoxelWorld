@@ -43,6 +43,7 @@ struct TerrainConfig {
 	float lake_density = 0.72f; //0..1 basin-mask threshold: higher means rarer lakes
 	float lake_min_size = 3.0f; //how far below sea level a fully-formed lake bed sits
 
+	float variation_frequency = 0.0015f; //splits biomes that share a climate cell
 	float moisture_frequency = 0.004f;
 	float temperature_frequency = 0.0018f;
 };
@@ -107,6 +108,7 @@ private:
 	FastNoiseLite detail_noise;
 	FastNoiseLite river_noise;
 	FastNoiseLite lake_basin_noise;
+	FastNoiseLite variation_noise;
 	FastNoiseLite moisture_noise;
 	FastNoiseLite temperature_noise;
 };
