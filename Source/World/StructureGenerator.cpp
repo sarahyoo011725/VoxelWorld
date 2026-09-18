@@ -3,8 +3,8 @@
 
 StructureGenerator::StructureGenerator() : chunk_manager(ChunkManager::get_instance()) {
 	terrain_structures = {
-		{ 60, [this](vec3 c) { spawn_tree(c); } },
-		{ 10, [this](vec3 c) { spawn_grass(c); } },
+		{ vegetation_kind::tree, [this](vec3 c) { spawn_tree(c); } },
+		{ vegetation_kind::ground_cover, [this](vec3 c) { spawn_grass(c); } },
 	};
 	placeable_structures = {
 		{ grass, [this](vec3 c) { spawn_grass(c); } },

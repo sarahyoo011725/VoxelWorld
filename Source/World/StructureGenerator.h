@@ -1,6 +1,7 @@
 #pragma once
 #include "World/ChunkManager.h"
 #include "World/WorldRandom.h"
+#include "World/Biome.h"
 #include "Entity/Geometries.h"
 #include "Block/BlockType.h"
 #include <functional>
@@ -8,13 +9,27 @@
 
 class Chunk;
 
+//which of a biome's two vegetation budgets a rule draws from
+enum class vegetation_kind {
+	tree,         //uses BiomeDefinition::tree_chance
+	ground_cover, //uses BiomeDefinition::ground_cover_chance
+};
+
 /*
-	a rule for procedurally spawning a structure while generating a chunk
+	a rule for procedurally spawning a structure while generating a chunk.
+	the density comes from the biome rather than the rule, so a new biome sets
+	its own vegetation without any rule changing, and a new rule only has to say
+	which budget it belongs to.
 */
 struct structure_rule {
-	int spawn_chance; //1 in N chance per terrain column
+	vegetation_kind kind;
 	function<void(vec3)> spawn;
 };
+
+//1 in N for this rule in this biome, or 0 where it should never spawn
+inline int spawn_chance_in(const structure_rule& rule, const BiomeDefinition& biome) {
+	return rule.kind == vegetation_kind::tree ? biome.tree_chance : biome.ground_cover_chance;
+}
 
 //keeps a structure's own randomness on a different stream from the per-column
 //roll that decided to spawn it

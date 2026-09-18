@@ -269,9 +269,14 @@ void Terrain::spawn_structures(Chunk* chunk) {
 			//do not spawn anything in water
 			if (h <= water_level) continue;
 
+			//the biome decides how dense each kind of vegetation is here, so a
+			//forest fills in and a desert stays bare without the rules knowing
+			//anything about biomes
+			const BiomeDefinition& biome = biome_of(chunk->get_biome(x, z));
 			WorldRandom rng(get_terrain_generator().config.world_seed, wx, wz);
 			for (const structure_rule& rule : sg.terrain_structures) {
-				if (rng.next_int(rule.spawn_chance) == 0) {
+				int chance = spawn_chance_in(rule, biome);
+				if (chance > 0 && rng.next_int(chance) == 0) {
 					rule.spawn(vec3(wx, h + 1, wz));
 				}
 			}
