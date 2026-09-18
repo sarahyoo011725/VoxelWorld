@@ -34,6 +34,10 @@ void StructureGenerator::spawn_grass(vec3 world_coord) {
 		Block* block = chunk->get_block(local_coord);
 		if (block == nullptr || block != nullptr && block->type != none) return; //spawn grass only if there is no structure
 
+		//foliage_vertex carries a biome tint; leaving it unset value-initialised
+		//it to black, and the shader multiplied the grass texture away
+		vec3 tint = biome_of(chunk->get_biome(local_coord.x, local_coord.z)).foliage_tint;
+
 		vector<foliage_vertex> transformed_vertices;
 		for (vector<vertex> face : grass_face_vertices) {
 			vec3 edge1 = face[1].position - face[0].position;
@@ -44,7 +48,7 @@ void StructureGenerator::spawn_grass(vec3 world_coord) {
 				vec3 position = face[i].position + world_coord;
 				vec2 uv_coord = convert_to_uv(i, grass_text_coord);
 				float sway = (face[i].position.y > 0.0f) ? 1.0f : 0.0f; //base stays pinned to the ground
-				transformed_vertices.push_back({ position, uv_coord, plane_normal, sway });
+				transformed_vertices.push_back({ position, uv_coord, plane_normal, sway, tint });
 			}
 		}
 		chunk->add_nonblock_structure_vertices(local_coord, transformed_vertices);
