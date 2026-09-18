@@ -46,7 +46,6 @@ namespace {
 		switch (type) {
 		case water:
 		case glass:
-		case leaf_transp:
 		case grass:
 		case flower_red:
 		case flower_yellow:
@@ -100,9 +99,7 @@ namespace {
 	//checks if a block type should wave in the wind
 	bool is_foliage(block_type type) {
 		switch (type) {
-		case leaf_red:
-		case leaf_yellow:
-		case leaf_transp:
+		case leaf:
 		case grass:
 		case flower_red:
 		case flower_yellow:

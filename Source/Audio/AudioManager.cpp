@@ -7,9 +7,7 @@ void audio::play_block_sound_effect(block_type type) {
 	ALuint sound = -1;
 	switch (type) {
 	case grass:
-	case leaf_transp:
-	case leaf_yellow:
-	case leaf_red:
+	case leaf:
 	case dirt_grass:
 		sound = sound_effect::grass;
 		break;

@@ -62,7 +62,6 @@ struct BiomeDefinition {
 	block_type surface = dirt_grass;    //the top block
 	block_type subsurface = dirt;       //the few blocks under it
 	int subsurface_depth = 4;
-	block_type leaf_type = leaf_red;    //which greyscale leaf tile this biome's trees use
 
 	//multiplied onto the greyscale grass/leaf tiles. non-tinted blocks ignore it
 	vec3 grass_tint = vec3(0.45f, 0.72f, 0.31f);

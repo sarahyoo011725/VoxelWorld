@@ -14,9 +14,7 @@ enum block_type : unsigned char {
 	stone,
 	sand,
 	wood,
-	leaf_transp,
-	leaf_red,
-	leaf_yellow,
+	leaf, //single tile, tinted per biome; kept fully opaque (no cutout) so it culls like a solid block
 	water,
 	glass,
 	grass,
@@ -64,9 +62,7 @@ namespace {
 		switch (type) {
 		case dirt_grass:
 		case grass: //greyscale; flowers are not, so they keep their own colour
-		case leaf_transp:
-		case leaf_red:
-		case leaf_yellow:
+		case leaf:
 			return true;
 		}
 		return false;
@@ -87,9 +83,7 @@ namespace {
 		{sand, {{Front,vec2(3,2)},{Back,vec2(3,2)},{Left,vec2(3,2)},{Right,vec2(3,2)},{Top,vec2(3,2)},{Bottom,vec2(3,2)}}},
 		{snow, {{Front,vec2(3,5)},{Back,vec2(3,5)},{Left,vec2(3,5)},{Right,vec2(3,5)},{Top,vec2(3,5)},{Bottom,vec2(3,5)}}},
 		{wood, {{Front,vec2(5,2)},{Back,vec2(5,2)},{Left,vec2(5,2)},{Right,vec2(5,2)},{Top,vec2(6,2)},{Bottom,vec2(6,2)}}},
-		{leaf_transp, {{Front,vec2(5,4)},{Back,vec2(5,4)},{Left,vec2(5,4)},{Right,vec2(5,4)},{Top,vec2(5,4)},{Bottom,vec2(5,4)}}},
-		{leaf_red, {{Front,vec2(6,4)},{Back,vec2(6,4)},{Left,vec2(6,4)},{Right,vec2(6,4)},{Top,vec2(6,4)},{Bottom,vec2(6,4)}}},
-		{leaf_yellow, {{Front,vec2(7,4)},{Back,vec2(7,4)},{Left,vec2(7,4)},{Right,vec2(7,4)},{Top,vec2(7,4)},{Bottom,vec2(7,4)}}},
+		{leaf, {{Front,vec2(6,4)},{Back,vec2(6,4)},{Left,vec2(6,4)},{Right,vec2(6,4)},{Top,vec2(6,4)},{Bottom,vec2(6,4)}}},
 		{water, {{Front,vec2(16,14)},{Back,vec2(16,14)},{Left,vec2(16,14)},{Right,vec2(16,14)},{Top,vec2(16,14)},{Bottom,vec2(16,14)}}},
 		{glass, {{Front,vec2(2,4)},{Back,vec2(2,4)},{Left,vec2(2,4)},{Right,vec2(2,4)},{Top,vec2(2,4)},{Bottom,vec2(2,4)}}},
 	};
