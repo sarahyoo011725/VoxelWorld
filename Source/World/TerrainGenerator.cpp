@@ -189,13 +189,32 @@ void TerrainGenerator::export_debug_maps(const std::string& path_prefix, int cen
 	std::vector<unsigned char> feature_img(static_cast<size_t>(size) * size * 3);
 	std::vector<unsigned char> moisture_img(static_cast<size_t>(size) * size * 3);
 	std::vector<unsigned char> temperature_img(static_cast<size_t>(size) * size * 3);
+	std::vector<unsigned char> biome_img(static_cast<size_t>(size) * size * 3);
+
+	//one colour per biome so a glance at the map shows region shape and size
+	const unsigned char biome_colors[(int)biome_id::count][3] = {
+		{ 20,  40, 160}, //ocean
+		{232, 214, 150}, //beach
+		{224, 196,  92}, //desert
+		{124, 192,  76}, //plains
+		{ 44, 118,  48}, //forest
+		{ 70,  92,  56}, //swamp
+		{ 56, 116,  92}, //taiga
+		{206, 222, 220}, //tundra
+		{124, 120, 116}, //mountain
+		{248, 250, 252}, //snowy peak
+	};
 
 	int half = size / 2;
 	for (int row = 0; row < size; ++row) {
 		for (int col = 0; col < size; ++col) {
 			int wx = center_x - half + col;
 			int wz = center_z - half + row;
-			TerrainSample s = sample(wx, wz);
+			//sample_climate rather than sample(): it carries every field these
+			//maps show, costs a fifth as much, and is the same path chunk
+			//generation uses - building a ClimateSample by hand here once left
+			//landform_elevation unset and coloured the whole map as shoreline
+			ClimateSample s = sample_climate(wx, wz);
 			size_t idx = (static_cast<size_t>(row) * size + col) * 3;
 
 			unsigned char e = (unsigned char)glm::clamp((float)s.elevation / 90.0f * 255.0f, 0.0f, 255.0f);
@@ -217,6 +236,8 @@ void TerrainGenerator::export_debug_maps(const std::string& path_prefix, int cen
 			unsigned char t = (unsigned char)(s.temperature * 255.0f);
 			temperature_img[idx + 0] = t; temperature_img[idx + 1] = 40; temperature_img[idx + 2] = (unsigned char)(255 - t);
 
+			const unsigned char* bc = biome_colors[(int)select_biome(s, config.sea_level)];
+			biome_img[idx + 0] = bc[0]; biome_img[idx + 1] = bc[1]; biome_img[idx + 2] = bc[2];
 		}
 	}
 
@@ -224,4 +245,5 @@ void TerrainGenerator::export_debug_maps(const std::string& path_prefix, int cen
 	write_ppm(path_prefix + "_feature.ppm", size, feature_img);
 	write_ppm(path_prefix + "_moisture.ppm", size, moisture_img);
 	write_ppm(path_prefix + "_temperature.ppm", size, temperature_img);
+	write_ppm(path_prefix + "_biome.ppm", size, biome_img);
 }

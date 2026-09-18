@@ -217,6 +217,8 @@ void PlayerRenderer::draw_perf_overlay(const PerfStats& stats) {
 		"QUEUED " + num((float)stats.chunks_pending, 0) + "  DRAWN " + num((float)stats.chunks_drawn, 0) + "/" + num((float)stats.chunks_visible, 0),
 		"LOADED " + num((float)stats.chunks_loaded, 0),
 		"XYZ " + num((float)stats.player_x, 0) + " " + num((float)stats.player_y, 0) + " " + num((float)stats.player_z, 0),
+		std::string("BIOME ") + stats.biome_name,
+		"TEMP " + num(stats.temperature, 2) + "  MOIST " + num(stats.moisture, 2),
 	};
 
 	//budget overruns are the thing worth noticing, so flag them in the text color

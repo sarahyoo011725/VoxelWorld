@@ -170,6 +170,12 @@ public:
 			terrain.stats.player_x = (int)player.position.x;
 			terrain.stats.player_y = (int)player.position.y;
 			terrain.stats.player_z = (int)player.position.z;
+			//answers "what biome am I in, and what climate produced it"
+			ClimateSample climate = get_terrain_generator().sample_climate(
+				terrain.stats.player_x, terrain.stats.player_z);
+			terrain.stats.biome_name = biome_of(select_biome(climate, water_level)).name;
+			terrain.stats.temperature = climate.temperature;
+			terrain.stats.moisture = climate.moisture;
 			renderer.draw_perf_overlay(terrain.stats);
 		}
 
