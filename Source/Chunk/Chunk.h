@@ -5,6 +5,7 @@
 #include <glad/glad.h>
 #include <vector>
 #include "Block/Block.h"
+#include "World/Biome.h"
 #include "Buffers/VAO.h"
 #include "Buffers/VBO.h"
 #include "Buffers/EBO.h"
@@ -55,6 +56,9 @@ private:
 
 	vector<Block> blocks;
 	vector<int> height_map;
+	//one biome per column, not per block - biome is a 2D property, so resolving
+	//it once here keeps it out of the per-block loop entirely
+	vector<biome_id> biome_map;
 	inline size_t block_index(int x, int y, int z) const { return (static_cast<size_t>(x) * height + y) * length + z; }
 	inline size_t height_index(int x, int z) const { return static_cast<size_t>(x) * length + z; }
 	vector<int> get_heightmap();
@@ -85,6 +89,7 @@ public:
 	Chunk& operator=(const Chunk&) = delete;
 	~Chunk();
 	int get_height(int x, int z) const { return height_map[height_index(x, z)]; }
+	biome_id get_biome(int x, int z) const { return biome_map[height_index(x, z)]; }
 
 	/*
 		the chunk pipeline is split into three phases so the expensive ones can

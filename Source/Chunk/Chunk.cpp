@@ -79,21 +79,25 @@ void Chunk::generate_terrain() {
 
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
+			int h = get_height(x, z);
+			const BiomeDefinition& biome = biome_of(get_biome(x, z));
+
 			for (int y = 0; y < height; ++y) {
 				block_type type = none;
-				int h = get_height(x, z);
 				if (y > h && y <= water_level) {
 					type = water;
 				}
 				if (y == h) {
-					type = dirt_grass;
+					type = biome.surface;
 				}
 				if (y < h) {
-					type = dirt;
-					if (y < h - 5) {
+					type = biome.subsurface;
+					if (y < h - biome.subsurface_depth) {
 						type = stone;
 					}
 				}
+				//anything at the waterline is beach regardless of biome, so
+				//shores read as shores instead of grass running into the sea
 				if (y <= h && y >= h - 2 && y + 1 < height && y + 1 <= water_level) {
 					type = sand;
 				}
@@ -110,16 +114,25 @@ void Chunk::generate_terrain() {
 */
 vector<int> Chunk::get_heightmap() {
 	vector<int> map(static_cast<size_t>(width) * length);
+	biome_map.assign(static_cast<size_t>(width) * length, biome_id::plains);
 
+	const TerrainGenerator& generator = get_terrain_generator();
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
 			//get a block's world coords
 			int x_pos = world_position.x + x - 1;
 			int z_pos = world_position.z + z - 1;
-			int height_val = get_noise(x_pos, z_pos);
+
+			//one climate sample feeds both the height and the biome, so adding
+			//biomes costs two extra noise lookups per column rather than a
+			//second pass over the chunk
+			ClimateSample climate = generator.sample_climate(x_pos, z_pos);
+
+			int height_val = climate.elevation;
 			if (height_val > height) height_val = height;
 			if (height_val < 0) height_val = 0;
 			map[height_index(x, z)] = height_val;
+			biome_map[height_index(x, z)] = select_biome(climate, water_level);
 		}
 	}
 	return map;

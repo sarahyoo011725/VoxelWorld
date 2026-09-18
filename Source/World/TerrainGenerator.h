@@ -2,6 +2,7 @@
 #include <FastNoise/FastNoiseLite.h>
 #include <glm/glm.hpp>
 #include <string>
+#include "Biome.h"
 
 struct TerrainConfig {
 	int world_seed = 1337;
@@ -46,13 +47,6 @@ struct TerrainConfig {
 	float temperature_frequency = 0.0018f;
 };
 
-enum class terrain_feature {
-	ocean,
-	river,
-	lake,
-	land
-};
-
 //kept separate from the elevation math so new biomes can key off these
 //without touching height generation
 struct TerrainSample {
@@ -81,6 +75,14 @@ public:
 	TerrainSample sample(int x, int z) const;
 	int sample_height(int x, int z) const;
 
+	/*
+		elevation, feature and the two climate fields in one pass - everything
+		biome selection needs and nothing it doesn't. sample() costs five
+		compute_elevation calls because of its slope central-difference, so
+		per-column chunk generation uses this instead.
+	*/
+	ClimateSample sample_climate(int x, int z) const;
+
 	//PPM rather than PNG so this needs no image-writing dependency
 	void export_debug_maps(const std::string& path_prefix, int center_x, int center_z, int size) const;
 
@@ -89,6 +91,7 @@ public:
 private:
 	struct elevation_result {
 		float height;
+		float landform_height; //height without hills, detail or river carving
 		terrain_feature feature;
 	};
 

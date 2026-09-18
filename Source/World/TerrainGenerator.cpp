@@ -70,7 +70,7 @@ TerrainGenerator::elevation_result TerrainGenerator::compute_elevation(int x, in
 	//independent 0..1 factors to peak at the same spot meant the bonus
 	//almost never materialized
 	float peak_mask = extreme_peak_noise.GetNoise(fx, fz) * 0.5f + 0.5f;
-	float peak_t = clamp((peak_mask - config.extreme_peak_threshold) / (1.0f - config.extreme_peak_threshold), 0.0f, 1.0f);
+	float peak_t = glm::clamp((peak_mask - config.extreme_peak_threshold) / (1.0f - config.extreme_peak_threshold), 0.0f, 1.0f);
 	float extreme_bonus = peak_t * mountains * config.extreme_peak_strength;
 
 	//hills taper out where the mountain mask is strong so foothills blend
@@ -80,11 +80,13 @@ TerrainGenerator::elevation_result TerrainGenerator::compute_elevation(int x, in
 	float detail = detail_noise.GetNoise(fx, fz) * config.terrain_detail_strength;
 
 	const float baseline = (float)config.sea_level + 2.0f;
-	float land_height = baseline + mountains * config.mountain_strength + extreme_bonus + hill_contribution + detail;
+	float landform = baseline + mountains * config.mountain_strength + extreme_bonus;
+	float land_height = landform + hill_contribution + detail;
 
 	const float ocean_floor = 3.0f;
-	float ocean_t = clamp((continent - config.coast_inner_edge) / (config.coast_outer_edge - config.coast_inner_edge), 0.0f, 1.0f);
+	float ocean_t = glm::clamp((continent - config.coast_inner_edge) / (config.coast_outer_edge - config.coast_inner_edge), 0.0f, 1.0f);
 	float height = mix(ocean_floor, land_height, ocean_t);
+	float landform_height = mix(ocean_floor, landform, ocean_t);
 
 	terrain_feature feature = terrain_feature::land;
 	bool is_ocean = ocean_t < 0.5f;
@@ -96,9 +98,9 @@ TerrainGenerator::elevation_result TerrainGenerator::compute_elevation(int x, in
 
 	if (!is_ocean && height > (float)config.sea_level && river_strength > 0.0f) {
 		float river_v = river_noise.GetNoise(mx, mz);
-		float coastal_proximity = 1.0f - clamp((continent - config.coast_outer_edge) / 0.5f, 0.0f, 1.0f);
+		float coastal_proximity = 1.0f - glm::clamp((continent - config.coast_outer_edge) / 0.5f, 0.0f, 1.0f);
 		float half_width = config.river_min_length * (1.0f + coastal_proximity * config.river_mouth_widening);
-		float river_t = clamp(std::abs(river_v) / half_width, 0.0f, 1.0f);
+		float river_t = glm::clamp(std::abs(river_v) / half_width, 0.0f, 1.0f);
 		float carve = (1.0f - river_t) * river_strength;
 		if (carve > 0.0f) {
 			float river_bed = (float)config.sea_level - 1.0f;
@@ -111,17 +113,41 @@ TerrainGenerator::elevation_result TerrainGenerator::compute_elevation(int x, in
 
 	if (feature == terrain_feature::land) {
 		float basin = lake_basin_noise.GetNoise(fx, fz) * 0.5f + 0.5f;
-		float basin_t = clamp((basin - config.lake_density) / (1.0f - config.lake_density), 0.0f, 1.0f);
+		float basin_t = glm::clamp((basin - config.lake_density) / (1.0f - config.lake_density), 0.0f, 1.0f);
 		if (basin_t > 0.0f) {
 			//eased so shorelines slope in instead of forming a cliff ring
 			float depth_t = basin_t * basin_t * (3.0f - 2.0f * basin_t);
 			float lake_bed = (float)config.sea_level - config.lake_min_size;
-			height = mix(height, min(height, lake_bed), depth_t);
+			height = mix(height, glm::min(height, lake_bed), depth_t);
 			if (height <= (float)config.sea_level) feature = terrain_feature::lake;
 		}
 	}
 
-	return { height, feature };
+	return { height, landform_height, feature };
+}
+
+/*
+	the climate fields share their noise and their altitude/water adjustments
+	with sample(), so a column resolves to the same climate either way - this
+	just skips the slope work biome selection has no use for.
+*/
+ClimateSample TerrainGenerator::sample_climate(int x, int z) const {
+	elevation_result e = compute_elevation(x, z);
+	float fx = (float)x, fz = (float)z;
+
+	ClimateSample c;
+	c.elevation = (int)e.height;
+	c.landform_elevation = (int)e.landform_height;
+	c.feature = e.feature;
+
+	bool near_water = e.feature != terrain_feature::land;
+	c.moisture = glm::clamp(moisture_noise.GetNoise(fx, fz) * 0.5f + 0.5f + (near_water ? 0.3f : 0.0f), 0.0f, 1.0f);
+
+	//height cools a column off, which is what puts snow on peaks without
+	//needing a separate mask for it
+	float altitude_above_sea = glm::max(0.0f, e.height - (float)config.sea_level);
+	c.temperature = glm::clamp(temperature_noise.GetNoise(fx, fz) * 0.5f + 0.5f - altitude_above_sea * 0.01f, 0.0f, 1.0f);
+	return c;
 }
 
 int TerrainGenerator::sample_height(int x, int z) const {
@@ -129,27 +155,23 @@ int TerrainGenerator::sample_height(int x, int z) const {
 }
 
 TerrainSample TerrainGenerator::sample(int x, int z) const {
-	elevation_result center = compute_elevation(x, z);
+	//shares sample_climate's one definition of the climate fields, so a column's
+	//climate can't read one way here and another way during biome selection
+	ClimateSample climate = sample_climate(x, z);
 
 	//four extra samples for the central-difference slope, which is why
-	//heightmap generation calls sample_height() instead of this
+	//heightmap generation calls sample_climate() instead of this
 	float e_px = compute_elevation(x + 1, z).height;
 	float e_nx = compute_elevation(x - 1, z).height;
 	float e_pz = compute_elevation(x, z + 1).height;
 	float e_nz = compute_elevation(x, z - 1).height;
 
 	TerrainSample result;
-	result.elevation = (int)center.height;
-	result.feature = center.feature;
+	result.elevation = climate.elevation;
+	result.feature = climate.feature;
+	result.moisture = climate.moisture;
+	result.temperature = climate.temperature;
 	result.slope = (std::abs(e_px - e_nx) + std::abs(e_pz - e_nz)) * 0.5f;
-
-	bool near_water = center.feature != terrain_feature::land;
-	float fx = (float)x, fz = (float)z;
-	result.moisture = clamp(moisture_noise.GetNoise(fx, fz) * 0.5f + 0.5f + (near_water ? 0.3f : 0.0f), 0.0f, 1.0f);
-
-	float altitude_above_sea = max(0.0f, center.height - (float)config.sea_level);
-	result.temperature = clamp(temperature_noise.GetNoise(fx, fz) * 0.5f + 0.5f - altitude_above_sea * 0.01f, 0.0f, 1.0f);
-
 	return result;
 }
 
@@ -176,7 +198,7 @@ void TerrainGenerator::export_debug_maps(const std::string& path_prefix, int cen
 			TerrainSample s = sample(wx, wz);
 			size_t idx = (static_cast<size_t>(row) * size + col) * 3;
 
-			unsigned char e = (unsigned char)clamp((float)s.elevation / 90.0f * 255.0f, 0.0f, 255.0f);
+			unsigned char e = (unsigned char)glm::clamp((float)s.elevation / 90.0f * 255.0f, 0.0f, 255.0f);
 			elevation_img[idx + 0] = e;
 			elevation_img[idx + 1] = e;
 			elevation_img[idx + 2] = e;
@@ -194,6 +216,7 @@ void TerrainGenerator::export_debug_maps(const std::string& path_prefix, int cen
 
 			unsigned char t = (unsigned char)(s.temperature * 255.0f);
 			temperature_img[idx + 0] = t; temperature_img[idx + 1] = 40; temperature_img[idx + 2] = (unsigned char)(255 - t);
+
 		}
 	}
 
