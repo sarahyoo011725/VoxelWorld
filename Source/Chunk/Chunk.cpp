@@ -314,7 +314,7 @@ void Chunk::add_foliage_quad_indices() {
 void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 	if (texture_map.find(type) == texture_map.end()) return; //a type is not in texture map if it is a structure that is not cube i.e. grass
 	vec2 texture_coord = texture_map[type][face];
-	vec2 tile_origin = vec2((texture_coord.x - 1.0f) / textures_columns, (texture_coord.y - 1.0f) / texture_rows);
+	vec2 tile_origin = tile_uv_origin(texture_coord);
 
 	vec3 normal = face_normal(face);
 
@@ -428,7 +428,7 @@ bool Chunk::opaque_face_visible(int x, int y, int z, block_face face) const {
 void Chunk::add_merged_quad(block_face face, block_type type, ivec3 base_block, int run_u, int run_v) {
 	if (texture_map.find(type) == texture_map.end()) return;
 	vec2 texture_coord = texture_map[type][face];
-	vec2 tile_origin = vec2((texture_coord.x - 1.0f) / textures_columns, (texture_coord.y - 1.0f) / texture_rows);
+	vec2 tile_origin = tile_uv_origin(texture_coord);
 
 	const vector<vertex>& unit = cw_face_map[face];
 	//the face's own texture axes, read off the unit quad: corner 0 -> 1 is +u,

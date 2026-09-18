@@ -18,7 +18,7 @@ private:
 	Player player;
 	Terrain terrain;
 	PlayerRenderer renderer;
-	Texture texture = Texture("Resources/Textures/texture_atlas.png", GL_TEXTURE1, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+	Texture texture = Texture("Resources/Textures/texture_atlas_blocks.png", GL_TEXTURE1, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 	bool wireframe = false;
 	bool enable_music = true;
 	bool gl_setting_done = false;

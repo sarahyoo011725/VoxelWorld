@@ -20,6 +20,7 @@ enum block_type : unsigned char {
 	water,
 	glass,
 	grass,
+	snow,
 };
 
 //names block faces
@@ -33,24 +34,26 @@ enum block_face {
 };
 
 namespace {
-	//total rows in the texture atlance
-	const static int texture_rows = 16;
-	//total columns in the texture atlance
+	//tiles in the block atlas. tile coords below are 1-based with row 1 at the
+	//TOP of the image; the loader flips vertically, so v is measured from the
+	//bottom and a tile's v range is (rows - row) / rows upward
+	const static int texture_rows = 34;
 	const static int textures_columns = 16;
 
-	static vec2 grass_text_coord = vec2(8, 14);
+	static vec2 grass_text_coord = vec2(8, 3);
 
 	//collects texture index on the texture atlance for block types
 	static map<block_type, map<block_face, vec2>> texture_map = {
-		{dirt, {{Front,vec2(3,16)},{Back,vec2(3,16)},{Left,vec2(3,16)},{Right,vec2(3,16)},{Top,vec2(3,16)},{Bottom,vec2(3,16)}}},
-		{dirt_grass, {{Front,vec2(4, 16)},{Back,vec2(4, 16)},{Left,vec2(4, 16)},{Right,vec2(4, 16)},{Top,vec2(1, 16)},{Bottom,vec2(3, 16)}}},
-		{stone, {{Front,vec2(2, 16)},{Back,vec2(2, 16)},{Left,vec2(2, 16)},{Right,vec2(2, 16)},{Top,vec2(2, 16)},{Bottom,vec2(2, 16)}}},
-		{sand, {{Front,vec2(3, 15)},{Back,vec2(3, 15)},{Left,vec2(3, 15)},{Right,vec2(3, 15)},{Top,vec2(3, 15)},{Bottom,vec2(3, 15)}}},
-		{wood, {{Front,vec2(5, 15)},{Back,vec2(5, 15)},{Left,vec2(5, 15)},{Right,vec2(5, 15)},{Top,vec2(6, 15)},{Bottom,vec2(6, 15)}}},
-		{leaf_transp, {{Front,vec2(5, 13)},{Back,vec2(5, 13)},{Left,vec2(5, 13)},{Right,vec2(5, 13)},{Top,vec2(5, 13)},{Bottom,vec2(5, 13)}}},
-		{leaf_red, {{Front,vec2(6, 13)},{Back,vec2(6, 13)},{Left,vec2(6, 13)},{Right,vec2(6, 13)},{Top,vec2(6, 13)},{Bottom,vec2(6, 13)}}},
-		{leaf_yellow, {{Front,vec2(7, 13)},{Back,vec2(7, 13)},{Left,vec2(7, 13)},{Right,vec2(7, 13)},{Top,vec2(7, 13)},{Bottom,vec2(7, 13)}}},
-		{water, {{Front,vec2(16, 3)},{Back,vec2(16, 3)},{Left,vec2(16, 3)},{Right,vec2(16, 3)},{Top,vec2(16, 3)},{Bottom,vec2(16, 3)}}},
-		{glass, {{Front,vec2(2, 13)},{Back,vec2(2, 13)},{Left,vec2(2, 13)},{Right,vec2(2, 13)},{Top,vec2(2, 13)},{Bottom,vec2(2, 13)}}},
+		{dirt, {{Front,vec2(3,1)},{Back,vec2(3,1)},{Left,vec2(3,1)},{Right,vec2(3,1)},{Top,vec2(3,1)},{Bottom,vec2(3,1)}}},
+		{dirt_grass, {{Front,vec2(4,1)},{Back,vec2(4,1)},{Left,vec2(4,1)},{Right,vec2(4,1)},{Top,vec2(1,1)},{Bottom,vec2(3,1)}}},
+		{stone, {{Front,vec2(2,1)},{Back,vec2(2,1)},{Left,vec2(2,1)},{Right,vec2(2,1)},{Top,vec2(2,1)},{Bottom,vec2(2,1)}}},
+		{sand, {{Front,vec2(3,2)},{Back,vec2(3,2)},{Left,vec2(3,2)},{Right,vec2(3,2)},{Top,vec2(3,2)},{Bottom,vec2(3,2)}}},
+		{snow, {{Front,vec2(3,5)},{Back,vec2(3,5)},{Left,vec2(3,5)},{Right,vec2(3,5)},{Top,vec2(3,5)},{Bottom,vec2(3,5)}}},
+		{wood, {{Front,vec2(5,2)},{Back,vec2(5,2)},{Left,vec2(5,2)},{Right,vec2(5,2)},{Top,vec2(6,2)},{Bottom,vec2(6,2)}}},
+		{leaf_transp, {{Front,vec2(5,4)},{Back,vec2(5,4)},{Left,vec2(5,4)},{Right,vec2(5,4)},{Top,vec2(5,4)},{Bottom,vec2(5,4)}}},
+		{leaf_red, {{Front,vec2(6,4)},{Back,vec2(6,4)},{Left,vec2(6,4)},{Right,vec2(6,4)},{Top,vec2(6,4)},{Bottom,vec2(6,4)}}},
+		{leaf_yellow, {{Front,vec2(7,4)},{Back,vec2(7,4)},{Left,vec2(7,4)},{Right,vec2(7,4)},{Top,vec2(7,4)},{Bottom,vec2(7,4)}}},
+		{water, {{Front,vec2(16,14)},{Back,vec2(16,14)},{Left,vec2(16,14)},{Right,vec2(16,14)},{Top,vec2(16,14)},{Bottom,vec2(16,14)}}},
+		{glass, {{Front,vec2(2,4)},{Back,vec2(2,4)},{Left,vec2(2,4)},{Right,vec2(2,4)},{Top,vec2(2,4)},{Bottom,vec2(2,4)}}},
 	};
 }

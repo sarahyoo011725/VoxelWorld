@@ -36,8 +36,8 @@ float calculate_shadow(vec3 n) {
 	return shadow / 9.0;
 }
 
-//one cell of the 16x16 atlas
-const float tile_size = 1.0 / 16.0;
+//one cell of the 16x34 atlas - not square, so u and v differ
+const vec2 tile_size = vec2(1.0 / 16.0, 1.0 / 34.0);
 
 void main() {
 	//wrap the tiled coordinate back into this quad's atlas cell, so one merged

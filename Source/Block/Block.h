@@ -125,21 +125,23 @@ namespace {
 	* *** the unit for block data modification is face, which is a 2d square.
 	*/
 	static vec2 convert_to_uv(int index, vec2 texture_coord) {
-		float x = texture_coord.x;
-		float y = texture_coord.y;
-		if (index == 0) {
-			return vec2((x - 1)/  textures_columns, y/  texture_rows);
-		}
-		else if (index == 1) {
-			return vec2(x/  textures_columns, y/  texture_rows);
-		}
-		else if (index == 2) {
-			return vec2(x/  textures_columns, (y - 1)/  texture_rows);
-		}
-		else if (index == 3) {
-			return vec2((x - 1)/  textures_columns, (y - 1)/  texture_rows);
-		}
+		//row 1 is the top of the atlas but the image is flipped on load, so a
+		//tile's v range runs from (rows - row) upward
+		float u_min = (texture_coord.x - 1) / textures_columns;
+		float u_max = texture_coord.x / textures_columns;
+		float v_min = (texture_rows - texture_coord.y) / texture_rows;
+		float v_max = (texture_rows - texture_coord.y + 1) / texture_rows;
+		if (index == 0) return vec2(u_min, v_max);
+		if (index == 1) return vec2(u_max, v_max);
+		if (index == 2) return vec2(u_max, v_min);
+		if (index == 3) return vec2(u_min, v_min);
 		return vec2(-1, -1); //invalid index
+	}
+
+	//the atlas-space origin of a tile, for the tiled uv form merged quads use
+	static vec2 tile_uv_origin(vec2 texture_coord) {
+		return vec2((texture_coord.x - 1) / textures_columns,
+			(texture_rows - texture_coord.y) / texture_rows);
 	}
 
 	//a front face map of vertices and texture coordinates for a cube, winded in clock wise

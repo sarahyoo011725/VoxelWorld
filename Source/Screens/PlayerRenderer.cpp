@@ -148,7 +148,7 @@ void PlayerRenderer::draw_hotbar(const Inventory& inventory) {
 			continue;
 		}
 
-		vec2 uv_min = vec2((texture_coord.x - 1.0f) / textures_columns, (texture_coord.y - 1.0f) / texture_rows);
+		vec2 uv_min = tile_uv_origin(texture_coord);
 		vec2 uv_scale = vec2(1.0f / textures_columns, 1.0f / texture_rows);
 
 		sm.HUD_shader.set_uniform_1i("use_texture", GL_TRUE);
