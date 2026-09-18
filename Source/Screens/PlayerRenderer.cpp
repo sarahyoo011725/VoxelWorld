@@ -139,7 +139,7 @@ void PlayerRenderer::draw_hotbar(const Inventory& inventory) {
 
 		vec2 texture_coord;
 		if (is_nonblock(stack.type)) {
-			texture_coord = grass_text_coord;
+			texture_coord = plant_texture_coord(stack.type);
 		}
 		else if (texture_map.find(stack.type) != texture_map.end()) {
 			texture_coord = texture_map[stack.type][Front];

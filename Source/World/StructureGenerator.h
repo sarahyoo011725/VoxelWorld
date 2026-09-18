@@ -13,6 +13,7 @@ class Chunk;
 enum class vegetation_kind {
 	tree,         //uses BiomeDefinition::tree_chance
 	ground_cover, //uses BiomeDefinition::ground_cover_chance
+	flower,       //uses BiomeDefinition::flower_chance
 };
 
 /*
@@ -28,7 +29,11 @@ struct structure_rule {
 
 //1 in N for this rule in this biome, or 0 where it should never spawn
 inline int spawn_chance_in(const structure_rule& rule, const BiomeDefinition& biome) {
-	return rule.kind == vegetation_kind::tree ? biome.tree_chance : biome.ground_cover_chance;
+	switch (rule.kind) {
+	case vegetation_kind::tree: return biome.tree_chance;
+	case vegetation_kind::flower: return biome.flower_chance;
+	}
+	return biome.ground_cover_chance;
 }
 
 //keeps a structure's own randomness on a different stream from the per-column
@@ -49,8 +54,9 @@ private:
 	StructureGenerator& operator=(const StructureGenerator&) = delete;
 
 	void spawn_tree(vec3 world_coord);
-	void spawn_grass(vec3 world_coord);
+	void spawn_plant(vec3 world_coord, block_type type);
 	const BiomeDefinition& biome_at(vec3 world_coord);
+	block_type flower_of(vec3 world_coord);
 public:
 	static StructureGenerator& get_instance() {
 		static StructureGenerator instance;

@@ -4,10 +4,16 @@
 StructureGenerator::StructureGenerator() : chunk_manager(ChunkManager::get_instance()) {
 	terrain_structures = {
 		{ vegetation_kind::tree, [this](vec3 c) { spawn_tree(c); } },
-		{ vegetation_kind::ground_cover, [this](vec3 c) { spawn_grass(c); } },
+		{ vegetation_kind::ground_cover, [this](vec3 c) { spawn_plant(c, grass); } },
+		//the biome picks which flower, so one rule covers every kind
+		{ vegetation_kind::flower, [this](vec3 c) { spawn_plant(c, flower_of(c)); } },
 	};
 	placeable_structures = {
-		{ grass, [this](vec3 c) { spawn_grass(c); } },
+		{ grass, [this](vec3 c) { spawn_plant(c, grass); } },
+		{ flower_red, [this](vec3 c) { spawn_plant(c, flower_red); } },
+		{ flower_yellow, [this](vec3 c) { spawn_plant(c, flower_yellow); } },
+		{ flower_purple, [this](vec3 c) { spawn_plant(c, flower_purple); } },
+		{ flower_white, [this](vec3 c) { spawn_plant(c, flower_white); } },
 	};
 }
 
@@ -35,7 +41,11 @@ const BiomeDefinition& StructureGenerator::biome_at(vec3 world_coord) {
 	return biome_of(chunk->get_biome(local.x, local.z));
 }
 
-void StructureGenerator::spawn_grass(vec3 world_coord) {
+block_type StructureGenerator::flower_of(vec3 world_coord) {
+	return biome_at(world_coord).flower;
+}
+
+void StructureGenerator::spawn_plant(vec3 world_coord, block_type type) {
 	//draw grass
 	ivec2 chunk_id = get_chunk_origin(world_coord);
 	Chunk* chunk = chunk_manager.get_chunk(chunk_id);
@@ -44,9 +54,13 @@ void StructureGenerator::spawn_grass(vec3 world_coord) {
 		Block* block = chunk->get_block(local_coord);
 		if (block == nullptr || block != nullptr && block->type != none) return; //spawn grass only if there is no structure
 
-		//foliage_vertex carries a biome tint; leaving it unset value-initialised
-		//it to black, and the shader multiplied the grass texture away
-		vec3 tint = biome_of(chunk->get_biome(local_coord.x, local_coord.z)).foliage_tint;
+		//grass ships greyscale and takes the biome's colour; flowers are authored
+		//in colour and pass through untinted. without a tint set here the vertex
+		//would default to black and swallow the texture entirely.
+		vec3 tint = vec3(1.0f);
+		if (is_biome_tinted(type)) {
+			tint = biome_of(chunk->get_biome(local_coord.x, local_coord.z)).foliage_tint;
+		}
 
 		vector<foliage_vertex> transformed_vertices;
 		for (vector<vertex> face : grass_face_vertices) {
@@ -56,13 +70,13 @@ void StructureGenerator::spawn_grass(vec3 world_coord) {
 
 			for (int i = 0; i < face.size(); ++i) {
 				vec3 position = face[i].position + world_coord;
-				vec2 uv_coord = convert_to_uv(i, grass_text_coord);
+				vec2 uv_coord = convert_to_uv(i, plant_texture_coord(type));
 				float sway = (face[i].position.y > 0.0f) ? 1.0f : 0.0f; //base stays pinned to the ground
 				transformed_vertices.push_back({ position, uv_coord, plane_normal, sway, tint });
 			}
 		}
 		chunk->add_nonblock_structure_vertices(local_coord, transformed_vertices);
-		chunk->set_block(local_coord, grass);
+		chunk->set_block(local_coord, type);
 	}
 }
 
