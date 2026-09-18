@@ -15,6 +15,7 @@ struct vertex {
 	vec2 texture;
 	vec3 normal;
 	vec2 tile_origin;
+	vec3 tint; //biome colour multiplied onto greyscale tiles; white leaves a tile as authored
 };
 
 //a vertex for wind-swayed geometry (leaves, grass). sway is 0 at a pinned base and 1 at a freely swaying tip
@@ -23,6 +24,7 @@ struct foliage_vertex {
 	vec2 texture;
 	vec3 normal;
 	float sway;
+	vec3 tint;
 };
 
 /*

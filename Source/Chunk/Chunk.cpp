@@ -21,12 +21,14 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	opaque_vao.link_attrib(opaque_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float))); //vertex texture coords
 	opaque_vao.link_attrib(opaque_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float))); //vertex normal
 	opaque_vao.link_attrib(opaque_vbo, 3, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(8 * sizeof(float))); //atlas cell the uv repeats
+	opaque_vao.link_attrib(opaque_vbo, 4, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(10 * sizeof(float))); //biome tint
 
 	transp_vao.bind();
 	transp_vao.link_attrib(transp_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 	transp_vao.link_attrib(transp_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
 	transp_vao.link_attrib(transp_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float)));
 	transp_vao.link_attrib(transp_vbo, 3, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(8 * sizeof(float)));
+	transp_vao.link_attrib(transp_vbo, 4, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(10 * sizeof(float)));
 
 	water_vao.bind();
 	water_vao.link_attrib(water_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
@@ -38,6 +40,7 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	foliage_vao.link_attrib(foliage_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(3 * sizeof(float)));
 	foliage_vao.link_attrib(foliage_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(5 * sizeof(float)));
 	foliage_vao.link_attrib(foliage_vbo, 3, 1, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(8 * sizeof(float)));
+	foliage_vao.link_attrib(foliage_vbo, 4, 3, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)(9 * sizeof(float))); //biome tint
 }
 
 /*
@@ -328,6 +331,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 	if (texture_map.find(type) == texture_map.end()) return; //a type is not in texture map if it is a structure that is not cube i.e. grass
 	vec2 texture_coord = texture_map[type][face];
 	vec2 tile_origin = tile_uv_origin(texture_coord);
+	vec3 tint = tint_for(type, face, (int)local_coord.x, (int)local_coord.z);
 
 	vec3 normal = face_normal(face);
 
@@ -338,6 +342,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 			v.position += local_coord + world_position + vec3(-1, 0, -1);
 			v.texture = convert_to_uv(i, texture_coord);
 			v.normal = normal;
+			v.tint = tint;
 			water_vertices.push_back(v);
 		}
 		update_face_indices(true, true);
@@ -348,6 +353,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 			v.position += local_coord + world_position + vec3(-1, 0, -1);
 			v.texture = convert_to_uv(i, texture_coord);
 			v.normal = -normal;
+			v.tint = tint;
 			water_vertices.push_back(v);
 		}
 		update_face_indices(true, true);
@@ -361,7 +367,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 			vertex v = verts[i];
 			v.position += local_coord + world_position + vec3(-1, 0, -1);
 			v.texture = convert_to_uv(i, texture_coord);
-			foliage_vertices.push_back({ v.position, v.texture, normal, 1.0f });
+			foliage_vertices.push_back({ v.position, v.texture, normal, 1.0f, tint });
 		}
 		add_foliage_quad_indices();
 	}
@@ -377,6 +383,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 			//the tiled form the merged quads use, since both go through default.frag
 			v.texture = corner_uv[i];
 			v.tile_origin = tile_origin;
+			v.tint = tint;
 			v.normal = normal;
 			if (transparency) {
 				transp_vertices.push_back(v);
@@ -418,6 +425,16 @@ void Chunk::upload_mesh() {
 }
 
 /*
+	the colour a face gets multiplied by. greyscale grass/leaf tiles take their
+	biome's colour; every other tile stays as authored
+*/
+vec3 Chunk::tint_for(block_type type, block_face face, int x, int z) const {
+	if (!is_tinted_face(type, face)) return vec3(1.0f);
+	const BiomeDefinition& biome = biome_of(get_biome(x, z));
+	return type == dirt_grass ? biome.grass_tint : biome.foliage_tint;
+}
+
+/*
 	is this opaque block's face exposed? mirrors the neighbour test the per-block
 	loop uses, minus the foliage case - foliage never reaches the opaque buffer
 */
@@ -442,6 +459,7 @@ void Chunk::add_merged_quad(block_face face, block_type type, ivec3 base_block, 
 	if (texture_map.find(type) == texture_map.end()) return;
 	vec2 texture_coord = texture_map[type][face];
 	vec2 tile_origin = tile_uv_origin(texture_coord);
+	vec3 tint = tint_for(type, face, base_block.x, base_block.z);
 
 	const vector<vertex>& unit = cw_face_map[face];
 	//the face's own texture axes, read off the unit quad: corner 0 -> 1 is +u,
@@ -462,6 +480,7 @@ void Chunk::add_merged_quad(block_face face, block_type type, ivec3 base_block, 
 		v.texture = vec2(corner_uv[i].x * run_u, corner_uv[i].y * run_v);
 		v.normal = normal;
 		v.tile_origin = tile_origin;
+		v.tint = tint;
 		opaque_vertices.push_back(v);
 	}
 	update_face_indices(false, false);
@@ -502,6 +521,7 @@ void Chunk::build_opaque_mesh() {
 		bool v_flipped = dot(unit[0].position - unit[3].position, b_dir) < 0.0f;
 
 		vector<block_type> mask(static_cast<size_t>(a_count) * b_count);
+		vector<biome_id> biome_key(static_cast<size_t>(a_count) * b_count);
 
 		for (int slice = slice_lo; slice < slice_hi; ++slice) {
 			auto to_block = [&](int a, int b) {
@@ -517,23 +537,35 @@ void Chunk::build_opaque_mesh() {
 					bool opaque = t != none && !has_transparency(t) && !is_foliage(t);
 					mask[static_cast<size_t>(a) * b_count + b] =
 						(opaque && opaque_face_visible(p.x, p.y, p.z, face)) ? t : none;
+					//a tinted face changes colour with the biome, so two columns
+					//may only merge if they also share one. untinted faces keep a
+					//single biome key and merge as freely as before
+					biome_key[static_cast<size_t>(a) * b_count + b] =
+						is_tinted_face(t, face) ? get_biome(p.x, p.z) : biome_id::plains;
 				}
 			}
 
 			for (int a = 0; a < a_count; ++a) {
 				for (int b = 0; b < b_count; ) {
-					block_type t = mask[static_cast<size_t>(a) * b_count + b];
+					size_t here = static_cast<size_t>(a) * b_count + b;
+					block_type t = mask[here];
 					if (t == none) { ++b; continue; }
+					biome_id key = biome_key[here];
 
 					//extend along b first, then widen along a while whole rows match
 					int run_b = 1;
-					while (b + run_b < b_count && mask[static_cast<size_t>(a) * b_count + b + run_b] == t) ++run_b;
+					while (b + run_b < b_count) {
+						size_t n = static_cast<size_t>(a) * b_count + b + run_b;
+						if (mask[n] != t || biome_key[n] != key) break;
+						++run_b;
+					}
 
 					int run_a = 1;
 					bool can_widen = true;
 					while (a + run_a < a_count && can_widen) {
 						for (int k = 0; k < run_b; ++k) {
-							if (mask[static_cast<size_t>(a + run_a) * b_count + b + k] != t) { can_widen = false; break; }
+							size_t n = static_cast<size_t>(a + run_a) * b_count + b + k;
+							if (mask[n] != t || biome_key[n] != key) { can_widen = false; break; }
 						}
 						if (can_widen) ++run_a;
 					}

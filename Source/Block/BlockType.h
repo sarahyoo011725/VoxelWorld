@@ -42,6 +42,27 @@ namespace {
 
 	static vec2 grass_text_coord = vec2(8, 3);
 
+	//grass and leaf tiles are greyscale so a biome colour can be multiplied in
+	//(see Biome.h); everything else is used at its authored colour
+	inline bool is_biome_tinted(block_type type) {
+		switch (type) {
+		case dirt_grass:
+		case grass:
+		case leaf_transp:
+		case leaf_red:
+		case leaf_yellow:
+			return true;
+		}
+		return false;
+	}
+
+	//only the grass block's TOP face carries the greyscale grass texture - its
+	//sides are ordinary dirt-with-fringe and must not be tinted
+	inline bool is_tinted_face(block_type type, block_face face) {
+		if (type == dirt_grass) return face == Top;
+		return is_biome_tinted(type);
+	}
+
 	//collects texture index on the texture atlance for block types
 	static map<block_type, map<block_face, vec2>> texture_map = {
 		{dirt, {{Front,vec2(3,1)},{Back,vec2(3,1)},{Left,vec2(3,1)},{Right,vec2(3,1)},{Top,vec2(3,1)},{Bottom,vec2(3,1)}}},

@@ -3,6 +3,7 @@
 out vec4 FragColor;
 
 in vec2 tex_coord;
+in vec3 tint;
 in float fog_factor;
 in vec3 world_pos;
 in vec3 normal;
@@ -37,6 +38,9 @@ float calculate_shadow(vec3 n) {
 void main() {
 	vec4 tex_color = texture(texture1, tex_coord);
 	if (tex_color.a < 0.1) discard;
+
+	//leaves and grass ship greyscale and take their colour from the biome
+	tex_color.rgb *= tint;
 
 	vec3 n = normalize(normal);
 	float shadow = calculate_shadow(n);

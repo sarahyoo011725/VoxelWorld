@@ -4,6 +4,7 @@ out vec4 FragColor;
 
 in vec2 tex_coord;
 in vec2 tile_origin;
+in vec3 tint;
 in float fog_factor;
 in vec3 world_pos;
 in vec3 normal;
@@ -46,6 +47,10 @@ void main() {
 	vec2 atlas_uv = tile_origin + fract(tex_coord) * tile_size;
 	vec4 tex_color = texture(texture1, atlas_uv);
 	if (tex_color.a < 0.1) discard;
+
+	//grass and leaf tiles are greyscale so the biome colour lands here; every
+	//other tile carries a white tint and passes through unchanged
+	tex_color.rgb *= tint;
 
 	vec3 n = normalize(normal);
 	float shadow = calculate_shadow(n);
