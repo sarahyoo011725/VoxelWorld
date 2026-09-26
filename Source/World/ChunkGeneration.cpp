@@ -5,6 +5,14 @@
 
 static const uint32_t bedrock_salt = 0xBED0;
 
+unsigned char daylight_level(int column_height, int y) {
+	int depth = column_height - y;
+	if (depth < 0) return 15;
+	const CaveConfig& caves = get_cave_generator().config;
+	float light = glm::clamp(1.0f - depth / caves.light_falloff, caves.min_light, 1.0f);
+	return (unsigned char)glm::round(light * 15.0f);
+}
+
 CarveResult generate_chunk_blocks(glm::ivec2 chunk_id, int width, int height, int length,
 	std::vector<Block>& blocks, std::vector<int>& heights, std::vector<biome_id>& biomes) {
 	fill_chunk_terrain(chunk_id, width, height, length, blocks, heights, biomes);

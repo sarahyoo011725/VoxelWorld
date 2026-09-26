@@ -16,7 +16,11 @@ struct vertex {
 	vec3 normal;
 	vec2 tile_origin;
 	vec3 tint; //biome colour multiplied onto greyscale tiles; white leaves a tile as authored
+	float light = 1.0f; //daylight reaching the face, 0..1; emissive_light makes it glow
 };
+
+//a light value above 1 tells the shaders the block lights itself, ignoring sun and shadow
+const float emissive_light = 2.0f;
 
 //a vertex for wind-swayed geometry (leaves, grass). sway is 0 at a pinned base and 1 at a freely swaying tip
 struct foliage_vertex {

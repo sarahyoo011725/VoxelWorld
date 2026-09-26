@@ -53,6 +53,12 @@ namespace {
 
 	bool opaque(block_type t) { return !is_see_through(t) && !is_foliage(t); }
 
+	//mirrors Chunk::light_level
+	unsigned char face_light(const ChunkData& c, block_type t, int x, int y, int z, const int* dir) {
+		if (t == lava) return emissive_level;
+		return daylight_level(c.heights[(size_t)(x + dir[0]) * L + (z + dir[2])], y + dir[1]);
+	}
+
 	//border copies only feed face culling, which cares whether a block is air, a liquid or solid;
 	//which ore or gravel an opaque block is only matters in the chunk that owns and draws it
 	int render_class(block_type t) { return t == none ? 0 : t == water ? 1 : t == lava ? 2 : 3; }
@@ -64,7 +70,7 @@ namespace {
 	long long greedy_quads(const ChunkData& c) {
 		static const int d[6][3] = { {0,0,1},{0,0,-1},{-1,0,0},{1,0,0},{0,1,0},{0,-1,0} };
 		long long quads = 0;
-		vector<unsigned char> mask;
+		vector<unsigned char> mask, light;
 		for (int y_lo = 0; y_lo < H; y_lo += section_size) {
 			int y_hi = std::min(y_lo + section_size, H);
 			for (int f = 0; f < 6; ++f) {
@@ -74,6 +80,7 @@ namespace {
 				else { s0 = y_lo; s1 = y_hi; a0 = 1; a1 = W - 1; b0 = 1; b1 = L - 1; }
 				int aw = a1 - a0, bh = b1 - b0;
 				mask.assign((size_t)aw * bh, 0);
+				light.assign((size_t)aw * bh, 0);
 				for (int s = s0; s < s1; ++s) {
 					for (int a = 0; a < aw; ++a)
 						for (int b = 0; b < bh; ++b) {
@@ -86,17 +93,20 @@ namespace {
 							int ny = y + d[f][1];
 							if (opaque(t) && ny >= 0 && ny < H && face_exposed(c.at(x + d[f][0], ny, z + d[f][2]))) m = (unsigned char)t;
 							mask[(size_t)a * bh + b] = m;
+							light[(size_t)a * bh + b] = m ? face_light(c, t, x, y, z, d[f]) : 0;
 						}
 					for (int a = 0; a < aw; ++a)
 						for (int b = 0; b < bh; ) {
 							unsigned char t = mask[(size_t)a * bh + b];
 							if (!t) { ++b; continue; }
+							unsigned char l = light[(size_t)a * bh + b];
+							auto same = [&](size_t k) { return mask[k] == t && light[k] == l; };
 							int rh = 1;
-							while (b + rh < bh && mask[(size_t)a * bh + b + rh] == t) ++rh;
+							while (b + rh < bh && same((size_t)a * bh + b + rh)) ++rh;
 							int rw = 1;
 							bool grow = true;
 							while (a + rw < aw && grow) {
-								for (int k = 0; k < rh; ++k) if (mask[(size_t)(a + rw) * bh + b + k] != t) { grow = false; break; }
+								for (int k = 0; k < rh; ++k) if (!same((size_t)(a + rw) * bh + b + k)) { grow = false; break; }
 								if (grow) ++rw;
 							}
 							for (int i = 0; i < rw; ++i) for (int k = 0; k < rh; ++k) mask[(size_t)(a + i) * bh + b + k] = 0;
@@ -295,6 +305,22 @@ namespace {
 						}
 				}
 			}
+			long long dark = 0, dim = 0, lit = 0;
+			const unsigned char darkest = daylight_level(H, 0);
+			for (int x = 0; x < S; ++x)
+				for (int z = 0; z < S; ++z)
+					for (int y = 0; y < H; ++y) {
+						size_t i = r.at(x, y, z);
+						if (!r.carved(i) || r.blocks[i] != none) continue;
+						unsigned char level = daylight_level(r.surface[(size_t)x * S + z], y);
+						if (level <= darkest) dark++;
+						else if (level < 15) dim++;
+						else lit++;
+					}
+			long long air = std::max(dark + dim + lit, 1LL);
+			printf("  cave air daylight: %.1f%% at the darkest level, %.1f%% dim, %.1f%% fully lit\n",
+				100.0 * dark / air, 100.0 * dim / air, 100.0 * lit / air);
+
 			printf("  surface openings: %lld (one per %.0fx%.0f blocks of land)\n", openings,
 				sqrt((double)land / std::max(openings, 1LL)), sqrt((double)land / std::max(openings, 1LL)));
 

@@ -54,6 +54,10 @@ struct CaveConfig {
 	float moss_chance = 0.1f; //share of wall and ceiling patches that are mossy
 	float moss_chance_near_liquid = 0.45f; //within a few blocks above liquid_level
 	float ore_density = 1.0f; //scales every ore's vein chance
+
+	//daylight fades over this many blocks below the ground, so caves grow dark as they go deeper
+	float light_falloff = 10.0f;
+	float min_light = 0.12f; //the darkest a cave gets; 0 is pitch black
 };
 
 struct CarveResult {

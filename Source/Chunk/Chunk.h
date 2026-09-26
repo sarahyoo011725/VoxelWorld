@@ -78,7 +78,9 @@ private:
 	vec3 tint_for(block_type type, block_face face, int x, int z) const;
 	void build_opaque_mesh(int y_lo, int y_hi);
 	void build_block_faces(int y_lo, int y_hi);
-	void add_merged_quad(block_face face, block_type type, ivec3 base_block, int run_u, int run_v);
+	void add_merged_quad(block_face face, block_type type, ivec3 base_block, int run_u, int run_v, unsigned char light);
+	unsigned char light_level(block_type type, block_face face, int x, int y, int z) const;
+	static float light_value(unsigned char level);
 	bool opaque_face_visible(int x, int y, int z, block_face face) const;
 	void update_face_indices(bool has_transparency, bool is_water);
 	void add_foliage_quad_indices();

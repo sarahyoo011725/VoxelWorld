@@ -5,6 +5,7 @@ layout (location = 1) in vec2 texture_coord;
 layout (location = 2) in vec3 vertex_normal;
 layout (location = 3) in vec2 vertex_tile_origin;
 layout (location = 4) in vec3 vertex_tint;
+layout (location = 5) in float vertex_light;
 
 uniform mat4 cam_matrix; //projection * view
 uniform vec3 cam_pos;
@@ -14,6 +15,7 @@ uniform float fog_end;
 out vec2 tex_coord;
 out vec2 tile_origin;
 out vec3 tint;
+out float block_light;
 out float fog_factor;
 out vec3 world_pos;
 out vec3 normal;
@@ -24,6 +26,7 @@ void main() {
 	tex_coord = texture_coord;
 	tile_origin = vertex_tile_origin;
 	tint = vertex_tint;
+	block_light = vertex_light;
 	world_pos = vertex_pos;
 	normal = vertex_normal;
 	float dist = distance(vertex_pos, cam_pos);

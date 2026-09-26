@@ -5,6 +5,7 @@ out vec4 FragColor;
 in vec2 tex_coord;
 in vec2 tile_origin;
 in vec3 tint;
+in float block_light; //how much daylight reaches the face, 0..1; above 1 the block glows on its own
 in float fog_factor;
 in vec3 world_pos;
 in vec3 normal;
@@ -57,6 +58,9 @@ void main() {
 	float diffuse = max(dot(n, -sun_direction), 0.0);
 	float light = ambient_strength + diffuse * diffuse_strength * (1.0 - shadow);
 
-	vec3 lit_color = tex_color.rgb * light * light_color;
-	FragColor = mix(vec4(fog_color, 1.0), vec4(lit_color, tex_color.a), fog_factor);
+	float sky = min(block_light, 1.0);
+	vec3 lit_color = tex_color.rgb * light * light_color * sky;
+	if (block_light > 1.0) lit_color = tex_color.rgb;
+	//fog is daylight too, so it darkens with the face instead of glowing through a cave
+	FragColor = mix(vec4(fog_color * sky, 1.0), vec4(lit_color, tex_color.a), fog_factor);
 }

@@ -17,6 +17,14 @@ const int chunk_height = 112;
 CarveResult generate_chunk_blocks(glm::ivec2 chunk_id, int width, int height, int length,
 	std::vector<Block>& blocks, std::vector<int>& heights, std::vector<biome_id>& biomes);
 
+/*
+	daylight reaching a cell at height y whose column's ground is at
+	column_height, in 16 steps: 15 in the open, fading with depth below the
+	ground. it reads only that one column, so chunks agree on it for free
+*/
+unsigned char daylight_level(int column_height, int y);
+const unsigned char emissive_level = 255;
+
 //the same without caves, for measuring what carving adds
 void fill_chunk_terrain(glm::ivec2 chunk_id, int width, int height, int length,
 	std::vector<Block>& blocks, std::vector<int>& heights, std::vector<biome_id>& biomes);
