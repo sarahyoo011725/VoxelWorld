@@ -308,6 +308,51 @@ int main(int argc, char** argv) {
 		terrain.update_chunks();
 	}
 
+	{
+		//mirrors GameScreen's shadow pass and Camera::update_light_space_matrix
+		const int resolution = 2048;
+		const float extent = 60.0f;
+		GLuint shadow_fbo, shadow_depth;
+		glGenFramebuffers(1, &shadow_fbo);
+		glGenTextures(1, &shadow_depth);
+		glBindTexture(GL_TEXTURE_2D, shadow_depth);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, resolution, resolution, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+		glBindFramebuffer(GL_FRAMEBUFFER, shadow_fbo);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_depth, 0);
+		glDrawBuffer(GL_NONE);
+		glReadBuffer(GL_NONE);
+
+		vec3 sun_direction = normalize(vec3(-0.4f, -0.8f, -0.3f));
+		vec3 eye = position + vec3(0, 1.6f, 0);
+		mat4 light_matrix = ortho(-extent, extent, -extent, extent, 1.0f, 300.0f)
+			* lookAt(eye - sun_direction * 150.0f, eye, vec3(0.0f, 1.0f, 0.0f));
+		double cpu = 0, gpu = 0, calls = 0, triangles = 0;
+		const int frames = 20;
+		for (int f = 0; f <= frames; ++f) {
+			terrain.update_chunks();
+			glViewport(0, 0, resolution, resolution);
+			glClear(GL_DEPTH_BUFFER_BIT);
+			sm.shadow_shader.activate();
+			sm.shadow_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, light_matrix);
+			sm.shadow_shader.set_uniform_1f("time", 0.0f);
+			draw_calls = drawn_indices = 0;
+			glBeginQuery(GL_TIME_ELAPSED, query);
+			double t = now_ms();
+			terrain.draw_shadow_casters(light_matrix);
+			double c = now_ms() - t;
+			glEndQuery(GL_TIME_ELAPSED);
+			GLuint64 ns = 0;
+			glGetQueryObjectui64v(query, GL_QUERY_RESULT, &ns);
+			if (f == 0) continue;
+			cpu += c; gpu += ns / 1e6; calls += draw_calls; triangles += drawn_indices / 3.0;
+		}
+		printf("\nshadow pass (%dx%d depth, redrawn every 3rd frame and every frame while chunks build)\n", resolution, resolution);
+		printf("  %.2f ms cpu, %.2f ms gpu | %.0f draw calls, %.0fk triangles\n",
+			cpu / frames, gpu / frames, calls / frames, triangles / frames / 1000.0);
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		glViewport(0, 0, 1200, 700);
+	}
+
 	printf("\nstreaming (walking east one chunk at a time, %.0f ms build budget)\n", 3.0f);
 	terrain.build_budget_ms = 3.0f;
 #ifdef _DEBUG
