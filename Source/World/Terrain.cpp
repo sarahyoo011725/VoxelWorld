@@ -340,26 +340,31 @@ void Terrain::draw(const mat4& view_projection) {
 	}
 	stats.chunks_drawn = (int)drawn.size();
 
+	//one distance sort serves both passes: nearest first for solid geometry,
+	//then walked backwards for the transparent pass
+	auto dist_sq = [this](Chunk* c) {
+		float dx = c->world_position.x + chunk_size / 2.0f - player_pos->x;
+		float dz = c->world_position.z + chunk_size / 2.0f - player_pos->z;
+		return dx * dx + dz * dz;
+	};
 	//one shader bind for the whole opaque pass instead of one per chunk
 	sm.default_shader.activate();
-	for (Chunk* c : drawn) {
-		c->draw_opaque_blocks();
+	if (!sort_opaque_front_to_back) {
+		for (Chunk* c : drawn) c->draw_opaque_blocks();
+	}
+	sort(drawn.begin(), drawn.end(), [&](Chunk* a, Chunk* b) {
+		return dist_sq(a) < dist_sq(b);
+	});
+	if (sort_opaque_front_to_back) {
+		for (Chunk* c : drawn) c->draw_opaque_blocks();
 	}
 
 	//alpha blending needs back-to-front order, or a nearer chunk's transparent
 	//faces can wrongly show through a farther chunk's water/leaves
-	sort(drawn.begin(), drawn.end(), [this](Chunk* a, Chunk* b) {
-		vec3 a_center = a->world_position + vec3(chunk_size / 2.0f, 0.0f, chunk_size / 2.0f);
-		vec3 b_center = b->world_position + vec3(chunk_size / 2.0f, 0.0f, chunk_size / 2.0f);
-		float a_dist = distance(vec2(a_center.x, a_center.z), vec2(player_pos->x, player_pos->z));
-		float b_dist = distance(vec2(b_center.x, b_center.z), vec2(player_pos->x, player_pos->z));
-		return a_dist > b_dist;
-	});
-
-	for (Chunk* c : drawn) {
-		c->draw_transparent_blocks();
-		c->draw_foliage();
-		c->draw_water();
+	for (auto it = drawn.rbegin(); it != drawn.rend(); ++it) {
+		(*it)->draw_transparent_blocks();
+		(*it)->draw_foliage();
+		(*it)->draw_water();
 	}
 
 	visible_chunks.clear();

@@ -39,6 +39,8 @@ public:
 	float mesh_cost_ms = 1.0f;
 	float upload_cost_ms = 0.3f;
 	bool occlusion_culling = true;
+	//draw solid chunks nearest first, so the depth test rejects hidden pixels before they are shaded
+	bool sort_opaque_front_to_back = true;
 	//sections lying wholly this far below a chunk's lowest ground cannot throw a shadow anyone sees
 	int shadow_bury_depth = 16;
 	PerfStats stats;
