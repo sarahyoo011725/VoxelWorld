@@ -73,7 +73,10 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 		}
 		chunk->set_block(local_coord, type);
 		if (chunk->has_built) {
-			chunk->should_rebuild = true;
+			//the player expects to see their own edit this frame; anything else, such as a
+			//tree from a newly generated neighbour, can wait for the budgeted build queue
+			if (player_edit) chunk->should_rebuild = true;
+			else chunk->needs_remesh = true;
 		}
 		if (player_edit) relight_around(chunk_id);
 	}
@@ -95,7 +98,8 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 		auto adj = chunks.find(adj_id);
 		if (adj != chunks.end()) {
 			adj->second.set_block(adj_local_coord, type);
-			adj->second.should_rebuild = true;
+			if (player_edit) adj->second.should_rebuild = true;
+			else adj->second.needs_remesh = true;
 		}
 		else {
 			unloaded_blocks[adj_id].push_back({ adj_local_coord, type });
@@ -116,7 +120,8 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 		auto adj = chunks.find(adj_id);
 		if (adj != chunks.end()) {
 			adj->second.set_block(adj_local_coord, type);
-			adj->second.should_rebuild = true;
+			if (player_edit) adj->second.should_rebuild = true;
+			else adj->second.needs_remesh = true;
 		}
 		else {
 			unloaded_blocks[adj_id].push_back({ adj_local_coord, type });
@@ -142,10 +147,10 @@ void ChunkManager::relight_around(ivec2 chunk_id) {
 		for (int dz = -1; dz <= 1; ++dz) {
 			Chunk* chunk = get_chunk(chunk_id + ivec2(dx, dz));
 			if (chunk == nullptr || !chunk->has_built) continue;
-			for (int ex = -1; ex <= 1 && !chunk->needs_relight; ++ex) {
-				for (int ez = -1; ez <= 1 && !chunk->needs_relight; ++ez) {
+			for (int ex = -1; ex <= 1 && !chunk->needs_remesh; ++ex) {
+				for (int ez = -1; ez <= 1 && !chunk->needs_remesh; ++ez) {
 					Chunk* n = get_chunk(chunk->id + ivec2(ex, ez));
-					if (n != nullptr && reaches_change(n)) chunk->needs_relight = true;
+					if (n != nullptr && reaches_change(n)) chunk->needs_remesh = true;
 				}
 			}
 		}

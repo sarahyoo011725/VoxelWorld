@@ -68,6 +68,10 @@ private:
 	vector<index_range> foliage_ranges;
 	void draw_sections(const vector<index_range>& ranges, uint32_t mask) const;
 
+	//what was uploaded. the vertex and index vectors are freed after upload, so drawing goes by these
+	size_t opaque_count = 0, transp_count = 0, water_count = 0, foliage_count = 0;
+	size_t uploaded_vertices = 0, uploaded_bytes = 0;
+
 	vector<Block> blocks;
 	vector<int> height_map;
 	//one biome per column, not per block - biome is a 2D property, so resolving
@@ -111,8 +115,9 @@ public:
 	bool has_cave_opening = false;
 	//glowing blocks this chunk owns, in local coords. neighbours read them to light across the border
 	vector<ivec3> emitters;
-	//light from a neighbour changed, so the mesh needs rebuilding; the old mesh keeps drawing until then
-	bool needs_relight = false;
+	//the mesh is stale (a neighbour's light or a spawned structure changed it) and is rebuilt when the
+	//per-frame build budget allows; the old mesh keeps drawing until then
+	bool needs_remesh = false;
 	vec3 world_position = vec3(0.0f);
 	ivec2 id = ivec2(0);
 

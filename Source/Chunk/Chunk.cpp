@@ -106,6 +106,25 @@ void Chunk::update_buffers_data() {
 	water_ebo.reset_indices(water_indices.data(), sizeof(GLuint) * water_indices.size(), GL_STATIC_DRAW);
 	foliage_vbo.reset_vertices(foliage_vertices.data(), sizeof(foliage_vertex) * foliage_vertices.size(), GL_STATIC_DRAW);
 	foliage_ebo.reset_indices(foliage_indices.data(), sizeof(GLuint) * foliage_indices.size(), GL_STATIC_DRAW);
+
+	opaque_count = opaque_indices.size();
+	transp_count = transp_indices.size();
+	water_count = water_indices.size();
+	foliage_count = foliage_indices.size();
+	uploaded_vertices = opaque_vertices.size() + transp_vertices.size() + water_vertices.size() + foliage_vertices.size();
+	uploaded_bytes = (opaque_vertices.size() + transp_vertices.size() + water_vertices.size()) * sizeof(vertex)
+		+ foliage_vertices.size() * sizeof(foliage_vertex)
+		+ (opaque_count + transp_count + water_count + foliage_count) * sizeof(GLuint);
+
+	//the GPU has its own copy now, and the next rebuild starts from nothing, so the CPU one is dead weight
+	vector<vertex>().swap(opaque_vertices);
+	vector<GLuint>().swap(opaque_indices);
+	vector<vertex>().swap(transp_vertices);
+	vector<GLuint>().swap(transp_indices);
+	vector<vertex>().swap(water_vertices);
+	vector<GLuint>().swap(water_indices);
+	vector<foliage_vertex>().swap(foliage_vertices);
+	vector<GLuint>().swap(foliage_indices);
 }
 
 /*
@@ -113,7 +132,7 @@ void Chunk::update_buffers_data() {
 	Opaque objects must be drawn before transparent objects 
 */
 void Chunk::draw_opaque_blocks() {
-	if (opaque_indices.empty()) return;
+	if (opaque_count == 0) return;
 	//the shader is activated once by the caller for the whole pass, not per chunk
 	opaque_vao.bind();
 	opaque_ebo.bind();
@@ -125,7 +144,7 @@ void Chunk::draw_opaque_blocks() {
 	Transparent objects must be drawn after opaque objects
 */
 void Chunk::draw_transparent_blocks() {
-	if (transp_indices.empty()) return;
+	if (transp_count == 0) return;
 	sm.default_shader.activate();
 	transp_vao.bind();
 	transp_ebo.bind();
@@ -133,7 +152,7 @@ void Chunk::draw_transparent_blocks() {
 }
 
 void Chunk::draw_water() {
-	if (water_indices.empty()) return;
+	if (water_count == 0) return;
 	sm.wave_shader.activate();
 	water_vao.bind();
 	water_ebo.bind();
@@ -141,7 +160,7 @@ void Chunk::draw_water() {
 }
 
 void Chunk::draw_foliage() {
-	if (foliage_indices.empty()) return;
+	if (foliage_count == 0) return;
 	sm.foliage_shader.activate();
 	foliage_vao.bind();
 	foliage_ebo.bind();
@@ -151,14 +170,14 @@ void Chunk::draw_foliage() {
 //depth-only draws for the shadow map pass - the shadow shader is activated
 //once by the caller, not per chunk, so these don't switch shaders themselves
 void Chunk::draw_opaque_depth() {
-	if (opaque_indices.empty()) return;
+	if (opaque_count == 0) return;
 	opaque_vao.bind();
 	opaque_ebo.bind();
 	draw_sections(opaque_ranges, shadow_sections);
 }
 
 void Chunk::draw_foliage_depth() {
-	if (foliage_indices.empty()) return;
+	if (foliage_count == 0) return;
 	foliage_vao.bind();
 	foliage_ebo.bind();
 	draw_sections(foliage_ranges, shadow_sections);
@@ -621,7 +640,7 @@ void Chunk::build_mesh() {
 		}
 	}
 	has_block_light = compute_block_light(around, width, height, length, block_light);
-	needs_relight = false;
+	needs_remesh = false;
 
 	opaque_ranges.assign(section_count, {});
 	transp_ranges.assign(section_count, {});
@@ -654,6 +673,8 @@ void Chunk::build_mesh() {
 			? all_links
 			: compute_section_links(blocks, width, height, length, y_lo);
 	}
+	vector<unsigned char>().swap(block_light);
+	has_block_light = false;
 	mesh_ready = true;
 }
 
@@ -716,10 +737,9 @@ void Chunk::build_block_faces(int y_lo, int y_hi) {
 
 Chunk::MeshStats Chunk::mesh_stats() const {
 	MeshStats stats;
-	stats.vertices = opaque_vertices.size() + transp_vertices.size() + water_vertices.size() + foliage_vertices.size();
-	stats.indices = opaque_indices.size() + transp_indices.size() + water_indices.size() + foliage_indices.size();
-	stats.gpu_bytes = (opaque_vertices.size() + transp_vertices.size() + water_vertices.size()) * sizeof(vertex)
-		+ foliage_vertices.size() * sizeof(foliage_vertex) + stats.indices * sizeof(GLuint);
+	stats.vertices = uploaded_vertices;
+	stats.indices = opaque_count + transp_count + water_count + foliage_count;
+	stats.gpu_bytes = uploaded_bytes;
 	stats.cpu_bytes = (opaque_vertices.capacity() + transp_vertices.capacity() + water_vertices.capacity()) * sizeof(vertex)
 		+ foliage_vertices.capacity() * sizeof(foliage_vertex)
 		+ (opaque_indices.capacity() + transp_indices.capacity() + water_indices.capacity() + foliage_indices.capacity()) * sizeof(GLuint)

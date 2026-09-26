@@ -35,6 +35,9 @@ public:
 	//border doesn't repeatedly discard and regenerate the same chunks
 	int keep_dist = 12;
 	float build_budget_ms = 3.0f; //per-frame ceiling on new chunk building
+	//recent cost of meshing one chunk on one thread and of uploading one, used to size each frame's batch
+	float mesh_cost_ms = 1.0f;
+	float upload_cost_ms = 0.3f;
 	bool occlusion_culling = true;
 	//sections lying wholly this far below a chunk's lowest ground cannot throw a shadow anyone sees
 	int shadow_bury_depth = 16;

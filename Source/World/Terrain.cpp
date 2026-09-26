@@ -64,6 +64,23 @@ void Terrain::update_chunks() {
 		cm.relight_around(chunk->id);
 	}
 
+	/*
+		structures go in as soon as their chunks exist, all of them at once and
+		serially: spawn_tree writes through ChunkManager into neighbouring chunks,
+		so it is neither thread-safe nor confined to one chunk. placing them all
+		before any is meshed means a tree reaching into another new chunk is there
+		when that chunk is built, and an already-built neighbour is flagged once
+		rather than once for every new chunk next to it.
+	*/
+	auto structures_start = chrono::steady_clock::now();
+	for (Chunk* chunk : new_chunks) {
+		spawn_structures(chunk);
+		//after structures, never before: a regenerated tree would otherwise
+		//overwrite a block the player had already broken
+		restore_player_edits(chunk);
+	}
+	stats.structures_ms = chrono::duration<float, milli>(chrono::steady_clock::now() - structures_start).count();
+
 	//rebuilds come from the player breaking/placing a block, so they run
 	//immediately - deferring them would show a stale chunk for a frame
 	auto rebuild_start = chrono::steady_clock::now();
@@ -148,7 +165,7 @@ void Terrain::build_pending_chunks() {
 	//relighting shares the budget and the worker threads with new chunks
 	vector<Chunk*> pending;
 	for (Chunk* c : visible_chunks) {
-		if (!c->has_built || c->needs_relight) pending.push_back(c);
+		if (!c->has_built || c->needs_remesh) pending.push_back(c);
 	}
 	stats.chunks_pending = (int)pending.size();
 	if (pending.empty()) return;
@@ -165,26 +182,17 @@ void Terrain::build_pending_chunks() {
 
 	auto start = chrono::steady_clock::now();
 
-	/*
-		structures run first for the whole batch, and serially: spawn_tree writes
-		through ChunkManager into neighbouring chunks, so it is neither
-		thread-safe nor confined to the chunk being built. doing the whole batch
-		up front also means a tree crossing into another chunk of the same batch
-		lands before that chunk is meshed, instead of forcing it to rebuild.
-		the budget is checked after each one, so at least one always progresses.
-	*/
+	//meshing runs one chunk per thread at a time while uploads queue up on this one,
+	//so the batch grows until that predicted cost would overrun the budget.
+	//at least one chunk always goes, so the queue keeps moving on a slow machine
+	const int threads = (int)std::max(1u, thread::hardware_concurrency());
+	auto predicted_ms = [&](int n) {
+		return ((n + threads - 1) / threads) * mesh_cost_ms + n * upload_cost_ms;
+	};
 	vector<Chunk*> batch;
 	for (Chunk* c : pending) {
-		if (!c->has_built) {
-			spawn_structures(c);
-			//after structures, never before: a regenerated tree would otherwise
-			//overwrite a block the player had already broken
-			restore_player_edits(c);
-		}
+		if (!batch.empty() && predicted_ms((int)batch.size() + 1) > build_budget_ms) break;
 		batch.push_back(c);
-
-		float elapsed_ms = chrono::duration<float, milli>(chrono::steady_clock::now() - start).count();
-		if (elapsed_ms >= build_budget_ms) break;
 	}
 
 	//meshing only reads its own chunk's blocks and writes its own vertex
@@ -192,11 +200,19 @@ void Terrain::build_pending_chunks() {
 	pool.parallel_for((int)batch.size(), [&batch](int i) {
 		batch[i]->build_mesh();
 	});
+	auto upload_start = chrono::steady_clock::now();
 
 	//uploads touch GL, so they stay on this thread
 	for (Chunk* c : batch) {
 		c->upload_mesh();
 	}
+	auto end = chrono::steady_clock::now();
+
+	int rounds = ((int)batch.size() + threads - 1) / threads;
+	float mesh_ms = chrono::duration<float, milli>(upload_start - start).count() / rounds;
+	float upload_ms = chrono::duration<float, milli>(end - upload_start).count() / batch.size();
+	mesh_cost_ms = mesh_cost_ms * 0.7f + mesh_ms * 0.3f;
+	upload_cost_ms = upload_cost_ms * 0.7f + upload_ms * 0.3f;
 
 	stats.chunks_built = (int)batch.size();
 	stats.chunk_build_ms = chrono::duration<float, milli>(chrono::steady_clock::now() - start).count();
