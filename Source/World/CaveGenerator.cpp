@@ -1,4 +1,5 @@
 #include "CaveGenerator.h"
+#include "World/WorldRandom.h"
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -13,16 +14,239 @@ namespace {
 
 	//terrain fill only ever places ground, water and bedrock, so this is all that separates rock from the rest
 	bool carvable(block_type type) {
-		return type != none && type != water && type != bedrock;
+		return type != none && !is_liquid(type) && type != bedrock;
 	}
 
 	//1 well below a ceiling, falling to 0.25 at it, so tunnels meet their roof in an arch instead of a flat cut
 	float ceiling_taper(int y, int roof) {
 		return glm::clamp((roof - y + 1) / 4.0f, 0.0f, 1.0f);
 	}
+
+	const uint32_t worm_salt = 0x3A11E;
+	const uint32_t decoration_salt = 0xDEC0;
+
+	/*
+		the chunk being carved. original holds each carved block's type before
+		carving (0 where untouched) and carved lists those blocks, so later passes
+		visit only cave space instead of the whole chunk
+	*/
+	struct carve_space {
+		vector<Block>& blocks;
+		vector<unsigned char>& original;
+		vector<size_t>& carved;
+		const vector<int>& roof;
+		int origin_x, origin_z, width, height, length;
+		int floor_y;
+
+		size_t index(int x, int y, int z) const { return ((size_t)x * height + y) * length + z; }
+
+		void carve_at(size_t i) {
+			if (!carvable(blocks[i].type)) return;
+			original[i] = (unsigned char)blocks[i].type;
+			blocks[i].type = none;
+			carved.push_back(i);
+		}
+
+		void coords(size_t i, int& x, int& y, int& z) const {
+			x = (int)(i / ((size_t)height * length));
+			y = (int)((i / length) % height);
+			z = (int)(i % length);
+		}
+	};
+
+	float unit(WorldRandom& rng) {
+		return (rng.next() >> 8) * (1.0f / 16777216.0f);
+	}
+
+	/*
+		each worm is simulated from its start every time, drawing the same random
+		sequence, so every chunk it passes through carves the identical path and
+		the tunnel lines up across chunk borders
+	*/
+	void carve_worms(const CaveConfig& cfg, int seed, carve_space& s) {
+		if (cfg.worm_chance <= 0.0f || cfg.worm_cell_size <= 0) return;
+		const int cell = cfg.worm_cell_size;
+		const int reach = cfg.worm_max_length + (int)cfg.worm_max_radius + 2;
+		int gx0 = floor_div(s.origin_x - reach, cell), gx1 = floor_div(s.origin_x + s.width + reach, cell);
+		int gz0 = floor_div(s.origin_z - reach, cell), gz1 = floor_div(s.origin_z + s.length + reach, cell);
+
+		for (int gx = gx0; gx <= gx1; ++gx) {
+			for (int gz = gz0; gz <= gz1; ++gz) {
+				WorldRandom rng(seed, gx, gz, worm_salt);
+				if (unit(rng) >= cfg.worm_chance) continue;
+
+				glm::vec3 p(gx * cell + unit(rng) * cell,
+					cfg.worm_min_y + unit(rng) * (cfg.worm_max_y - cfg.worm_min_y),
+					gz * cell + unit(rng) * cell);
+				float yaw = unit(rng) * 6.2831853f;
+				float pitch = (unit(rng) - 0.5f) * 0.4f;
+				float yaw_turn = 0.0f, pitch_turn = 0.0f;
+				int length = cfg.worm_min_length + (int)(unit(rng) * (cfg.worm_max_length - cfg.worm_min_length));
+				float radius = cfg.worm_min_radius + unit(rng) * (cfg.worm_max_radius - cfg.worm_min_radius);
+				float phase = unit(rng) * 6.2831853f;
+
+				//a worm can end up no further than its length from where it starts
+				float gap_x = std::max({ 0.0f, s.origin_x - p.x, p.x - (s.origin_x + s.width) });
+				float gap_z = std::max({ 0.0f, s.origin_z - p.z, p.z - (s.origin_z + s.length) });
+				float limit = length + radius + 1.0f;
+				if (gap_x * gap_x + gap_z * gap_z > limit * limit) continue;
+
+				for (int step = 0; step < length; ++step) {
+					p += glm::vec3(cos(yaw) * cos(pitch), sin(pitch), sin(yaw) * cos(pitch));
+					yaw_turn = yaw_turn * 0.8f + (unit(rng) - 0.5f) * 0.25f;
+					pitch_turn = pitch_turn * 0.8f + (unit(rng) - 0.5f) * 0.1f;
+					yaw += yaw_turn;
+					pitch = glm::clamp(pitch * 0.9f + pitch_turn, -0.6f, 0.6f);
+
+					//swells and narrows along its length, and tapers shut at both ends
+					float ends = std::min(1.0f, std::min(step, length - step) / 10.0f + 0.3f);
+					float r = radius * (0.8f + 0.2f * sin(step * 0.09f + phase)) * ends;
+
+					int x_lo = std::max(0, (int)floor(p.x - r) - s.origin_x), x_hi = std::min(s.width - 1, (int)ceil(p.x + r) - s.origin_x);
+					int z_lo = std::max(0, (int)floor(p.z - r) - s.origin_z), z_hi = std::min(s.length - 1, (int)ceil(p.z + r) - s.origin_z);
+					if (x_lo > x_hi || z_lo > z_hi) continue;
+					int y_lo = std::max(s.floor_y + 1, (int)floor(p.y - r)), y_hi = std::min(s.height - 1, (int)ceil(p.y + r));
+
+					for (int x = x_lo; x <= x_hi; ++x) {
+						float dx = s.origin_x + x - p.x;
+						for (int z = z_lo; z <= z_hi; ++z) {
+							float dz = s.origin_z + z - p.z;
+							int roof = s.roof[(size_t)x * s.length + z];
+							for (int y = y_lo; y <= std::min(y_hi, roof); ++y) {
+								float dy = y - p.y;
+								if (dx * dx + dy * dy + dz * dz <= r * r * ceiling_taper(y, roof)) s.carve_at(s.index(x, y, z));
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	/*
+		fills back any cave region too small to explore. a region within two
+		columns of the edge may continue next door, or show up in a neighbour's
+		border copy, so it is kept; anything removed is then invisible to every
+		other chunk and all of them agree on it.
+	*/
+	void remove_small_pockets(int min_size, carve_space& s) {
+		if (min_size <= 1) return;
+		//block types fit in 7 bits, so the top bit of original marks cells already visited
+		const unsigned char visited = 0x80;
+		thread_local vector<size_t> region, stack;
+		const int d[6][3] = { {-1,0,0},{1,0,0},{0,-1,0},{0,1,0},{0,0,-1},{0,0,1} };
+
+		for (size_t start : s.carved) {
+			if (!s.original[start] || (s.original[start] & visited)) continue;
+			region.clear();
+			stack.clear();
+			stack.push_back(start);
+			s.original[start] |= visited;
+			bool reaches_edge = false;
+			while (!stack.empty()) {
+				size_t c = stack.back();
+				stack.pop_back();
+				region.push_back(c);
+				int x, y, z;
+				s.coords(c, x, y, z);
+				if (x <= 1 || z <= 1 || x >= s.width - 2 || z >= s.length - 2) reaches_edge = true;
+				for (const auto& o : d) {
+					int nx = x + o[0], ny = y + o[1], nz = z + o[2];
+					if (nx < 0 || ny < 0 || nz < 0 || nx >= s.width || ny >= s.height || nz >= s.length) continue;
+					size_t n = s.index(nx, ny, nz);
+					if (s.original[n] && !(s.original[n] & visited)) {
+						s.original[n] |= visited;
+						stack.push_back(n);
+					}
+				}
+			}
+			if (reaches_edge || (int)region.size() >= min_size) continue;
+			for (size_t c : region) {
+				s.blocks[c].type = (block_type)(s.original[c] & ~visited);
+				s.original[c] = 0;
+			}
+		}
+		for (size_t c : s.carved) s.original[c] &= (unsigned char)~visited;
+	}
+
+	struct ore_rule {
+		block_type type;
+		int max_y;
+		float vein_chance; //share of 4x4x4 patches below max_y that hold this ore
+	};
+
+	//rarest first, so a patch that qualifies for several ores gets the rarer one
+	const ore_rule ore_rules[] = {
+		{ diamond_ore, 12, 0.03f },
+		{ gold_ore, 22, 0.05f },
+		{ redstone_ore, 16, 0.07f },
+		{ iron_ore, 40, 0.10f },
+		{ coal_ore, 70, 0.14f },
+	};
+
+	//one generator per 4x4x4 patch, so every block in a patch draws the same rolls and decoration comes in clusters
+	WorldRandom patch_random(int seed, int x, int y, int z) {
+		return WorldRandom(seed, floor_div(x, 4), floor_div(z, 4), decoration_salt ^ ((uint32_t)floor_div(y, 4) * 0x9E3779B9u));
+	}
+
+	/*
+		turns rock bordering the caves into ore, gravel and moss. each block's
+		outcome depends only on its world position and which of its sides are
+		open, so it is the same whichever chunk decides it
+	*/
+	void decorate(const CaveConfig& cfg, int seed, carve_space& s) {
+		thread_local vector<unsigned char> queued;
+		thread_local vector<size_t> candidates;
+		if (queued.size() != s.blocks.size()) queued.assign(s.blocks.size(), 0);
+		candidates.clear();
+
+		auto is_cave = [&](size_t i) { return s.original[i] != 0; };
+		const int d[6][3] = { {-1,0,0},{1,0,0},{0,-1,0},{0,1,0},{0,0,-1},{0,0,1} };
+		for (size_t c : s.carved) {
+			if (!is_cave(c)) continue;
+			int x, y, z;
+			s.coords(c, x, y, z);
+			for (const auto& o : d) {
+				int nx = x + o[0], ny = y + o[1], nz = z + o[2];
+				if (nx < 0 || ny < 0 || nz < 0 || nx >= s.width || ny >= s.height || nz >= s.length) continue;
+				size_t n = s.index(nx, ny, nz);
+				if (queued[n] || s.blocks[n].type != stone) continue;
+				queued[n] = 1;
+				candidates.push_back(n);
+			}
+		}
+
+		for (size_t i : candidates) {
+			queued[i] = 0;
+			int x, y, z;
+			s.coords(i, x, y, z);
+			int wx = s.origin_x + x, wz = s.origin_z + z;
+			bool is_floor = y + 1 < s.height && is_cave(i + s.length);
+
+			//the patch's rolls come in a fixed order: one per ore, then gravel, then moss
+			WorldRandom patch = patch_random(seed, wx, y, wz);
+			block_type result = stone;
+			for (const ore_rule& ore : ore_rules) {
+				float roll = unit(patch);
+				if (result != stone || y > ore.max_y || roll >= ore.vein_chance * cfg.ore_density) continue;
+				WorldRandom block_rng(seed, wx, wz, decoration_salt ^ ((uint32_t)y * 0x85EBCA6Bu));
+				result = unit(block_rng) < 0.6f ? ore.type : none;
+			}
+			float gravel_roll = unit(patch), moss_roll = unit(patch);
+			if (result == none) result = stone;
+			else if (result == stone && is_floor) {
+				if (gravel_roll < cfg.gravel_chance) result = gravel;
+			}
+			else if (result == stone) {
+				float chance = y <= cfg.liquid_level + 4 ? cfg.moss_chance_near_liquid : cfg.moss_chance;
+				if (moss_roll < chance) result = mossy_stone;
+			}
+			s.blocks[i].type = result;
+		}
+	}
 }
 
-CaveGenerator::CaveGenerator(int world_seed, int sea, const CaveConfig& cfg) : config(cfg), sea_level(sea) {
+CaveGenerator::CaveGenerator(int seed, int sea, const CaveConfig& cfg) : config(cfg), world_seed(seed), sea_level(sea) {
 	tunnel_noise_a.SetSeed(world_seed + 101);
 	tunnel_noise_a.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 	tunnel_noise_a.SetFrequency(config.tunnel_frequency);
@@ -40,12 +264,17 @@ CaveGenerator::CaveGenerator(int world_seed, int sea, const CaveConfig& cfg) : c
 	entrance_noise.SetSeed(world_seed + 104);
 	entrance_noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
 	entrance_noise.SetFrequency(config.entrance_frequency);
+
+	lava_noise.SetSeed(world_seed + 105);
+	lava_noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+	lava_noise.SetFrequency(config.lava_frequency);
 }
 
-void CaveGenerator::carve(vector<Block>& blocks, const vector<int>& heights,
+CarveResult CaveGenerator::carve(vector<Block>& blocks, const vector<int>& heights,
 	int origin_x, int origin_z, int width, int height, int length,
 	const TerrainGenerator& terrain) const {
-	if (!config.enabled) return;
+	CarveResult result;
+	if (!config.enabled) return result;
 
 	auto height_at = [&](int x, int z) {
 		if (x >= 0 && x < width && z >= 0 && z < length) return heights[(size_t)x * length + z];
@@ -85,7 +314,12 @@ void CaveGenerator::carve(vector<Block>& blocks, const vector<int>& heights,
 			y_hi = std::max(y_hi, top[i]);
 		}
 	}
-	if (y_hi < y_lo) return;
+	if (y_hi < y_lo) return result;
+
+	thread_local vector<unsigned char> original;
+	thread_local vector<size_t> carved;
+	original.assign(blocks.size(), 0);
+	carved.clear();
 
 	int gx0 = floor_div(origin_x, cell);
 	int gz0 = floor_div(origin_z, cell);
@@ -226,11 +460,38 @@ void CaveGenerator::carve(vector<Block>& blocks, const vector<int>& heights,
 						carve = vc > cavern_threshold_of[y] + (1.0f - ceiling_taper(y, col_cavern_roof)) * cavern_taper_strength;
 					}
 
-					if (carve) type = none;
+					if (carve) {
+						size_t index = ((size_t)x * height + y) * length + z;
+						original[index] = (unsigned char)type;
+						carved.push_back(index);
+						type = none;
+						if (y == heights[i]) result.opened_surface = true;
+					}
 				}
 			}
 		}
 	}
+
+	carve_space space{ blocks, original, carved, roof, origin_x, origin_z, width, height, length, config.floor_y };
+	carve_worms(config, world_seed, space);
+	remove_small_pockets(config.min_pocket_size, space);
+
+	for (int x = 0; x < width; ++x) {
+		for (int z = 0; z < length; ++z) {
+			block_type liquid = none;
+			for (int y = config.floor_y + 1; y <= config.liquid_level && y < height; ++y) {
+				size_t i = space.index(x, y, z);
+				if (!original[i]) continue;
+				if (liquid == none) {
+					liquid = lava_noise.GetNoise((float)(origin_x + x), (float)(origin_z + z)) > config.lava_threshold ? lava : water;
+				}
+				blocks[i].type = liquid;
+			}
+		}
+	}
+
+	decorate(config, world_seed, space);
+	return result;
 }
 
 namespace {
