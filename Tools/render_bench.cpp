@@ -499,6 +499,18 @@ int main(int argc, char** argv) {
 		timed("crosshair", [&] { renderer.draw_HUDs(); });
 		timed("hotbar", [&] { renderer.draw_hotbar(inventory); });
 		timed("F3 overlay", [&] { renderer.draw_perf_overlay(terrain.stats); });
+		{
+			renderer.bind_fbo();
+			glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			renderer.draw_perf_overlay(terrain.stats);
+			vector<unsigned char> pixels(1200 * 700 * 3);
+			glPixelStorei(GL_PACK_ALIGNMENT, 1);
+			glReadPixels(0, 0, 1200, 700, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
+			ofstream file("bench_overlay.ppm", ios::binary);
+			file << "P6\n1200 700\n255\n";
+			for (int y = 699; y >= 0; --y) file.write(reinterpret_cast<const char*>(&pixels[(size_t)y * 1200 * 3]), 1200 * 3);
+		}
 		timed("post-process to screen", [&] {
 			renderer.unbind_fbo();
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
