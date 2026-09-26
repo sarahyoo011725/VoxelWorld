@@ -305,18 +305,24 @@ int main(int argc, char** argv) {
 	printf("  total: %.1f MB GPU, %.1f MB RAM\n", total.gpu_bytes / 1048576.0, total.cpu_bytes / 1048576.0);
 
 	{
+		//best of several passes, since other work on the machine only ever adds time
 		const int N = std::min<int>(80, (int)loaded.size());
-		double mesh_ms = 0, upload_ms = 0;
-		for (int i = 0; i < N; ++i) {
-			double a = now_ms();
-			loaded[i]->build_mesh();
-			double b = now_ms();
-			loaded[i]->upload_mesh();
-			glFinish();
-			mesh_ms += b - a;
-			upload_ms += now_ms() - b;
+		double best_mesh = 1e9, best_upload = 1e9;
+		for (int pass = 0; pass < 5; ++pass) {
+			double mesh_ms = 0, upload_ms = 0;
+			for (int i = 0; i < N; ++i) {
+				double a = now_ms();
+				loaded[i]->build_mesh();
+				double b = now_ms();
+				loaded[i]->upload_mesh();
+				glFinish();
+				mesh_ms += b - a;
+				upload_ms += now_ms() - b;
+			}
+			best_mesh = std::min(best_mesh, mesh_ms / N);
+			best_upload = std::min(best_upload, upload_ms / N);
 		}
-		printf("  build_mesh %.3f ms per chunk (single thread), upload %.3f ms per chunk\n", mesh_ms / N, upload_ms / N);
+		printf("  build_mesh %.3f ms per chunk (single thread, best of 5), upload %.3f ms per chunk\n", best_mesh, best_upload);
 	}
 
 	printf("\nframe cost (4 directions, 1200x700, shadows excluded)\n");
