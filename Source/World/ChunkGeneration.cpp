@@ -5,11 +5,11 @@
 
 static const uint32_t bedrock_salt = 0xBED0;
 
-void generate_chunk_blocks(glm::ivec2 chunk_id, int width, int height, int length,
+CarveResult generate_chunk_blocks(glm::ivec2 chunk_id, int width, int height, int length,
 	std::vector<Block>& blocks, std::vector<int>& heights, std::vector<biome_id>& biomes) {
 	fill_chunk_terrain(chunk_id, width, height, length, blocks, heights, biomes);
 	const int chunk_width = width - 2;
-	get_cave_generator().carve(blocks, heights, chunk_id.x * chunk_width - 1, chunk_id.y * chunk_width - 1,
+	return get_cave_generator().carve(blocks, heights, chunk_id.x * chunk_width - 1, chunk_id.y * chunk_width - 1,
 		width, height, length, get_terrain_generator());
 }
 

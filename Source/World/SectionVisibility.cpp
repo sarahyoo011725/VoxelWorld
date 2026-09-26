@@ -8,65 +8,67 @@ section_links compute_section_links(const vector<Block>& blocks, int width, int 
 	const int sy = std::min(section_size, height - y0);
 	if (sy <= 0) return all_links;
 
-	auto block_at = [&](int x, int y, int z) {
-		return blocks[((size_t)(x + 1) * height + (y0 + y)) * length + (z + 1)].type;
-	};
-
-	int open = 0;
-	for (int x = 0; x < sx; ++x)
-		for (int y = 0; y < sy; ++y)
-			for (int z = 0; z < sz; ++z)
-				if (is_see_through(block_at(x, y, z))) ++open;
-	if (open == 0) return 0;
-	if (open == sx * sy * sz) return all_links;
-
-	thread_local vector<unsigned char> seen;
+	/*
+		the section plus a one-cell shell. shell cells hold the face they lie on,
+		so the fill learns which faces a region reaches without any bounds checks
+	*/
+	enum : unsigned char { solid = 0, open = 1, filled = 2, shell = 0x10 };
+	const int px = sx + 2, py = sy + 2, pz = sz + 2;
+	const int step_x = py * pz, step_y = pz;
+	thread_local vector<unsigned char> cells;
 	thread_local vector<int> stack;
-	seen.assign((size_t)sx * sy * sz, 0);
-	auto cell = [&](int x, int y, int z) { return (x * sy + y) * sz + z; };
+	cells.assign((size_t)px * py * pz, solid);
 
-	section_links links = 0;
-	for (int ix = 0; ix < sx; ++ix) {
-		for (int iy = 0; iy < sy; ++iy) {
-			for (int iz = 0; iz < sz; ++iz) {
-				int start = cell(ix, iy, iz);
-				if (seen[start] || !is_see_through(block_at(ix, iy, iz))) continue;
-
-				unsigned touched = 0;
-				seen[start] = 1;
-				stack.clear();
-				stack.push_back(start);
-				while (!stack.empty()) {
-					int c = stack.back();
-					stack.pop_back();
-					int x = c / (sy * sz), y = (c / sz) % sy, z = c % sz;
-					if (x == 0) touched |= 1u << face_neg_x;
-					if (x == sx - 1) touched |= 1u << face_pos_x;
-					if (y == 0) touched |= 1u << face_neg_y;
-					if (y == sy - 1) touched |= 1u << face_pos_y;
-					if (z == 0) touched |= 1u << face_neg_z;
-					if (z == sz - 1) touched |= 1u << face_pos_z;
-
-					const int step[6][3] = { {-1,0,0},{1,0,0},{0,-1,0},{0,1,0},{0,0,-1},{0,0,1} };
-					for (const auto& d : step) {
-						int nx = x + d[0], ny = y + d[1], nz = z + d[2];
-						if (nx < 0 || ny < 0 || nz < 0 || nx >= sx || ny >= sy || nz >= sz) continue;
-						int n = cell(nx, ny, nz);
-						if (seen[n] || !is_see_through(block_at(nx, ny, nz))) continue;
-						seen[n] = 1;
-						stack.push_back(n);
-					}
+	int open_count = 0;
+	for (int x = 0; x < px; ++x) {
+		for (int y = 0; y < py; ++y) {
+			for (int z = 0; z < pz; ++z) {
+				unsigned char& c = cells[(size_t)x * step_x + y * step_y + z];
+				if (x == 0) c = shell | face_neg_x;
+				else if (x == px - 1) c = shell | face_pos_x;
+				else if (y == 0) c = shell | face_neg_y;
+				else if (y == py - 1) c = shell | face_pos_y;
+				else if (z == 0) c = shell | face_neg_z;
+				else if (z == pz - 1) c = shell | face_pos_z;
+				else if (is_see_through(blocks[((size_t)x * height + (y0 + y - 1)) * length + z].type)) {
+					c = open;
+					++open_count;
 				}
-
-				for (int a = 0; a < 6; ++a) {
-					if (!(touched & (1u << a))) continue;
-					for (int b = 0; b < 6; ++b) {
-						if (touched & (1u << b)) links |= 1ull << (a * 6 + b);
-					}
-				}
-				if (links == all_links) return links;
 			}
 		}
+	}
+	if (open_count == 0) return 0;
+	if (open_count == sx * sy * sz) return all_links;
+
+	const int offsets[6] = { -step_x, step_x, -step_y, step_y, -1, 1 };
+	section_links links = 0;
+	for (int start = 0; start < px * py * pz; ++start) {
+		if (cells[start] != open) continue;
+
+		unsigned touched = 0;
+		cells[start] = filled;
+		stack.clear();
+		stack.push_back(start);
+		while (!stack.empty()) {
+			int c = stack.back();
+			stack.pop_back();
+			for (int offset : offsets) {
+				int n = c + offset;
+				unsigned char v = cells[n];
+				if (v == open) {
+					cells[n] = filled;
+					stack.push_back(n);
+				}
+				else if (v & shell) {
+					touched |= 1u << (v & 7);
+				}
+			}
+		}
+
+		for (int f = 0; f < 6; ++f) {
+			if (touched & (1u << f)) links |= (section_links)touched << (f * 6);
+		}
+		if (links == all_links) return links;
 	}
 	return links;
 }

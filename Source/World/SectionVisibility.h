@@ -34,9 +34,10 @@ inline bool faces_linked(section_links links, int a, int b) {
 	return (links >> (a * 6 + b)) & 1ull;
 }
 
-//water, glass and plants are looked through; leaves are opaque tiles, so they occlude
+//water, glass and plants are looked through. leaves are opaque tiles, but they
+//sway and open gaps between them, so they are not trusted to hide anything
 inline bool is_see_through(block_type type) {
-	return type == none || has_transparency(type);
+	return type == none || has_transparency(type) || is_foliage(type);
 }
 
 /*

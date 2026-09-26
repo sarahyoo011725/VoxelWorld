@@ -100,6 +100,8 @@ public:
 	uint32_t shadow_sections = ~0u;
 	//lowest ground across the chunk and its border, for telling buried sections apart
 	int lowest_surface_y = 0;
+	//a cave opens to the sky here, so sunlight can reach below the ground
+	bool has_cave_opening = false;
 	vec3 world_position = vec3(0.0f);
 	ivec2 id = ivec2(0);
 

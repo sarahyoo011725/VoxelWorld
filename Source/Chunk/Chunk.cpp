@@ -72,7 +72,7 @@ Chunk::~Chunk() {
 void Chunk::generate_terrain() {
 	if (has_generated) return;
 
-	generate_chunk_blocks(id, width, height, length, blocks, height_map, biome_map);
+	has_cave_opening = generate_chunk_blocks(id, width, height, length, blocks, height_map, biome_map).opened_surface;
 
 	//water fills to water_level even where the ground is lower, so the top of
 	//the terrain alone is not the top of the solid geometry

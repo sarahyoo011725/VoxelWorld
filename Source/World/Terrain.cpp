@@ -199,7 +199,7 @@ void Terrain::draw_shadow_casters(const mat4& light_space_matrix) {
 	for (Chunk* c : visible_chunks) {
 		if (!is_chunk_visible(c, light_frustum)) continue;
 		c->shadow_sections = ~0u;
-		if (occlusion_culling) {
+		if (occlusion_culling && !c->has_cave_opening) {
 			for (int s = 0; s < c->section_count; ++s) {
 				if ((s + 1) * section_size <= c->lowest_surface_y - shadow_bury_depth) c->shadow_sections &= ~(1u << s);
 			}
