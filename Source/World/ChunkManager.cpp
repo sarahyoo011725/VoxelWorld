@@ -75,6 +75,7 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 		if (chunk->has_built) {
 			chunk->should_rebuild = true;
 		}
+		if (player_edit) relight_around(chunk_id);
 	}
 
 	if (local_coord.x == 1 || local_coord.x == 16) {
@@ -123,6 +124,32 @@ bool ChunkManager::set_block_manual(ivec2 chunk_id, ivec3 local_coord, block_typ
 	}
 
 	return true;
+}
+
+void ChunkManager::relight_around(ivec2 chunk_id) {
+	//light only crosses the changed chunk if it starts within reach of it
+	ivec2 lo = chunk_id * chunk_size, hi = lo + ivec2(chunk_size - 1);
+	auto reaches_change = [&](const Chunk* n) {
+		for (const ivec3& e : n->emitters) {
+			int wx = n->id.x * chunk_size + e.x - 1, wz = n->id.y * chunk_size + e.z - 1;
+			int gap = std::max(std::max(lo.x - wx, wx - hi.x), std::max(lo.y - wz, wz - hi.y));
+			if (gap < max_block_light) return true;
+		}
+		return false;
+	};
+
+	for (int dx = -1; dx <= 1; ++dx) {
+		for (int dz = -1; dz <= 1; ++dz) {
+			Chunk* chunk = get_chunk(chunk_id + ivec2(dx, dz));
+			if (chunk == nullptr || !chunk->has_built) continue;
+			for (int ex = -1; ex <= 1 && !chunk->needs_relight; ++ex) {
+				for (int ez = -1; ez <= 1 && !chunk->needs_relight; ++ez) {
+					Chunk* n = get_chunk(chunk->id + ivec2(ex, ez));
+					if (n != nullptr && reaches_change(n)) chunk->needs_relight = true;
+				}
+			}
+		}
+	}
 }
 
 /*

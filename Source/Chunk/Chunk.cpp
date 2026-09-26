@@ -26,6 +26,7 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	opaque_vao.link_attrib(opaque_vbo, 3, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(8 * sizeof(float))); //atlas cell the uv repeats
 	opaque_vao.link_attrib(opaque_vbo, 4, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(10 * sizeof(float))); //biome tint
 	opaque_vao.link_attrib(opaque_vbo, 5, 1, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(13 * sizeof(float))); //daylight
+	opaque_vao.link_attrib(opaque_vbo, 6, 1, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(14 * sizeof(float))); //block light
 
 	transp_vao.bind();
 	transp_vao.link_attrib(transp_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
@@ -34,12 +35,14 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	transp_vao.link_attrib(transp_vbo, 3, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(8 * sizeof(float)));
 	transp_vao.link_attrib(transp_vbo, 4, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(10 * sizeof(float)));
 	transp_vao.link_attrib(transp_vbo, 5, 1, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(13 * sizeof(float)));
+	transp_vao.link_attrib(transp_vbo, 6, 1, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(14 * sizeof(float)));
 
 	water_vao.bind();
 	water_vao.link_attrib(water_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 	water_vao.link_attrib(water_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
 	water_vao.link_attrib(water_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float)));
 	water_vao.link_attrib(water_vbo, 5, 1, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(13 * sizeof(float)));
+	water_vao.link_attrib(water_vbo, 6, 1, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(14 * sizeof(float)));
 
 	foliage_vao.bind();
 	foliage_vao.link_attrib(foliage_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)0);
@@ -85,6 +88,7 @@ void Chunk::generate_terrain() {
 	}
 	max_occupied_y = std::min(highest, height - 1);
 	lowest_surface_y = *std::min_element(height_map.begin(), height_map.end());
+	find_emitters(blocks, width, height, length, emitters);
 
 	has_generated = true;
 }
@@ -203,8 +207,15 @@ void Chunk::set_block(ivec3 local_coord, block_type type) {
 		//cout << "provided local coord is invalid" << endl;
 		return;
 	}
+	block_type previous = blocks[block_index(x, y, z)].type;
 	blocks[block_index(x, y, z)].type = type;
 	if (y > max_occupied_y) max_occupied_y = y;
+
+	bool owned = x >= 1 && x <= width - 2 && z >= 1 && z <= length - 2;
+	if (owned && is_emissive(previous) != is_emissive(type)) {
+		if (is_emissive(type)) emitters.push_back(local_coord);
+		else emitters.erase(std::remove(emitters.begin(), emitters.end(), local_coord), emitters.end());
+	}
 }
 
 /*
@@ -297,7 +308,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 	vec2 texture_coord = texture_map[type][face];
 	vec2 tile_origin = tile_uv_origin(texture_coord);
 	vec3 tint = tint_for(type, face, (int)local_coord.x, (int)local_coord.z);
-	float light = light_value(light_level(type, face, (int)local_coord.x, (int)local_coord.y, (int)local_coord.z));
+	uint16_t light = light_key(type, face, (int)local_coord.x, (int)local_coord.y, (int)local_coord.z);
 
 	vec3 normal = face_normal(face);
 
@@ -309,7 +320,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 			v.texture = convert_to_uv(i, texture_coord);
 			v.normal = normal;
 			v.tint = tint;
-			v.light = light;
+			apply_light(v, light);
 			water_vertices.push_back(v);
 		}
 		update_face_indices(true, true);
@@ -321,7 +332,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 			v.texture = convert_to_uv(i, texture_coord);
 			v.normal = -normal;
 			v.tint = tint;
-			v.light = light;
+			apply_light(v, light);
 			water_vertices.push_back(v);
 		}
 		update_face_indices(true, true);
@@ -353,7 +364,7 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 			v.tile_origin = tile_origin;
 			v.tint = tint;
 			v.normal = normal;
-			v.light = light;
+			apply_light(v, light);
 			if (transparency) {
 				transp_vertices.push_back(v);
 
@@ -403,16 +414,28 @@ vec3 Chunk::tint_for(block_type type, block_face face, int x, int z) const {
 	return type == dirt_grass ? biome.grass_tint : biome.foliage_tint;
 }
 
-//daylight on a face is the daylight in the cell it looks into; lava lights itself
-unsigned char Chunk::light_level(block_type type, block_face face, int x, int y, int z) const {
-	if (type == lava) return emissive_level;
+/*
+	a face is lit by the cell it looks into. packed as daylight in bits 0-3 and
+	block light in bits 4-7, with bit 8 for a block that glows itself, so one
+	number decides both the vertex values and whether two faces may merge
+*/
+uint16_t Chunk::light_key(block_type type, block_face face, int x, int y, int z) const {
+	if (is_emissive(type)) return 0x100;
 	vec3 n = face_normal(face);
 	int fx = x + (int)n.x, fy = y + (int)n.y, fz = z + (int)n.z;
-	return daylight_level(get_height(fx, fz), fy);
+	uint16_t glow = 0;
+	if (has_block_light && fy >= 0 && fy < height) glow = block_light[block_index(fx, fy, fz)];
+	return (uint16_t)(daylight_level(get_height(fx, fz), fy) | (glow << 4));
 }
 
-float Chunk::light_value(unsigned char level) {
-	return level == emissive_level ? emissive_light : level / 15.0f;
+void Chunk::apply_light(vertex& v, uint16_t key) {
+	if (key & 0x100) {
+		v.light = emissive_light;
+		v.glow = 0.0f;
+		return;
+	}
+	v.light = (key & 15) / 15.0f;
+	v.glow = ((key >> 4) & 15) / 15.0f;
 }
 
 /*
@@ -436,7 +459,7 @@ bool Chunk::opaque_face_visible(int x, int y, int z, block_face face) const {
 	quad's texture origin, and the uv runs 0..run across the quad, which the
 	fragment shader wraps back into one atlas cell.
 */
-void Chunk::add_merged_quad(block_face face, block_type type, ivec3 base_block, int run_u, int run_v, unsigned char light) {
+void Chunk::add_merged_quad(block_face face, block_type type, ivec3 base_block, int run_u, int run_v, uint16_t light) {
 	if (texture_map.find(type) == texture_map.end()) return;
 	vec2 texture_coord = texture_map[type][face];
 	vec2 tile_origin = tile_uv_origin(texture_coord);
@@ -462,7 +485,7 @@ void Chunk::add_merged_quad(block_face face, block_type type, ivec3 base_block, 
 		v.normal = normal;
 		v.tile_origin = tile_origin;
 		v.tint = tint;
-		v.light = light_value(light);
+		apply_light(v, light);
 		opaque_vertices.push_back(v);
 	}
 	update_face_indices(false, false);
@@ -503,7 +526,7 @@ void Chunk::build_opaque_mesh(int y_lo, int y_hi) {
 
 		vector<block_type> mask(static_cast<size_t>(a_count) * b_count);
 		vector<biome_id> biome_key(static_cast<size_t>(a_count) * b_count);
-		vector<unsigned char> light_key(static_cast<size_t>(a_count) * b_count);
+		vector<uint16_t> light_keys(static_cast<size_t>(a_count) * b_count);
 
 		for (int slice = slice_lo; slice < slice_hi; ++slice) {
 			auto to_block = [&](int a, int b) {
@@ -525,7 +548,7 @@ void Chunk::build_opaque_mesh(int y_lo, int y_hi) {
 					biome_key[static_cast<size_t>(a) * b_count + b] =
 						is_tinted_face(t, face) ? get_biome(p.x, p.z) : biome_id::plains;
 					//faces only merge at equal light, or a quad would take one face's brightness everywhere
-					light_key[static_cast<size_t>(a) * b_count + b] = mask[static_cast<size_t>(a) * b_count + b] != none ? light_level(t, face, p.x, p.y, p.z) : 0;
+					light_keys[static_cast<size_t>(a) * b_count + b] = mask[static_cast<size_t>(a) * b_count + b] != none ? light_key(t, face, p.x, p.y, p.z) : 0;
 				}
 			}
 
@@ -535,13 +558,13 @@ void Chunk::build_opaque_mesh(int y_lo, int y_hi) {
 					block_type t = mask[here];
 					if (t == none) { ++b; continue; }
 					biome_id key = biome_key[here];
-					unsigned char light = light_key[here];
+					uint16_t light = light_keys[here];
 
 					//extend along b first, then widen along a while whole rows match
 					int run_b = 1;
 					while (b + run_b < b_count) {
 						size_t n = static_cast<size_t>(a) * b_count + b + run_b;
-						if (mask[n] != t || biome_key[n] != key || light_key[n] != light) break;
+						if (mask[n] != t || biome_key[n] != key || light_keys[n] != light) break;
 						++run_b;
 					}
 
@@ -550,7 +573,7 @@ void Chunk::build_opaque_mesh(int y_lo, int y_hi) {
 					while (a + run_a < a_count && can_widen) {
 						for (int k = 0; k < run_b; ++k) {
 							size_t n = static_cast<size_t>(a + run_a) * b_count + b + k;
-							if (mask[n] != t || biome_key[n] != key || light_key[n] != light) { can_widen = false; break; }
+							if (mask[n] != t || biome_key[n] != key || light_keys[n] != light) { can_widen = false; break; }
 						}
 						if (can_widen) ++run_a;
 					}
@@ -588,6 +611,17 @@ void Chunk::build_mesh() {
 	water_indices.clear();
 	foliage_vertices.clear();
 	foliage_indices.clear();
+
+	//neighbours are only read here, never written: every structure is placed before meshing starts
+	LightNeighbour around[9];
+	for (int dx = -1; dx <= 1; ++dx) {
+		for (int dz = -1; dz <= 1; ++dz) {
+			Chunk* c = (dx == 0 && dz == 0) ? this : cm.get_chunk(id + ivec2(dx, dz));
+			if (c != nullptr && c->has_generated) around[(dx + 1) * 3 + (dz + 1)] = { &c->blocks, &c->emitters };
+		}
+	}
+	has_block_light = compute_block_light(around, width, height, length, block_light);
+	needs_relight = false;
 
 	opaque_ranges.assign(section_count, {});
 	transp_ranges.assign(section_count, {});

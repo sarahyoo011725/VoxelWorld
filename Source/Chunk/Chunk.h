@@ -7,6 +7,7 @@
 #include "Block/Block.h"
 #include "World/Biome.h"
 #include "World/SectionVisibility.h"
+#include "World/BlockLight.h"
 #include "Buffers/VAO.h"
 #include "Buffers/VBO.h"
 #include "Buffers/EBO.h"
@@ -78,9 +79,13 @@ private:
 	vec3 tint_for(block_type type, block_face face, int x, int z) const;
 	void build_opaque_mesh(int y_lo, int y_hi);
 	void build_block_faces(int y_lo, int y_hi);
-	void add_merged_quad(block_face face, block_type type, ivec3 base_block, int run_u, int run_v, unsigned char light);
-	unsigned char light_level(block_type type, block_face face, int x, int y, int z) const;
-	static float light_value(unsigned char level);
+	void add_merged_quad(block_face face, block_type type, ivec3 base_block, int run_u, int run_v, uint16_t light);
+	uint16_t light_key(block_type type, block_face face, int x, int y, int z) const;
+	static void apply_light(vertex& v, uint16_t key);
+
+	//light from glowing blocks, indexed like blocks; only filled while has_block_light
+	vector<unsigned char> block_light;
+	bool has_block_light = false;
 	bool opaque_face_visible(int x, int y, int z, block_face face) const;
 	void update_face_indices(bool has_transparency, bool is_water);
 	void add_foliage_quad_indices();
@@ -104,6 +109,10 @@ public:
 	int lowest_surface_y = 0;
 	//a cave opens to the sky here, so sunlight can reach below the ground
 	bool has_cave_opening = false;
+	//glowing blocks this chunk owns, in local coords. neighbours read them to light across the border
+	vector<ivec3> emitters;
+	//light from a neighbour changed, so the mesh needs rebuilding; the old mesh keeps drawing until then
+	bool needs_relight = false;
 	vec3 world_position = vec3(0.0f);
 	ivec2 id = ivec2(0);
 

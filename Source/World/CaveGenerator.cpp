@@ -222,8 +222,9 @@ namespace {
 			s.coords(i, x, y, z);
 			int wx = s.origin_x + x, wz = s.origin_z + z;
 			bool is_floor = y + 1 < s.height && is_cave(i + s.length);
+			bool is_ceiling = y > 0 && is_cave(i - s.length);
 
-			//the patch's rolls come in a fixed order: one per ore, then gravel, then moss
+			//the patch's rolls come in a fixed order: one per ore, then gravel, moss and glowstone
 			WorldRandom patch = patch_random(seed, wx, y, wz);
 			block_type result = stone;
 			for (const ore_rule& ore : ore_rules) {
@@ -232,8 +233,12 @@ namespace {
 				WorldRandom block_rng(seed, wx, wz, decoration_salt ^ ((uint32_t)y * 0x85EBCA6Bu));
 				result = unit(block_rng) < 0.6f ? ore.type : none;
 			}
-			float gravel_roll = unit(patch), moss_roll = unit(patch);
+			float gravel_roll = unit(patch), moss_roll = unit(patch), glow_roll = unit(patch);
 			if (result == none) result = stone;
+			else if (result == stone && is_ceiling && !is_floor && glow_roll < cfg.glowstone_chance) {
+				WorldRandom block_rng(seed, wx, wz, decoration_salt ^ 0x6100 ^ ((uint32_t)y * 0x85EBCA6Bu));
+				if (unit(block_rng) < 0.5f) result = glowstone;
+			}
 			else if (result == stone && is_floor) {
 				if (gravel_roll < cfg.gravel_chance) result = gravel;
 			}

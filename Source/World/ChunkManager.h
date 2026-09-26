@@ -65,6 +65,13 @@ public:
 	//before anything reads its blocks. kept separate so a batch of new chunks
 	//can be generated in parallel (see Terrain::update_chunks)
 	Chunk* create_chunk(ivec2 chunk_id);
+
+	/*
+		block light is worked out from a chunk's 3x3 neighbourhood, so a change in
+		one chunk can alter the light in the eight around it. marks those that are
+		already built and have something glowing nearby for a rebuild.
+	*/
+	void relight_around(ivec2 chunk_id);
 };
 
 namespace {

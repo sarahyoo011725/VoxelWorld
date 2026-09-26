@@ -51,6 +51,7 @@ add_executable(VoxelWorld
 	Source/Shader/Shader.cpp
 	Source/Texture/Texture.cpp
 	Source/World/BlockInteractor.cpp
+	Source/World/BlockLight.cpp
 	Source/World/CaveGenerator.cpp
 	Source/World/ChunkGeneration.cpp
 	Source/World/ChunkManager.cpp
@@ -98,6 +99,7 @@ endif()
 add_executable(worldgen_check
 	Tools/worldgen_check.cpp
 	Source/World/Biome.cpp
+	Source/World/BlockLight.cpp
 	Source/World/CaveGenerator.cpp
 	Source/World/ChunkGeneration.cpp
 	Source/World/SectionVisibility.cpp

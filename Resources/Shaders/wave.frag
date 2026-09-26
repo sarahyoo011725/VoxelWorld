@@ -7,6 +7,7 @@ in float fog_factor;
 in vec3 world_pos;
 in vec3 normal;
 in float block_light;
+in float block_glow;
 
 uniform sampler2D texture1;
 uniform sampler2D shadow_map;
@@ -44,6 +45,7 @@ void main() {
 	float light = ambient_strength + diffuse * diffuse_strength * (1.0 - shadow);
 
 	float sky = min(block_light, 1.0);
-	vec3 lit_color = tex_color.rgb * light * light_color * sky;
-	FragColor = mix(vec4(fog_color * sky, 1.0), vec4(lit_color, tex_color.a), fog_factor);
+	float glow = pow(block_glow, 1.6);
+	vec3 lit_color = max(tex_color.rgb * light * light_color * sky, tex_color.rgb * glow * vec3(1.0, 0.82, 0.6));
+	FragColor = mix(vec4(fog_color * max(sky, glow), 1.0), vec4(lit_color, tex_color.a), fog_factor);
 }

@@ -25,6 +25,7 @@ void audio::play_block_sound_effect(block_type type) {
 	case gold_ore:
 	case redstone_ore:
 	case diamond_ore:
+	case glowstone:
 		sound = sound_effect::stone;
 		break;
 	case sand:

@@ -6,6 +6,7 @@ in vec2 tex_coord;
 in vec2 tile_origin;
 in vec3 tint;
 in float block_light; //how much daylight reaches the face, 0..1; above 1 the block glows on its own
+in float block_glow; //light from nearby glowing blocks, 0..1
 in float fog_factor;
 in vec3 world_pos;
 in vec3 normal;
@@ -40,6 +41,7 @@ float calculate_shadow(vec3 n) {
 
 //one cell of the 16x34 atlas - not square, so u and v differ
 const vec2 tile_size = vec2(1.0 / 16.0, 1.0 / 34.0);
+const vec3 glow_color = vec3(1.0, 0.82, 0.6);
 
 void main() {
 	//wrap the tiled coordinate back into this quad's atlas cell, so one merged
@@ -59,8 +61,10 @@ void main() {
 	float light = ambient_strength + diffuse * diffuse_strength * (1.0 - shadow);
 
 	float sky = min(block_light, 1.0);
-	vec3 lit_color = tex_color.rgb * light * light_color * sky;
+	//squared-ish falloff, so light pools near its source instead of washing a cave evenly
+	float glow = pow(block_glow, 1.6);
+	vec3 lit_color = max(tex_color.rgb * light * light_color * sky, tex_color.rgb * glow * glow_color);
 	if (block_light > 1.0) lit_color = tex_color.rgb;
-	//fog is daylight too, so it darkens with the face instead of glowing through a cave
-	FragColor = mix(vec4(fog_color * sky, 1.0), vec4(lit_color, tex_color.a), fog_factor);
+	//fog is lit the same way, so it darkens with the face instead of glowing through a cave
+	FragColor = mix(vec4(fog_color * max(sky, glow), 1.0), vec4(lit_color, tex_color.a), fog_factor);
 }

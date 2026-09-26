@@ -54,6 +54,7 @@ struct CaveConfig {
 	float moss_chance = 0.1f; //share of wall and ceiling patches that are mossy
 	float moss_chance_near_liquid = 0.45f; //within a few blocks above liquid_level
 	float ore_density = 1.0f; //scales every ore's vein chance
+	float glowstone_chance = 0.03f; //share of ceiling patches that grow glowstone, which lights the cave around it
 
 	//daylight fades over this many blocks below the ground, so caves grow dark as they go deeper
 	float light_falloff = 10.0f;

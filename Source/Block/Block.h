@@ -17,6 +17,7 @@ struct vertex {
 	vec2 tile_origin;
 	vec3 tint; //biome colour multiplied onto greyscale tiles; white leaves a tile as authored
 	float light = 1.0f; //daylight reaching the face, 0..1; emissive_light makes it glow
+	float glow = 0.0f; //light from nearby glowing blocks, 0..1
 };
 
 //a light value above 1 tells the shaders the block lights itself, ignoring sun and shadow
@@ -64,6 +65,11 @@ namespace {
 	bool has_transparency(Block* block) {
 		if (block == nullptr) return false;
 		return has_transparency(block->type);
+	}
+
+	//blocks that give off light of their own
+	bool is_emissive(block_type type) {
+		return type == lava || type == glowstone;
 	}
 
 	bool is_liquid(block_type type) {

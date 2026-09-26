@@ -56,6 +56,11 @@ void Terrain::update_chunks() {
 		}
 	}
 
+	//a new neighbour can open or block a path for light that reaches into chunks already built
+	for (Chunk* chunk : new_chunks) {
+		cm.relight_around(chunk->id);
+	}
+
 	//rebuilds come from the player breaking/placing a block, so they run
 	//immediately - deferring them would show a stale chunk for a frame
 	for (Chunk* c : visible_chunks) {
@@ -98,6 +103,8 @@ void Terrain::unload_distant_chunks() {
 void Terrain::restore_player_edits(Chunk* chunk) {
 	auto edits = cm.player_edits.find(chunk->id);
 	if (edits == cm.player_edits.end()) return;
+	//a restored edit may add or remove something glowing that neighbours were lit without
+	cm.relight_around(chunk->id);
 
 	for (const auto& edit : edits->second) {
 		ivec3 local_coord = edit.first;
@@ -131,9 +138,10 @@ void Terrain::build_pending_chunks() {
 	stats.chunks_visible = (int)visible_chunks.size();
 	stats.chunks_loaded = (int)cm.chunks.size();
 
+	//relighting shares the budget and the worker threads with new chunks
 	vector<Chunk*> pending;
 	for (Chunk* c : visible_chunks) {
-		if (!c->has_built) pending.push_back(c);
+		if (!c->has_built || c->needs_relight) pending.push_back(c);
 	}
 	stats.chunks_pending = (int)pending.size();
 	if (pending.empty()) return;
@@ -160,10 +168,12 @@ void Terrain::build_pending_chunks() {
 	*/
 	vector<Chunk*> batch;
 	for (Chunk* c : pending) {
-		spawn_structures(c);
-		//after structures, never before: a regenerated tree would otherwise
-		//overwrite a block the player had already broken
-		restore_player_edits(c);
+		if (!c->has_built) {
+			spawn_structures(c);
+			//after structures, never before: a regenerated tree would otherwise
+			//overwrite a block the player had already broken
+			restore_player_edits(c);
+		}
 		batch.push_back(c);
 
 		float elapsed_ms = chrono::duration<float, milli>(chrono::steady_clock::now() - start).count();

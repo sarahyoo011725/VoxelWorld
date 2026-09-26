@@ -33,6 +33,7 @@ enum block_type : unsigned char {
 	redstone_ore,
 	diamond_ore,
 	lava,
+	glowstone,
 };
 
 //names block faces
@@ -105,5 +106,6 @@ namespace {
 		{redstone_ore, {{Front,vec2(4,4)},{Back,vec2(4,4)},{Left,vec2(4,4)},{Right,vec2(4,4)},{Top,vec2(4,4)},{Bottom,vec2(4,4)}}},
 		{diamond_ore, {{Front,vec2(3,4)},{Back,vec2(3,4)},{Left,vec2(3,4)},{Right,vec2(3,4)},{Top,vec2(3,4)},{Bottom,vec2(3,4)}}},
 		{lava, {{Front,vec2(14,15)},{Back,vec2(14,15)},{Left,vec2(14,15)},{Right,vec2(14,15)},{Top,vec2(14,15)},{Bottom,vec2(14,15)}}},
+		{glowstone, {{Front,vec2(10,7)},{Back,vec2(10,7)},{Left,vec2(10,7)},{Right,vec2(10,7)},{Top,vec2(10,7)},{Bottom,vec2(10,7)}}},
 	};
 }
