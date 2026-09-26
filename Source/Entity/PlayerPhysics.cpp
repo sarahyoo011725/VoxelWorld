@@ -18,7 +18,10 @@ void PlayerPhysics::integrate(GameObject& target, float dt, bool enabled) {
 		float rise = std::min(pending_step, step_speed * dt);
 		target.position.y += rise;
 		pending_step -= rise;
-		target.position += vec3(target.velocity.x, 0.0f, target.velocity.z) * dt;
+		//turning mid-rise could otherwise carry the box sideways into a wall
+		GameObject moved = target;
+		moved.position += vec3(target.velocity.x, 0.0f, target.velocity.z) * dt;
+		if (is_position_clear(moved)) target.position = moved.position;
 		if (pending_step <= 0.0f) {
 			//land in a clean, known state - a stray residual velocity.y or a
 			//height a hair off the true resting position is exactly what turns
@@ -56,8 +59,10 @@ void PlayerPhysics::integrate(GameObject& target, float dt, bool enabled) {
 			//and register a phantom horizontal collision
 			bool underfoot_level = block.y + 0.5f <= target.position.y - target.size.y * 0.5f + 0.01f;
 			if (underfoot_level) {
-				bool directly_below = abs(block.x - target.position.x) < (target.size.x * 0.5f + 0.5f)
-					&& abs(block.z - target.position.z) < (target.size.z * 0.5f + 0.5f);
+				//judged where the sweep ends: a block only brushed now can be underfoot by then
+				vec3 end = target.position + target.velocity * remaining_dt;
+				bool directly_below = abs(block.x - end.x) < (target.size.x * 0.5f + 0.5f)
+					&& abs(block.z - end.z) < (target.size.z * 0.5f + 0.5f);
 				if (!directly_below) continue;
 			}
 

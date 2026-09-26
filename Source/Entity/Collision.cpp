@@ -84,9 +84,11 @@ float aabb::get_collision_time(const GameObject& a, const GameObject& b, vec3& n
 		return 1.0f;
 	}
 
-	normal.x = (first_entry_time == entry_time.x) ? -sign(displacement.x) : 0.0f;
-	normal.y = (first_entry_time == entry_time.y) ? -sign(displacement.y) : 0.0f;
-	normal.z = (first_entry_time == entry_time.z) ? -sign(displacement.z) : 0.0f;
+	//a tie means an edge or corner contact; landing on it beats being shoved sideways by it
+	normal = vec3(0.0f);
+	if (first_entry_time == entry_time.y) normal.y = -sign(displacement.y);
+	else if (first_entry_time == entry_time.x) normal.x = -sign(displacement.x);
+	else normal.z = -sign(displacement.z);
 
 	return std::max(first_entry_time, 0.0f);
 }
