@@ -69,7 +69,7 @@ private:
 
 	const float cloud_cell_size = 16.0f;
 	const float cloud_thickness = 2.5f;
-	const float cloud_base_height = 70.0f; //above the terrain's max height (50)
+	const float cloud_base_height = 116.0f; //just above the chunk ceiling (112), so no peak reaches it
 	const int cloud_grid_radius = 13; 
 	const float cloud_threshold = 0.42f; //higher = sparser clouds
 	const float cloud_wind_speed = 0.3f;
