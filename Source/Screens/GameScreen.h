@@ -109,6 +109,13 @@ public:
 
 		terrain.update_chunks();
 
+		//before anything is drawn, so this frame shows this frame's input rather than the last one's
+		if (window_setting->window_active) {
+			player.update();
+			sm.frame_buffer_shader.activate();
+			sm.frame_buffer_shader.set_uniform_1i("is_underwater", player.is_underwater());
+		}
+
 		//shadow pass: render opaque + foliage geometry depth-only from the sun's POV.
 		//refreshed on an interval, or immediately when geometry changed
 		bool geometry_changed = terrain.stats.chunks_built > 0;
@@ -164,11 +171,6 @@ public:
 		texture.activate();
 		texture.bind();
 		terrain.draw(player.camera.mat);
-		if (window_setting->window_active) {
-			player.update();
-			sm.frame_buffer_shader.activate();
-			sm.frame_buffer_shader.set_uniform_1i("is_underwater", player.is_underwater());
-		}
 		renderer.draw_outlines(player.view_matrix(), player.hovered_block(), player.hovered_position());
 		renderer.draw_HUDs();
 		renderer.draw_hotbar(player.inventory());
