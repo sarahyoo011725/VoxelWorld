@@ -120,6 +120,7 @@ endif()
 add_executable(render_bench
 	Tools/render_bench.cpp
 	Source/stb.cpp
+	Source/Screens/PlayerRenderer.cpp
 	Source/Buffers/EBO.cpp
 	Source/Buffers/FBO.cpp
 	Source/Buffers/RBO.cpp

@@ -83,6 +83,8 @@ static int report_debug_failure(int, char* message, int*) {
 #include <cstdio>
 #include <vector>
 #include "World/Terrain.h"
+#include "Screens/PlayerRenderer.h"
+#include <functional>
 
 
 using namespace std;
@@ -96,6 +98,12 @@ namespace {
 		draw_calls++;
 		drawn_indices += count;
 		real_draw_elements(mode, count, type, indices);
+	}
+
+	PFNGLDRAWARRAYSPROC real_draw_arrays = nullptr;
+	void APIENTRY counting_draw_arrays(GLenum mode, GLint first, GLsizei count) {
+		draw_calls++;
+		real_draw_arrays(mode, first, count);
 	}
 
 	double now_ms() {
@@ -239,6 +247,8 @@ int main(int argc, char** argv) {
 
 	real_draw_elements = glad_glDrawElements;
 	glad_glDrawElements = counting_draw_elements;
+	real_draw_arrays = glad_glDrawArrays;
+	glad_glDrawArrays = counting_draw_arrays;
 
 	//the game draws at window size; an offscreen target of the same size stands in for it
 	GLuint fbo, color, depth, query;
@@ -452,6 +462,53 @@ int main(int argc, char** argv) {
 		}
 		save_view(terrain, sm, atlas, eye, 0.3f, "bench_view_a.ppm");
 		save_view(terrain, sm, atlas, eye, 3.4f, "bench_view_b.ppm");
+
+		//everything in GameScreen's frame that is not terrain
+		WindowSetting setting = { window, 1200, 700, true, 0.0 };
+		PlayerRenderer renderer(&setting);
+		Inventory inventory;
+		const mat4 projection = perspective(radians(70.0f), 1200.0f / 700.0f, 0.1f, 180.0f);
+		const mat4 view = lookAt(eye, eye + normalize(vec3(1.0f, -0.15f, 0.3f)), vec3(0, 1, 0));
+		const vec3 to_sun = -normalize(vec3(-0.4f, -0.8f, -0.3f));
+		auto timed = [&](const char* label, const function<void()>& pass) {
+			double cpu = 0, gpu = 0, calls = 0;
+			const int frames = 10;
+			for (int f = 0; f <= frames; ++f) {
+				renderer.bind_fbo();
+				draw_calls = 0;
+				glBeginQuery(GL_TIME_ELAPSED, query);
+				double t = now_ms();
+				pass();
+				double c = now_ms() - t;
+				glEndQuery(GL_TIME_ELAPSED);
+				GLuint64 ns = 0;
+				glGetQueryObjectui64v(query, GL_QUERY_RESULT, &ns);
+				if (f == 0) continue;
+				cpu += c; gpu += ns / 1e6; calls += draw_calls;
+			}
+			printf("  %-22s %.3f ms cpu, %.3f ms gpu, %.0f draw calls\n", label, cpu / frames, gpu / frames, calls / frames);
+		};
+		printf("\nrest of the frame (1200x700)\n");
+		timed("sky background", [&] {
+			glDisable(GL_DEPTH_TEST);
+			renderer.draw_sky_background(view, projection, vec3(0.25f, 0.45f, 0.85f), vec3(0.6f, 0.75f, 0.95f), to_sun);
+			glEnable(GL_DEPTH_TEST);
+		});
+		timed("sun and moon", [&] { renderer.draw_sky_discs(view, projection, eye, to_sun); });
+		timed("clouds", [&] { renderer.draw_clouds(projection * view, vec2(eye.x, eye.z), 0.0f, vec3(1.0f)); });
+		timed("crosshair", [&] { renderer.draw_HUDs(); });
+		timed("hotbar", [&] { renderer.draw_hotbar(inventory); });
+		timed("F3 overlay", [&] { renderer.draw_perf_overlay(terrain.stats); });
+		timed("post-process to screen", [&] {
+			renderer.unbind_fbo();
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glDisable(GL_DEPTH_TEST);
+			sm.frame_buffer_shader.activate();
+			renderer.post_process();
+			glEnable(GL_DEPTH_TEST);
+		});
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		glViewport(0, 0, 1200, 700);
 	}
 
 	printf("\nstreaming (walking east one chunk at a time, %.0f ms build budget)\n", 3.0f);
