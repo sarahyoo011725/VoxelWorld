@@ -1,5 +1,6 @@
 #include "Chunk.h"
 #include <algorithm>
+#include <cstddef>
 #include "World/ChunkManager.h"
 #include "World/StructureGenerator.h"
 #include "World/ChunkGeneration.h"
@@ -19,30 +20,15 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	section_count = (height + section_size - 1) / section_size;
 	section_connectivity.assign(section_count, all_links);
 
-	opaque_vao.bind();
-	opaque_vao.link_attrib(opaque_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0); //vertex positions coords
-	opaque_vao.link_attrib(opaque_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float))); //vertex texture coords
-	opaque_vao.link_attrib(opaque_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float))); //vertex normal
-	opaque_vao.link_attrib(opaque_vbo, 3, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(8 * sizeof(float))); //atlas cell the uv repeats
-	opaque_vao.link_attrib(opaque_vbo, 4, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(10 * sizeof(float))); //biome tint
-	opaque_vao.link_attrib(opaque_vbo, 5, 1, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(13 * sizeof(float))); //daylight
-	opaque_vao.link_attrib(opaque_vbo, 6, 1, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(14 * sizeof(float))); //block light
-
-	transp_vao.bind();
-	transp_vao.link_attrib(transp_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
-	transp_vao.link_attrib(transp_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
-	transp_vao.link_attrib(transp_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float)));
-	transp_vao.link_attrib(transp_vbo, 3, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(8 * sizeof(float)));
-	transp_vao.link_attrib(transp_vbo, 4, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(10 * sizeof(float)));
-	transp_vao.link_attrib(transp_vbo, 5, 1, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(13 * sizeof(float)));
-	transp_vao.link_attrib(transp_vbo, 6, 1, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(14 * sizeof(float)));
-
-	water_vao.bind();
-	water_vao.link_attrib(water_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
-	water_vao.link_attrib(water_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
-	water_vao.link_attrib(water_vbo, 2, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(5 * sizeof(float)));
-	water_vao.link_attrib(water_vbo, 5, 1, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(13 * sizeof(float)));
-	water_vao.link_attrib(water_vbo, 6, 1, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(14 * sizeof(float)));
+	//terrain vertices: position, one packed word (see block_vertex) and an RGBA8 tint
+	VAO* terrain_vaos[3] = { &opaque_vao, &transp_vao, &water_vao };
+	VBO* terrain_vbos[3] = { &opaque_vbo, &transp_vbo, &water_vbo };
+	for (int i = 0; i < 3; ++i) {
+		terrain_vaos[i]->bind();
+		terrain_vaos[i]->link_attrib(*terrain_vbos[i], 0, 3, GL_FLOAT, GL_FALSE, sizeof(block_vertex), (void*)offsetof(block_vertex, position));
+		terrain_vaos[i]->link_integer_attrib(*terrain_vbos[i], 1, 1, GL_UNSIGNED_INT, sizeof(block_vertex), (void*)offsetof(block_vertex, data));
+		terrain_vaos[i]->link_attrib(*terrain_vbos[i], 2, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(block_vertex), (void*)offsetof(block_vertex, tint));
+	}
 
 	foliage_vao.bind();
 	foliage_vao.link_attrib(foliage_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(foliage_vertex), (void*)0);
@@ -98,11 +84,11 @@ void Chunk::generate_terrain() {
 	This must be called after build_chunk() or rebuild_chunk()
 */
 void Chunk::update_buffers_data() {
-	opaque_vbo.reset_vertices(opaque_vertices.data(), sizeof(vertex) * opaque_vertices.size(), GL_STATIC_DRAW);
+	opaque_vbo.reset_vertices(opaque_vertices.data(), sizeof(block_vertex) * opaque_vertices.size(), GL_STATIC_DRAW);
 	opaque_ebo.reset_indices(opaque_indices.data(), sizeof(GLuint) * opaque_indices.size(), GL_STATIC_DRAW);
-	transp_vbo.reset_vertices(transp_vertices.data(), sizeof(vertex) * transp_vertices.size(), GL_STATIC_DRAW);
+	transp_vbo.reset_vertices(transp_vertices.data(), sizeof(block_vertex) * transp_vertices.size(), GL_STATIC_DRAW);
 	transp_ebo.reset_indices(transp_indices.data(), sizeof(GLuint) * transp_indices.size(), GL_STATIC_DRAW);
-	water_vbo.reset_vertices(water_vertices.data(), sizeof(vertex) * water_vertices.size(), GL_STATIC_DRAW);
+	water_vbo.reset_vertices(water_vertices.data(), sizeof(block_vertex) * water_vertices.size(), GL_STATIC_DRAW);
 	water_ebo.reset_indices(water_indices.data(), sizeof(GLuint) * water_indices.size(), GL_STATIC_DRAW);
 	foliage_vbo.reset_vertices(foliage_vertices.data(), sizeof(foliage_vertex) * foliage_vertices.size(), GL_STATIC_DRAW);
 	foliage_ebo.reset_indices(foliage_indices.data(), sizeof(GLuint) * foliage_indices.size(), GL_STATIC_DRAW);
@@ -112,16 +98,16 @@ void Chunk::update_buffers_data() {
 	water_count = water_indices.size();
 	foliage_count = foliage_indices.size();
 	uploaded_vertices = opaque_vertices.size() + transp_vertices.size() + water_vertices.size() + foliage_vertices.size();
-	uploaded_bytes = (opaque_vertices.size() + transp_vertices.size() + water_vertices.size()) * sizeof(vertex)
+	uploaded_bytes = (opaque_vertices.size() + transp_vertices.size() + water_vertices.size()) * sizeof(block_vertex)
 		+ foliage_vertices.size() * sizeof(foliage_vertex)
 		+ (opaque_count + transp_count + water_count + foliage_count) * sizeof(GLuint);
 
 	//the GPU has its own copy now, and the next rebuild starts from nothing, so the CPU one is dead weight
-	vector<vertex>().swap(opaque_vertices);
+	vector<block_vertex>().swap(opaque_vertices);
 	vector<GLuint>().swap(opaque_indices);
-	vector<vertex>().swap(transp_vertices);
+	vector<block_vertex>().swap(transp_vertices);
 	vector<GLuint>().swap(transp_indices);
-	vector<vertex>().swap(water_vertices);
+	vector<block_vertex>().swap(water_vertices);
 	vector<GLuint>().swap(water_indices);
 	vector<foliage_vertex>().swap(foliage_vertices);
 	vector<GLuint>().swap(foliage_indices);
@@ -325,72 +311,48 @@ void Chunk::add_foliage_quad_indices() {
 void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 	if (texture_map.find(type) == texture_map.end()) return; //a type is not in texture map if it is a structure that is not cube i.e. grass
 	vec2 texture_coord = texture_map[type][face];
-	vec2 tile_origin = tile_uv_origin(texture_coord);
 	vec3 tint = tint_for(type, face, (int)local_coord.x, (int)local_coord.z);
 	uint16_t light = light_key(type, face, (int)local_coord.x, (int)local_coord.y, (int)local_coord.z);
+	uint32_t packed_tint = pack_tint(tint);
 
 	vec3 normal = face_normal(face);
+	//corner order matches cw_face_map and ccw_face_map: left-top, right-top, right-bottom, left-bottom
+	const ivec2 corner_uv[4] = { ivec2(0, 1), ivec2(1, 1), ivec2(1, 0), ivec2(0, 0) };
+	vec3 offset = local_coord + world_position + vec3(-1, 0, -1); //subtract 1 to adjust chunk position due to boundaries
 
 	if (type == water) {
-		vector<vertex> cw_verts = cw_face_map[face];
-		for (int i = 0; i < cw_verts.size(); ++i) {
-			vertex v = cw_verts[i];
-			v.position += local_coord + world_position + vec3(-1, 0, -1);
-			v.texture = convert_to_uv(i, texture_coord);
-			v.normal = normal;
-			v.tint = tint;
-			apply_light(v, light);
-			water_vertices.push_back(v);
+		//both windings, so the surface shows from above and from under the water
+		const vector<vertex>& cw_verts = cw_face_map[face];
+		for (int i = 0; i < 4; ++i) {
+			water_vertices.push_back({ cw_verts[i].position + offset,
+				pack_block_vertex(normal, light, corner_uv[i].x, corner_uv[i].y, texture_coord), packed_tint });
 		}
 		update_face_indices(true, true);
 
-		vector<vertex> ccw_verts = ccw_face_map[face];
-		for (int i = 0; i < ccw_verts.size(); ++i) {
-			vertex v = ccw_verts[i];
-			v.position += local_coord + world_position + vec3(-1, 0, -1);
-			v.texture = convert_to_uv(i, texture_coord);
-			v.normal = -normal;
-			v.tint = tint;
-			apply_light(v, light);
-			water_vertices.push_back(v);
+		const vector<vertex>& ccw_verts = ccw_face_map[face];
+		for (int i = 0; i < 4; ++i) {
+			water_vertices.push_back({ ccw_verts[i].position + offset,
+				pack_block_vertex(-normal, light, corner_uv[i].x, corner_uv[i].y, texture_coord), packed_tint });
 		}
 		update_face_indices(true, true);
 	}
 	else if (is_foliage(type)) {
-		vector<vertex> verts = cw_face_map[face];
+		const vector<vertex>& verts = cw_face_map[face];
 
 		//a leaf block has no "root" side like a grass blade does, so it
 		//sways as a rigid whole - a pinned bottom would shear it into a wobbling parallelogram
 		for (int i = 0; i < verts.size(); ++i) {
-			vertex v = verts[i];
-			v.position += local_coord + world_position + vec3(-1, 0, -1);
-			v.texture = convert_to_uv(i, texture_coord);
-			foliage_vertices.push_back({ v.position, v.texture, normal, 1.0f, tint });
+			foliage_vertices.push_back({ verts[i].position + offset, convert_to_uv(i, texture_coord), normal, 1.0f, tint });
 		}
 		add_foliage_quad_indices();
 	}
 	else {
-		vector<vertex> verts = cw_face_map[face];
+		const vector<vertex>& verts = cw_face_map[face];
 		bool transparency = has_transparency(type);
-
-		//transforms vertices
-		const vec2 corner_uv[4] = { vec2(0, 1), vec2(1, 1), vec2(1, 0), vec2(0, 0) };
-		for (int i = 0; i < verts.size(); ++i) {
-			vertex v = verts[i];
-			v.position += local_coord + world_position + vec3(-1, 0, -1); //subtract 1 to adjust chunk position due to boundaries
-			//the tiled form the merged quads use, since both go through default.frag
-			v.texture = corner_uv[i];
-			v.tile_origin = tile_origin;
-			v.tint = tint;
-			v.normal = normal;
-			apply_light(v, light);
-			if (transparency) {
-				transp_vertices.push_back(v);
-
-			}
-			else {
-				opaque_vertices.push_back(v);
-			}
+		vector<block_vertex>& target = transparency ? transp_vertices : opaque_vertices;
+		for (int i = 0; i < 4; ++i) {
+			target.push_back({ verts[i].position + offset,
+				pack_block_vertex(normal, light, corner_uv[i].x, corner_uv[i].y, texture_coord), packed_tint });
 		}
 		update_face_indices(transparency, false);
 	}
@@ -447,15 +409,7 @@ uint16_t Chunk::light_key(block_type type, block_face face, int x, int y, int z)
 	return (uint16_t)(daylight_level(get_height(fx, fz), fy) | (glow << 4));
 }
 
-void Chunk::apply_light(vertex& v, uint16_t key) {
-	if (key & 0x100) {
-		v.light = emissive_light;
-		v.glow = 0.0f;
-		return;
-	}
-	v.light = (key & 15) / 15.0f;
-	v.glow = ((key >> 4) & 15) / 15.0f;
-}
+
 
 /*
 	is this opaque block's face exposed? mirrors the neighbour test the per-block
@@ -481,8 +435,7 @@ bool Chunk::opaque_face_visible(int x, int y, int z, block_face face) const {
 void Chunk::add_merged_quad(block_face face, block_type type, ivec3 base_block, int run_u, int run_v, uint16_t light) {
 	if (texture_map.find(type) == texture_map.end()) return;
 	vec2 texture_coord = texture_map[type][face];
-	vec2 tile_origin = tile_uv_origin(texture_coord);
-	vec3 tint = tint_for(type, face, base_block.x, base_block.z);
+	uint32_t packed_tint = pack_tint(tint_for(type, face, base_block.x, base_block.z));
 
 	const vector<vertex>& unit = cw_face_map[face];
 	//the face's own texture axes, read off the unit quad: corner 0 -> 1 is +u,
@@ -494,18 +447,13 @@ void Chunk::add_merged_quad(block_face face, block_type type, ivec3 base_block, 
 	vec3 base_center = world_position + vec3(base_block.x - 1, base_block.y, base_block.z - 1);
 
 	//corner order matches cw_face_map: left-top, right-top, right-bottom, left-bottom
-	const vec2 corner_uv[4] = { vec2(0, 1), vec2(1, 1), vec2(1, 0), vec2(0, 0) };
+	const ivec2 corner_uv[4] = { ivec2(0, 1), ivec2(1, 1), ivec2(1, 0), ivec2(0, 0) };
 	for (int i = 0; i < 4; ++i) {
-		vertex v;
-		v.position = base_center + unit[i].position
+		vec3 position = base_center + unit[i].position
 			+ u_axis * (corner_uv[i].x * (float)(run_u - 1))
 			+ v_axis * (corner_uv[i].y * (float)(run_v - 1));
-		v.texture = vec2(corner_uv[i].x * run_u, corner_uv[i].y * run_v);
-		v.normal = normal;
-		v.tile_origin = tile_origin;
-		v.tint = tint;
-		apply_light(v, light);
-		opaque_vertices.push_back(v);
+		opaque_vertices.push_back({ position,
+			pack_block_vertex(normal, light, corner_uv[i].x * run_u, corner_uv[i].y * run_v, texture_coord), packed_tint });
 	}
 	update_face_indices(false, false);
 }
@@ -740,7 +688,7 @@ Chunk::MeshStats Chunk::mesh_stats() const {
 	stats.vertices = uploaded_vertices;
 	stats.indices = opaque_count + transp_count + water_count + foliage_count;
 	stats.gpu_bytes = uploaded_bytes;
-	stats.cpu_bytes = (opaque_vertices.capacity() + transp_vertices.capacity() + water_vertices.capacity()) * sizeof(vertex)
+	stats.cpu_bytes = (opaque_vertices.capacity() + transp_vertices.capacity() + water_vertices.capacity()) * sizeof(block_vertex)
 		+ foliage_vertices.capacity() * sizeof(foliage_vertex)
 		+ (opaque_indices.capacity() + transp_indices.capacity() + water_indices.capacity() + foliage_indices.capacity()) * sizeof(GLuint)
 		+ blocks.capacity() * sizeof(Block) + block_light.capacity();

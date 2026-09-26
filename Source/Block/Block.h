@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glad/glad.h>
+#include <cstdint>
 #include <map>
 #include <vector>
 #include <glm/glm.hpp>
@@ -16,12 +17,32 @@ struct vertex {
 	vec3 normal;
 	vec2 tile_origin;
 	vec3 tint; //biome colour multiplied onto greyscale tiles; white leaves a tile as authored
-	float light = 1.0f; //daylight reaching the face, 0..1; emissive_light makes it glow
-	float glow = 0.0f; //light from nearby glowing blocks, 0..1
 };
 
-//a light value above 1 tells the shaders the block lights itself, ignoring sun and shadow
-const float emissive_light = 2.0f;
+/*
+	a terrain mesh vertex at a third of vertex's size. apart from position and tint
+	everything fits one 32-bit word, unpacked in the vertex shader:
+	bits 0-2 normal direction, 3-6 daylight, 7-10 block light, 11 glows itself,
+	12-16 and 17-21 texture repeat (u, v), 22-25 atlas column, 26-31 atlas row
+*/
+struct block_vertex {
+	vec3 position;
+	uint32_t data;
+	uint32_t tint; //RGBA8
+};
+
+//light packed as daylight in bits 0-3, block light in bits 4-7 and 0x100 for a block that glows itself
+inline uint32_t pack_block_vertex(vec3 normal, uint16_t light, int u, int v, vec2 texture_coord) {
+	uint32_t direction = normal.x > 0.5f ? 0 : normal.x < -0.5f ? 1 : normal.y > 0.5f ? 2 : normal.y < -0.5f ? 3 : normal.z > 0.5f ? 4 : 5;
+	uint32_t column = (uint32_t)texture_coord.x - 1, row = (uint32_t)texture_coord.y - 1;
+	return direction | (uint32_t)(light & 0xFF) << 3 | (uint32_t)((light >> 8) & 1) << 11
+		| (uint32_t)u << 12 | (uint32_t)v << 17 | column << 22 | row << 26;
+}
+
+inline uint32_t pack_tint(vec3 tint) {
+	auto channel = [](float c) { return (uint32_t)(glm::clamp(c, 0.0f, 1.0f) * 255.0f + 0.5f); };
+	return channel(tint.r) | channel(tint.g) << 8 | channel(tint.b) << 16 | 255u << 24;
+}
 
 //a vertex for wind-swayed geometry (leaves, grass). sway is 0 at a pinned base and 1 at a freely swaying tip
 struct foliage_vertex {

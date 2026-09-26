@@ -29,23 +29,23 @@ private:
 	ShaderManager& sm;
 
 	//for opaque geometry
-	vector<vertex> opaque_vertices;
+	vector<block_vertex> opaque_vertices;
 	vector<GLuint> opaque_indices;
 	VAO opaque_vao = VAO();
-	VBO opaque_vbo = VBO(nullptr, sizeof(vertex) * 0, GL_STATIC_DRAW);
+	VBO opaque_vbo = VBO(nullptr, 0, GL_STATIC_DRAW);
 	EBO opaque_ebo = EBO(nullptr, sizeof(GLuint) * 0, GL_STATIC_DRAW);
 
 	//for transparent geometry
-	vector<vertex> transp_vertices;
+	vector<block_vertex> transp_vertices;
 	vector<GLuint> transp_indices;
 	VAO transp_vao = VAO();
-	VBO transp_vbo = VBO(nullptr, sizeof(vertex) * 0, GL_STATIC_DRAW);
+	VBO transp_vbo = VBO(nullptr, 0, GL_STATIC_DRAW);
 	EBO transp_ebo = EBO(nullptr, sizeof(GLuint) * 0, GL_STATIC_DRAW);
 
-	vector<vertex> water_vertices;
+	vector<block_vertex> water_vertices;
 	vector<GLuint> water_indices;
 	VAO water_vao = VAO();
-	VBO water_vbo = VBO(nullptr, sizeof(vertex) * 0, GL_STATIC_DRAW);
+	VBO water_vbo = VBO(nullptr, 0, GL_STATIC_DRAW);
 	EBO water_ebo = EBO(nullptr, sizeof(GLuint) * 0, GL_STATIC_DRAW);
 
 	//for wind-swayed geometry (leaves, grass)
@@ -85,7 +85,6 @@ private:
 	void build_block_faces(int y_lo, int y_hi);
 	void add_merged_quad(block_face face, block_type type, ivec3 base_block, int run_u, int run_v, uint16_t light);
 	uint16_t light_key(block_type type, block_face face, int x, int y, int z) const;
-	static void apply_light(vertex& v, uint16_t key);
 
 	//light from glowing blocks, indexed like blocks; only filled while has_block_light
 	vector<unsigned char> block_light;

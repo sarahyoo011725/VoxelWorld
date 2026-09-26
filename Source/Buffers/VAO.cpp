@@ -27,6 +27,13 @@ void VAO::link_attrib(VBO& VBO, GLuint layout, GLint length, GLenum type, GLbool
 	VBO.unbind();
 }
 
+void VAO::link_integer_attrib(VBO& VBO, GLuint layout, GLint length, GLenum type, GLsizei stride, const void* offset) {
+	VBO.bind();
+	glVertexAttribIPointer(layout, length, type, stride, offset);
+	glEnableVertexAttribArray(layout);
+	VBO.unbind();
+}
+
 /*
 	binds a VAO
 */
