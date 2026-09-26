@@ -47,6 +47,8 @@ PlayerRenderer::PlayerRenderer(WindowSetting* setting)
 	sm.wave_shader.set_uniform_1i("shadow_map", 4);
 	sm.foliage_shader.activate();
 	sm.foliage_shader.set_uniform_1i("shadow_map", 4);
+	sm.mob_shader.activate();
+	sm.mob_shader.set_uniform_1i("shadow_map", 4);
 
 	fbo.bind();
 	fbo.attach_texture(GL_COLOR_ATTACHMENT0, texture_color_buffer.get_id());

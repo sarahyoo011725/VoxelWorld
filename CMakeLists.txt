@@ -47,6 +47,8 @@ add_executable(VoxelWorld
 	Source/Entity/Collision.cpp
 	Source/Entity/Player.cpp
 	Source/Entity/PlayerPhysics.cpp
+	Source/Entity/Sheep.cpp
+	Source/Screens/MobRenderer.cpp
 	Source/Screens/PlayerRenderer.cpp
 	Source/Shader/Shader.cpp
 	Source/Texture/Texture.cpp
@@ -55,6 +57,7 @@ add_executable(VoxelWorld
 	Source/World/CaveGenerator.cpp
 	Source/World/ChunkGeneration.cpp
 	Source/World/ChunkManager.cpp
+	Source/World/MobManager.cpp
 	Source/World/StructureGenerator.cpp
 	Source/World/Biome.cpp
 	Source/World/SectionVisibility.cpp
@@ -120,6 +123,11 @@ endif()
 add_executable(render_bench
 	Tools/render_bench.cpp
 	Source/stb.cpp
+	Source/Entity/Collision.cpp
+	Source/Entity/PlayerPhysics.cpp
+	Source/Entity/Sheep.cpp
+	Source/Screens/MobRenderer.cpp
+	Source/World/MobManager.cpp
 	Source/Screens/PlayerRenderer.cpp
 	Source/Buffers/EBO.cpp
 	Source/Buffers/FBO.cpp

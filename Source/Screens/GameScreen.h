@@ -5,6 +5,8 @@
 #include "World/Terrain.h"
 #include "World/CaveGenerator.h"
 #include "PlayerRenderer.h"
+#include "MobRenderer.h"
+#include "World/MobManager.h"
 #include "Audio/AudioManager.h"
 #include <GLFW/glfw3.h>
 
@@ -19,6 +21,9 @@ private:
 	Player player;
 	Terrain terrain;
 	PlayerRenderer renderer;
+	MobManager mobs;
+	MobRenderer mob_renderer;
+	double last_mob_update = 0.0;
 	Texture texture = Texture("Resources/Textures/texture_atlas_blocks.png", GL_TEXTURE1, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 	bool wireframe = false;
 	bool enable_music = true;
@@ -43,6 +48,8 @@ public:
 		sm.wave_shader.set_uniform_1i("texture1", 1);
 		sm.foliage_shader.activate();
 		sm.foliage_shader.set_uniform_1i("texture1", 1);
+		sm.mob_shader.activate();
+		sm.mob_shader.set_uniform_1i("texture1", 1);
 	}
 
 	void gl_settings() {
@@ -116,6 +123,13 @@ public:
 			sm.frame_buffer_shader.set_uniform_1i("is_underwater", player.is_underwater());
 		}
 
+		//capped so a stall (a window drag, a debugger) can't launch mobs through the ground
+		double mob_now = glfwGetTime();
+		float mob_dt = last_mob_update > 0.0 ? (float)std::min(mob_now - last_mob_update, 0.1) : 0.0f;
+		last_mob_update = mob_now;
+		mobs.update(mob_dt, player.position);
+		mob_renderer.build(mobs.sheep());
+
 		//shadow pass: render opaque + foliage geometry depth-only from the sun's POV.
 		//refreshed on an interval, or immediately when geometry changed
 		bool geometry_changed = terrain.stats.chunks_built > 0;
@@ -132,6 +146,8 @@ public:
 			sm.wave_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shadow_matrix);
 			sm.foliage_shader.activate();
 			sm.foliage_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shadow_matrix);
+			sm.mob_shader.activate();
+			sm.mob_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shadow_matrix);
 
 			renderer.bind_shadow_fbo();
 			glViewport(0, 0, renderer.shadow_resolution, renderer.shadow_resolution);
@@ -142,6 +158,7 @@ public:
 			sm.shadow_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shadow_matrix);
 			sm.shadow_shader.set_uniform_1f("time", (float)glfwGetTime());
 			terrain.draw_shadow_casters(shadow_matrix);
+			mob_renderer.draw_depth();
 			renderer.unbind_shadow_fbo();
 			glViewport(0, 0, window_setting->width, window_setting->height);
 		}
@@ -171,6 +188,7 @@ public:
 		texture.activate();
 		texture.bind();
 		terrain.draw(player.camera.mat);
+		mob_renderer.draw();
 		renderer.draw_outlines(player.view_matrix(), player.hovered_block(), player.hovered_position());
 		renderer.draw_HUDs();
 		renderer.draw_hotbar(player.inventory());

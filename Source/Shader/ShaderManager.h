@@ -21,4 +21,6 @@ public:
 	Shader sky_disc_shader = Shader("Resources/Shaders/sky_disc.vert", "Resources/Shaders/sky_disc.frag");
 	Shader sky_shader = Shader("Resources/Shaders/sky.vert", "Resources/Shaders/sky.frag");
 	Shader clouds_shader = Shader("Resources/Shaders/clouds.vert", "Resources/Shaders/clouds.frag");
+	//mobs share the terrain's lighting, so they reuse its fragment shader
+	Shader mob_shader = Shader("Resources/Shaders/mob.vert", "Resources/Shaders/default.frag");
 };

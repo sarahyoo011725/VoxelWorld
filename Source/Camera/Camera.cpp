@@ -19,16 +19,18 @@ void Camera::update(vec3 eye_position) {
 	update_day_night_cycle(dt);
 	update_light_space_matrix(eye_position);
 
-	sm.default_shader.activate();
-	sm.default_shader.set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);
-	sm.default_shader.set_uniform_3f("cam_pos", 1, eye_position);
-	sm.default_shader.set_uniform_3f("fog_color", 1, sky_color);
-	sm.default_shader.set_uniform_1f("fog_start", fog_start);
-	sm.default_shader.set_uniform_1f("fog_end", fog_end);
-	sm.default_shader.set_uniform_3f("sun_direction", 1, sun_direction);
-	sm.default_shader.set_uniform_3f("light_color", 1, light_color);
-	sm.default_shader.set_uniform_1f("ambient_strength", ambient_strength);
-	sm.default_shader.set_uniform_1f("diffuse_strength", diffuse_strength);
+	for (Shader* shader : { &sm.default_shader, &sm.mob_shader }) {
+		shader->activate();
+		shader->set_uniform_mat4f("cam_matrix", 1, GL_FALSE, mat);
+		shader->set_uniform_3f("cam_pos", 1, eye_position);
+		shader->set_uniform_3f("fog_color", 1, sky_color);
+		shader->set_uniform_1f("fog_start", fog_start);
+		shader->set_uniform_1f("fog_end", fog_end);
+		shader->set_uniform_3f("sun_direction", 1, sun_direction);
+		shader->set_uniform_3f("light_color", 1, light_color);
+		shader->set_uniform_1f("ambient_strength", ambient_strength);
+		shader->set_uniform_1f("diffuse_strength", diffuse_strength);
+	}
 
 	sm.wave_shader.activate();
 	sm.wave_shader.set_uniform_1f("time", frame);
