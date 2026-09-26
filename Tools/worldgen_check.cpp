@@ -6,6 +6,7 @@
 	usage: worldgen_check [caves|occlusion|all] [region=<chunks per side>]
 	caves also writes cave_slice_y*.ppm and cave_cut.ppm to the working directory.
 */
+#include "World/BlockLight.h"
 #include "World/ChunkGeneration.h"
 #include "World/CaveGenerator.h"
 #include "World/SectionVisibility.h"
@@ -31,7 +32,11 @@ namespace {
 		vector<Block> blocks;
 		vector<int> heights;
 		vector<biome_id> biomes;
+		vector<glm::ivec3> emitters;
+		vector<unsigned char> light;
+		bool lit = false;
 		block_type at(int x, int y, int z) const { return blocks[((size_t)x * H + y) * L + z].type; }
+		unsigned char light_at(int x, int y, int z) const { return lit ? light[((size_t)x * H + y) * L + z] : 0; }
 	};
 
 	void generate(int cx, int cz, ChunkData& c) {
@@ -53,10 +58,12 @@ namespace {
 
 	bool opaque(block_type t) { return !is_see_through(t) && !is_foliage(t); }
 
-	//mirrors Chunk::light_level
-	unsigned char face_light(const ChunkData& c, block_type t, int x, int y, int z, const int* dir) {
-		if (t == lava) return emissive_level;
-		return daylight_level(c.heights[(size_t)(x + dir[0]) * L + (z + dir[2])], y + dir[1]);
+	//mirrors Chunk::light_key
+	uint16_t face_light(const ChunkData& c, block_type t, int x, int y, int z, const int* dir) {
+		if (is_emissive(t)) return 0x100;
+		int fx = x + dir[0], fy = y + dir[1], fz = z + dir[2];
+		unsigned char glow = fy >= 0 && fy < H ? c.light_at(fx, fy, fz) : 0;
+		return (uint16_t)(daylight_level(c.heights[(size_t)fx * L + fz], fy) | (glow << 4));
 	}
 
 	//border copies only feed face culling, which cares whether a block is air, a liquid or solid;
@@ -70,7 +77,8 @@ namespace {
 	long long greedy_quads(const ChunkData& c) {
 		static const int d[6][3] = { {0,0,1},{0,0,-1},{-1,0,0},{1,0,0},{0,1,0},{0,-1,0} };
 		long long quads = 0;
-		vector<unsigned char> mask, light;
+		vector<unsigned char> mask;
+		vector<uint16_t> light;
 		for (int y_lo = 0; y_lo < H; y_lo += section_size) {
 			int y_hi = std::min(y_lo + section_size, H);
 			for (int f = 0; f < 6; ++f) {
@@ -99,7 +107,7 @@ namespace {
 						for (int b = 0; b < bh; ) {
 							unsigned char t = mask[(size_t)a * bh + b];
 							if (!t) { ++b; continue; }
-							unsigned char l = light[(size_t)a * bh + b];
+							uint16_t l = light[(size_t)a * bh + b];
 							auto same = [&](size_t k) { return mask[k] == t && light[k] == l; };
 							int rh = 1;
 							while (b + rh < bh && same((size_t)a * bh + b + rh)) ++rh;
@@ -130,16 +138,21 @@ namespace {
 		int chunks, size, cx0, cz0;
 		vector<unsigned char> blocks, filled;
 		vector<int> surface;
+		vector<ChunkData> parts;
 		size_t at(int x, int y, int z) const { return ((size_t)x * H + y) * size + z; }
+		ChunkData& part(int i, int k) { return parts[(size_t)i * chunks + k]; }
 
 		explicit Region(int n) : chunks(n), size(n * CS), cx0(-n / 2), cz0(-n / 2) {
 			blocks.resize((size_t)size * H * size);
 			filled.resize(blocks.size());
 			surface.resize((size_t)size * size);
-			ChunkData c, f;
+			parts.resize((size_t)n * n);
+			ChunkData f;
 			for (int i = 0; i < n; ++i)
 				for (int k = 0; k < n; ++k) {
+					ChunkData& c = part(i, k);
 					generate(cx0 + i, cz0 + k, c);
+					find_emitters(c.blocks, W, H, L, c.emitters);
 					fill_only(cx0 + i, cz0 + k, f);
 					for (int x = 1; x < W - 1; ++x)
 						for (int z = 1; z < L - 1; ++z) {
@@ -353,12 +366,127 @@ namespace {
 				sizes.size(), tiny, sizes.empty() ? 0.0 : 100.0 * sizes[0] / total);
 		}
 
+		printf("\ncaves: block light\n");
+		{
+			const int n = r.chunks;
+			long long lava_count = 0, glow_count = 0;
+			for (ChunkData& c : r.parts)
+				for (const glm::ivec3& e : c.emitters) (c.at(e.x, e.y, e.z) == lava ? lava_count : glow_count)++;
+
+			double light_ms = 0;
+			int lit_chunks = 0;
+			for (int i = 0; i < n; ++i)
+				for (int k = 0; k < n; ++k) {
+					LightNeighbour around[9];
+					for (int dx = -1; dx <= 1; ++dx)
+						for (int dz = -1; dz <= 1; ++dz) {
+							int ni = i + dx, nk = k + dz;
+							if (ni < 0 || nk < 0 || ni >= n || nk >= n) continue;
+							around[(dx + 1) * 3 + (dz + 1)] = { &r.part(ni, nk).blocks, &r.part(ni, nk).emitters };
+						}
+					ChunkData& c = r.part(i, k);
+					double t0 = now_ms();
+					c.lit = compute_block_light(around, W, H, L, c.light);
+					light_ms += now_ms() - t0;
+					if (c.lit) lit_chunks++;
+				}
+			printf("  glowing blocks: lava %lld, glowstone %lld\n", lava_count, glow_count);
+			printf("  light pass: %.3f ms per chunk on average, %d of %d chunks have light\n", light_ms / (n * n), lit_chunks, n * n);
+
+			//both chunks either side of a border must compute the same light for the cells they share.
+			//the outer ring is left out: its missing neighbours read as solid, just as at the render edge
+			long long compared = 0, mismatched = 0;
+			for (int i = 1; i + 2 < n; ++i)
+				for (int k = 1; k + 1 < n; ++k) {
+					ChunkData& a = r.part(i, k);
+					ChunkData& b = r.part(i + 1, k);
+					for (int z = 1; z < L - 1; ++z)
+						for (int y = 0; y < H; ++y) {
+							compared += 2;
+							if (a.light_at(W - 1, y, z) != b.light_at(1, y, z)) mismatched++;
+							if (a.light_at(W - 2, y, z) != b.light_at(0, y, z)) mismatched++;
+						}
+					ChunkData& c = r.part(k, i);
+					ChunkData& d2 = r.part(k, i + 1);
+					for (int x = 1; x < W - 1; ++x)
+						for (int y = 0; y < H; ++y) {
+							compared += 2;
+							if (c.light_at(x, y, L - 1) != d2.light_at(x, y, 1)) mismatched++;
+							if (c.light_at(x, y, L - 2) != d2.light_at(x, y, 0)) mismatched++;
+						}
+				}
+			check("light agrees across chunk borders", mismatched == 0,
+				"(" + to_string(mismatched) + " of " + to_string(compared) + " differ)");
+
+			//the open cell beside a glowing block holds one level less than the source
+			long long exposed = 0, wrong = 0;
+			static const int d[6][3] = { {0,0,1},{0,0,-1},{-1,0,0},{1,0,0},{0,1,0},{0,-1,0} };
+			for (ChunkData& c : r.parts)
+				for (const glm::ivec3& e : c.emitters)
+					for (auto& o : d) {
+						int x = e.x + o[0], y = e.y + o[1], z = e.z + o[2];
+						if (x < 1 || z < 1 || x > W - 2 || z > L - 2 || y < 0 || y >= H) continue;
+						if (!is_see_through(c.at(x, y, z))) continue;
+						exposed++;
+						if (c.light_at(x, y, z) != max_block_light - 1) wrong++;
+					}
+			check("open cells next to glowing blocks are at level 14", wrong == 0,
+				"(" + to_string(wrong) + " of " + to_string(exposed) + ")");
+
+			long long cave_air = 0, glowing_air = 0, quads_lit = 0, quads_unlit = 0;
+			for (int i = 0; i < n; ++i)
+				for (int k = 0; k < n; ++k) {
+					ChunkData& c = r.part(i, k);
+					quads_lit += greedy_quads(c);
+					bool was_lit = c.lit;
+					c.lit = false;
+					quads_unlit += greedy_quads(c);
+					c.lit = was_lit;
+					for (int x = 1; x < W - 1; ++x)
+						for (int z = 1; z < L - 1; ++z)
+							for (int y = 0; y < H; ++y) {
+								size_t ri = r.at(i * CS + x - 1, y, k * CS + z - 1);
+								if (!r.carved(ri) || c.at(x, y, z) != none) continue;
+								cave_air++;
+								if (c.light_at(x, y, z) > 0) glowing_air++;
+							}
+				}
+			//mirrors ChunkManager::relight_around: a newly loaded chunk makes a built neighbour relight
+			//only when a glowing block in that neighbour's 3x3 lies within reach of the new chunk
+			long long relights = 0, arrivals = 0;
+			for (int i = 2; i < n - 2; ++i)
+				for (int k = 2; k < n - 2; ++k) {
+					arrivals++;
+					int lo_x = i * CS, lo_z = k * CS, hi_x = lo_x + CS - 1, hi_z = lo_z + CS - 1;
+					for (int dx = -1; dx <= 1; ++dx)
+						for (int dz = -1; dz <= 1; ++dz) {
+							if (dx == 0 && dz == 0) continue;
+							bool flag = false;
+							for (int ex = -1; ex <= 1 && !flag; ++ex)
+								for (int ez = -1; ez <= 1 && !flag; ++ez) {
+									int ni = i + dx + ex, nk = k + dz + ez;
+									for (const glm::ivec3& e : r.part(ni, nk).emitters) {
+										int wx = ni * CS + e.x - 1, wz = nk * CS + e.z - 1;
+										int gap = std::max(std::max(lo_x - wx, wx - hi_x), std::max(lo_z - wz, wz - hi_z));
+										if (gap < max_block_light) { flag = true; break; }
+									}
+								}
+							if (flag) relights++;
+						}
+				}
+			printf("  a newly loaded chunk relights %.1f of its 8 neighbours on average\n", (double)relights / std::max(arrivals, 1LL));
+			printf("  cave air reached by block light: %.1f%%\n", 100.0 * glowing_air / std::max(cave_air, 1LL));
+			printf("  opaque quads: %.0f per chunk with block light, %.0f without\n",
+				(double)quads_lit / (n * n), (double)quads_unlit / (n * n));
+		}
+
 		auto color = [&](size_t i, unsigned char* px) {
 			block_type t = (block_type)r.blocks[i];
 			unsigned char c[3] = { 120, 90, 60 };
 			if (t == none) { c[0] = 150; c[1] = 200; c[2] = 255; }
 			if (t == water) { c[0] = 40; c[1] = 80; c[2] = 200; }
 			if (t == lava) { c[0] = 255; c[1] = 140; c[2] = 0; }
+			if (t == glowstone) { c[0] = 255; c[1] = 255; c[2] = 200; }
 			if (t == stone || t == mossy_stone) { c[0] = 110; c[1] = 110; c[2] = 110; }
 			if (t == bedrock) { c[0] = 20; c[1] = 20; c[2] = 20; }
 			if (t == gravel) { c[0] = 150; c[1] = 140; c[2] = 130; }
