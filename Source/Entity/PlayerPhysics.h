@@ -15,11 +15,11 @@ public:
 	bool on_ground = false;
 	void integrate(GameObject& target, float dt, bool enabled);
 	bool is_underwater(vec3 position);
+	bool is_position_clear(const GameObject& probe);
 private:
 	//blocks no longer carry a position, so collision candidates are gathered as
 	//the world coordinates they were found at
 	vector<vec3> gather_candidate_blocks(const GameObject& broadphase);
-	bool is_position_clear(const GameObject& probe);
 	bool has_solid_ground_below(const GameObject& probe);
 	void try_auto_step(GameObject& target, float dt);
 
