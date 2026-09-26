@@ -40,7 +40,7 @@ Windows only for now. The game targets OpenGL 3.3 core.
 | --- | --- |
 | [Visual Studio 2022](https://visualstudio.microsoft.com/downloads/) with the **Desktop development with C++** workload | The Build Tools edition is enough if you only plan to use VS Code. This provides the MSVC compiler and the Windows SDK. |
 | [CMake](https://cmake.org/download/) 3.21+ | Bundled with the C++ workload above. |
-| [Git](https://git-scm.com/downloads) and [Git LFS](https://git-lfs.com/) | **Git LFS is required** — the music and sound effects (~235 MB) are stored in LFS. |
+| [Git](https://git-scm.com/downloads) and [Git LFS](https://git-lfs.com/) | **Git LFS is required** — the music and sound effects (~30 MB) are stored in LFS. |
 | [vcpkg](https://github.com/microsoft/vcpkg) | Fetches glad, GLFW, GLM, OpenAL Soft and libsndfile. |
 
 ### 2. Set up vcpkg

@@ -239,12 +239,12 @@ bool resolve_resource_root(const char* argv0) {
 }
 
 /*
-* the .wav files are stored in Git LFS. Cloning without git-lfs leaves small
+* the audio files are stored in Git LFS. Cloning without git-lfs leaves small
 * text pointers in their place, which makes audio loading throw at startup with
 * no useful message, so check one of them up front.
 */
 void warn_if_lfs_placeholders() {
-	const char* probe = "Resources/Musics/sweden.wav";
+	const char* probe = "Resources/Musics/sweden.ogg";
 	ifstream in(probe, ios::binary);
 	if (!in) return;
 

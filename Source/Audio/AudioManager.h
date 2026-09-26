@@ -27,14 +27,14 @@ namespace audio {
 	loads and stores music files
 */
 namespace music {
-	static MusicBuffer moog_city2 = MusicBuffer("Resources/Musics/moog_city2.wav");
+	static MusicBuffer moog_city2 = MusicBuffer("Resources/Musics/moog_city2.ogg");
 
 	static unordered_map<int, MusicBuffer*> musics_list = {
-		{0, new MusicBuffer("Resources/Musics/minecraft.wav")},
-		{1, new MusicBuffer("Resources/Musics/blind_spots.wav")},
-		{2, new MusicBuffer("Resources/Musics/aria_math.wav")},
-		{3, new MusicBuffer("Resources/Musics/wet_hands.wav")},
-		{4, new MusicBuffer("Resources/Musics/sweden.wav")},
+		{0, new MusicBuffer("Resources/Musics/minecraft.ogg")},
+		{1, new MusicBuffer("Resources/Musics/blind_spots.ogg")},
+		{2, new MusicBuffer("Resources/Musics/aria_math.ogg")},
+		{3, new MusicBuffer("Resources/Musics/wet_hands.ogg")},
+		{4, new MusicBuffer("Resources/Musics/sweden.ogg")},
 	};
 }
 
