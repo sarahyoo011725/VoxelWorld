@@ -79,6 +79,7 @@ static int report_debug_failure(int, char* message, int*) {
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
 #include <chrono>
+#include <fstream>
 #include <cstdio>
 #include <vector>
 #include "World/Terrain.h"
@@ -176,6 +177,26 @@ namespace {
 		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth);
 		return target;
+	}
+
+	//renders one fixed view into the bound 1200x700 target and saves it, so two builds can be compared pixel for pixel
+	void save_view(Terrain& terrain, ShaderManager& sm, Texture& atlas, vec3 eye, float yaw, const char* path) {
+		const mat4 projection = perspective(radians(70.0f), 1200.0f / 700.0f, 0.1f, 180.0f);
+		vec3 forward = normalize(vec3(cos(yaw), -0.15f, sin(yaw)));
+		mat4 view_projection = projection * lookAt(eye, eye + forward, vec3(0, 1, 0));
+		terrain.update_chunks();
+		set_view_uniforms(sm, view_projection, eye);
+		atlas.activate();
+		atlas.bind();
+		glClearColor(0.6f, 0.75f, 0.95f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		terrain.draw(view_projection);
+		vector<unsigned char> pixels(1200 * 700 * 3);
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
+		glReadPixels(0, 0, 1200, 700, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
+		ofstream file(path, ios::binary);
+		file << "P6\n1200 700\n255\n";
+		for (int y = 699; y >= 0; --y) file.write(reinterpret_cast<const char*>(&pixels[(size_t)y * 1200 * 3]), 1200 * 3);
 	}
 
 	void print_frame(const char* label, const FrameResult& r) {
@@ -423,6 +444,14 @@ int main(int argc, char** argv) {
 		printf("  CPU %.2f ms  = update %.2f + draw submission %.2f + shadow submission %.2f\n",
 			cpu_frame, idle_ms, sorted.cpu_ms, shadow_cpu_ms / 3.0);
 		printf("  GPU %.2f ms  = main pass %.2f + shadow pass %.2f\n", gpu_frame, sorted.gpu_ms, shadow_gpu_ms / 3.0);
+
+		Texture atlas("Resources/Textures/texture_atlas_blocks.png", GL_TEXTURE1, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+		for (Shader* s : shaded) {
+			s->activate();
+			s->set_uniform_1i("texture1", 1);
+		}
+		save_view(terrain, sm, atlas, eye, 0.3f, "bench_view_a.ppm");
+		save_view(terrain, sm, atlas, eye, 3.4f, "bench_view_b.ppm");
 	}
 
 	printf("\nstreaming (walking east one chunk at a time, %.0f ms build budget)\n", 3.0f);
