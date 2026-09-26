@@ -74,7 +74,6 @@ private:
 	vector<biome_id> biome_map;
 	inline size_t block_index(int x, int y, int z) const { return (static_cast<size_t>(x) * height + y) * length + z; }
 	inline size_t height_index(int x, int z) const { return static_cast<size_t>(x) * length + z; }
-	vector<int> get_heightmap();
 	void add_face(block_face face, block_type type, vec3 local_coord);
 	vec3 tint_for(block_type type, block_face face, int x, int z) const;
 	void build_opaque_mesh(int y_lo, int y_hi);

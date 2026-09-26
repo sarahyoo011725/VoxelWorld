@@ -2,9 +2,7 @@
 #include <algorithm>
 #include "World/ChunkManager.h"
 #include "World/StructureGenerator.h"
-#include "World/CaveGenerator.h"
-
-static const uint32_t bedrock_salt = 0xBED0;
+#include "World/ChunkGeneration.h"
 
 /*
 	sets up the chunk's dimensions and GL buffer objects. deliberately does no
@@ -74,8 +72,7 @@ Chunk::~Chunk() {
 void Chunk::generate_terrain() {
 	if (has_generated) return;
 
-	blocks.resize(static_cast<size_t>(width) * height * length);
-	height_map = get_heightmap();
+	generate_chunk_blocks(id, width, height, length, blocks, height_map, biome_map);
 
 	//water fills to water_level even where the ground is lower, so the top of
 	//the terrain alone is not the top of the solid geometry
@@ -86,74 +83,7 @@ void Chunk::generate_terrain() {
 	max_occupied_y = std::min(highest, height - 1);
 	lowest_surface_y = *std::min_element(height_map.begin(), height_map.end());
 
-	const TerrainConfig& config = get_terrain_generator().config;
-	for (int x = 0; x < width; ++x) {
-		for (int z = 0; z < length; ++z) {
-			int h = get_height(x, z);
-			const BiomeDefinition& biome = biome_of(get_biome(x, z));
-			WorldRandom rng(config.world_seed, (int)world_position.x + x - 1, (int)world_position.z + z - 1, bedrock_salt);
-			int bedrock_top = config.bedrock_height - 1 - rng.next_int(2);
-
-			for (int y = 0; y < height; ++y) {
-				block_type type = none;
-				if (y > h && y <= water_level) {
-					type = water;
-				}
-				if (y == h) {
-					type = biome.surface;
-				}
-				if (y < h) {
-					type = biome.subsurface;
-					if (y < h - biome.subsurface_depth) {
-						type = stone;
-					}
-				}
-				//anything at the waterline is beach regardless of biome, so
-				//shores read as shores instead of grass running into the sea
-				if (y <= h && y >= h - 2 && y + 1 < height && y + 1 <= water_level) {
-					type = sand;
-				}
-				if (y <= bedrock_top) {
-					type = bedrock;
-				}
-				blocks[block_index(x, y, z)].type = type;
-			}
-		}
-	}
-
-	get_cave_generator().carve(blocks, height_map, (int)world_position.x - 1, (int)world_position.z - 1,
-		width, height, length, get_terrain_generator());
-
 	has_generated = true;
-}
-
-/*
-	generate a height map from a block's world coordinate
-*/
-vector<int> Chunk::get_heightmap() {
-	vector<int> map(static_cast<size_t>(width) * length);
-	biome_map.assign(static_cast<size_t>(width) * length, biome_id::plains);
-
-	const TerrainGenerator& generator = get_terrain_generator();
-	for (int x = 0; x < width; ++x) {
-		for (int z = 0; z < length; ++z) {
-			//get a block's world coords
-			int x_pos = world_position.x + x - 1;
-			int z_pos = world_position.z + z - 1;
-
-			//one climate sample feeds both the height and the biome, so adding
-			//biomes costs two extra noise lookups per column rather than a
-			//second pass over the chunk
-			ClimateSample climate = generator.sample_climate(x_pos, z_pos);
-
-			int height_val = climate.elevation;
-			if (height_val > height) height_val = height;
-			if (height_val < 0) height_val = 0;
-			map[height_index(x, z)] = height_val;
-			biome_map[height_index(x, z)] = select_biome(climate, water_level);
-		}
-	}
-	return map;
 }
 
 /*

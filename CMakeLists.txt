@@ -52,6 +52,7 @@ add_executable(VoxelWorld
 	Source/Texture/Texture.cpp
 	Source/World/BlockInteractor.cpp
 	Source/World/CaveGenerator.cpp
+	Source/World/ChunkGeneration.cpp
 	Source/World/ChunkManager.cpp
 	Source/World/StructureGenerator.cpp
 	Source/World/Biome.cpp
