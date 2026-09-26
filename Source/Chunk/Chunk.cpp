@@ -713,3 +713,17 @@ void Chunk::build_block_faces(int y_lo, int y_hi) {
 		}
 	}
 }
+
+Chunk::MeshStats Chunk::mesh_stats() const {
+	MeshStats stats;
+	stats.vertices = opaque_vertices.size() + transp_vertices.size() + water_vertices.size() + foliage_vertices.size();
+	stats.indices = opaque_indices.size() + transp_indices.size() + water_indices.size() + foliage_indices.size();
+	stats.gpu_bytes = (opaque_vertices.size() + transp_vertices.size() + water_vertices.size()) * sizeof(vertex)
+		+ foliage_vertices.size() * sizeof(foliage_vertex) + stats.indices * sizeof(GLuint);
+	stats.cpu_bytes = (opaque_vertices.capacity() + transp_vertices.capacity() + water_vertices.capacity()) * sizeof(vertex)
+		+ foliage_vertices.capacity() * sizeof(foliage_vertex)
+		+ (opaque_indices.capacity() + transp_indices.capacity() + water_indices.capacity() + foliage_indices.capacity()) * sizeof(GLuint)
+		+ blocks.capacity() * sizeof(Block) + block_light.capacity();
+	for (const auto& e : nonblock_structure_vertices) stats.cpu_bytes += e.second.capacity() * sizeof(foliage_vertex);
+	return stats;
+}

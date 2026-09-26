@@ -12,6 +12,8 @@ struct PerfStats {
 	float chunk_build_ms = 0.0f;
 	float generate_ms = 0.0f;
 	int chunks_built = 0;
+	float rebuild_ms = 0.0f; //chunks remeshed at once, on the main thread, because a block in them changed
+	int chunks_rebuilt = 0;
 	int chunks_generated = 0;
 	int chunks_pending = 0;
 	int chunks_visible = 0;

@@ -114,5 +114,39 @@ if(MSVC)
 	target_compile_options(worldgen_check PRIVATE /utf-8 /EHsc)
 endif()
 
+# Rendering and chunk pipeline benchmark: drives the real Terrain in a hidden
+# window and reports load, mesh, memory, per-frame and streaming costs.
+# Run from the repository root so Resources/ resolves.
+add_executable(render_bench
+	Tools/render_bench.cpp
+	Source/stb.cpp
+	Source/Buffers/EBO.cpp
+	Source/Buffers/FBO.cpp
+	Source/Buffers/RBO.cpp
+	Source/Buffers/VAO.cpp
+	Source/Buffers/VBO.cpp
+	Source/Chunk/Chunk.cpp
+	Source/Shader/Shader.cpp
+	Source/Texture/Texture.cpp
+	Source/World/Biome.cpp
+	Source/World/BlockLight.cpp
+	Source/World/CaveGenerator.cpp
+	Source/World/ChunkGeneration.cpp
+	Source/World/ChunkManager.cpp
+	Source/World/SectionVisibility.cpp
+	Source/World/StructureGenerator.cpp
+	Source/World/Terrain.cpp
+	Source/World/TerrainGenerator.cpp
+)
+target_include_directories(render_bench PRIVATE
+	"${CMAKE_CURRENT_SOURCE_DIR}/Source"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Libraries/include"
+)
+target_link_libraries(render_bench PRIVATE glad::glad glfw glm::glm OpenGL::GL)
+if(MSVC)
+	target_compile_options(render_bench PRIVATE /utf-8 /EHsc /Zi)
+	target_link_options(render_bench PRIVATE /DEBUG)
+endif()
+
 # Resources/ is ~235 MB (mostly music), so it is located at runtime rather than
 # copied next to the executable on every build.

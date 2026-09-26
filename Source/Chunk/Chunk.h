@@ -147,4 +147,13 @@ public:
 	void set_block(ivec3 local_coord, block_type type);
 	void add_nonblock_structure_vertices(ivec3 local_coord, vector<foliage_vertex> vertices);
 	void remove_structure(ivec3 local_coord);
+
+	//what this chunk's mesh and storage currently hold, for profiling
+	struct MeshStats {
+		size_t vertices = 0;
+		size_t indices = 0;
+		size_t gpu_bytes = 0;
+		size_t cpu_bytes = 0; //blocks, light and the kept copy of every vertex and index
+	};
+	MeshStats mesh_stats() const;
 };

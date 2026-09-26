@@ -9,7 +9,7 @@ Terrain::Terrain(vec3& cam_pos) : cm(ChunkManager::get_instance()), sg(Structure
 /*
 	streams chunks around the player up to the render distance, building/rebuilding
 	as needed, and populates visible_chunks. must be called once per frame, before
-	draw_shadow_casters()/draw() - both consume visible_chunks and draw() clears it.
+	draw_shadow_casters()/draw(), which both consume visible_chunks.
 */
 void Terrain::update_chunks() {
 	//player's pos in chunk space
@@ -17,6 +17,9 @@ void Terrain::update_chunks() {
 		floor(player_pos->x / chunk_size),
 		floor(player_pos->z / chunk_size),
 	};
+
+	//rebuilt from scratch every call: a chunk listed twice would be meshed by two threads at once
+	visible_chunks.clear();
 
 	//render chunks around player's pos up to the render dist
 	vector<Chunk*> new_chunks;
@@ -63,11 +66,15 @@ void Terrain::update_chunks() {
 
 	//rebuilds come from the player breaking/placing a block, so they run
 	//immediately - deferring them would show a stale chunk for a frame
+	auto rebuild_start = chrono::steady_clock::now();
+	stats.chunks_rebuilt = 0;
 	for (Chunk* c : visible_chunks) {
 		if (c->has_built && c->should_rebuild) {
 			c->rebuild_chunk();
+			stats.chunks_rebuilt++;
 		}
 	}
+	stats.rebuild_ms = chrono::duration<float, milli>(chrono::steady_clock::now() - rebuild_start).count();
 
 	build_pending_chunks();
 	unload_distant_chunks();
