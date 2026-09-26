@@ -2,6 +2,7 @@
 #include <algorithm>
 #include "World/ChunkManager.h"
 #include "World/StructureGenerator.h"
+#include "World/CaveGenerator.h"
 
 static const uint32_t bedrock_salt = 0xBED0;
 
@@ -116,6 +117,9 @@ void Chunk::generate_terrain() {
 			}
 		}
 	}
+
+	get_cave_generator().carve(blocks, height_map, (int)world_position.x - 1, (int)world_position.z - 1,
+		width, height, length, get_terrain_generator());
 
 	has_generated = true;
 }

@@ -268,6 +268,8 @@ void Terrain::spawn_structures(Chunk* chunk) {
 
 			//do not spawn anything in water
 			if (h <= water_level) continue;
+			//a cave entrance can carve the surface block away
+			if (!is_solid(chunk->get_block(ivec3(x, h, z)))) continue;
 
 			//the biome decides how dense each kind of vegetation is here, so a
 			//forest fills in and a desert stays bare without the rules knowing
