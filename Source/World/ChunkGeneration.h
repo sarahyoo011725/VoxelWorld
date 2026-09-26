@@ -4,6 +4,9 @@
 #include "Block/Block.h"
 #include "World/Biome.h"
 
+//sea level + tallest extreme peak, with the underground below
+const int chunk_height = 112;
+
 /*
 	fills a chunk's blocks, heightmap and biome map from the world seed. arrays
 	include the one-block border and are indexed like Chunk: blocks
@@ -11,4 +14,8 @@
 	shared state, so it runs on any thread and in the offline tools unchanged.
 */
 void generate_chunk_blocks(glm::ivec2 chunk_id, int width, int height, int length,
+	std::vector<Block>& blocks, std::vector<int>& heights, std::vector<biome_id>& biomes);
+
+//the same without caves, for measuring what carving adds
+void fill_chunk_terrain(glm::ivec2 chunk_id, int width, int height, int length,
 	std::vector<Block>& blocks, std::vector<int>& heights, std::vector<biome_id>& biomes);

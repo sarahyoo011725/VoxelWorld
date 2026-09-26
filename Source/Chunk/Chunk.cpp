@@ -14,7 +14,7 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	id = chunk_id;
 	world_position = vec3(chunk_id.x * chunk_size, 0, chunk_id.y * chunk_size);
 	width = chunk_size + 2;
-	height = 112; //sea level + tallest extreme peak, with the underground below
+	height = chunk_height;
 	length = chunk_size + 2;
 	section_count = (height + section_size - 1) / section_size;
 	section_connectivity.assign(section_count, all_links);

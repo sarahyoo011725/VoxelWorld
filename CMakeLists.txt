@@ -92,5 +92,25 @@ if(MSVC)
 	)
 endif()
 
+# Offline world generation checks with no window or GL: cave stats and images,
+# chunk-border seams, timings, and a ray test for cave culling. Exits non-zero on
+# a failed check, so it doubles as a regression test.
+add_executable(worldgen_check
+	Tools/worldgen_check.cpp
+	Source/World/Biome.cpp
+	Source/World/CaveGenerator.cpp
+	Source/World/ChunkGeneration.cpp
+	Source/World/SectionVisibility.cpp
+	Source/World/TerrainGenerator.cpp
+)
+target_include_directories(worldgen_check PRIVATE
+	"${CMAKE_CURRENT_SOURCE_DIR}/Source"
+	"${CMAKE_CURRENT_SOURCE_DIR}/Libraries/include"
+)
+target_link_libraries(worldgen_check PRIVATE glad::glad glm::glm)
+if(MSVC)
+	target_compile_options(worldgen_check PRIVATE /utf-8 /EHsc)
+endif()
+
 # Resources/ is ~235 MB (mostly music), so it is located at runtime rather than
 # copied next to the executable on every build.
