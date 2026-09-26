@@ -216,6 +216,7 @@ void PlayerRenderer::draw_perf_overlay(const PerfStats& stats) {
 		"GEN " + num(stats.generate_ms, 1) + " MS  NEW " + num((float)stats.chunks_generated, 0),
 		"QUEUED " + num((float)stats.chunks_pending, 0) + "  DRAWN " + num((float)stats.chunks_drawn, 0) + "/" + num((float)stats.chunks_visible, 0),
 		"LOADED " + num((float)stats.chunks_loaded, 0),
+		"SECTIONS " + num((float)stats.sections_drawn, 0) + "/" + num((float)stats.sections_total, 0) + "  OCCLUSION " + (stats.occlusion_culling ? "ON " : "OFF ") + num(stats.visibility_ms, 2) + " MS",
 		"XYZ " + num((float)stats.player_x, 0) + " " + num((float)stats.player_y, 0) + " " + num((float)stats.player_z, 0),
 		std::string("BIOME ") + stats.biome_name,
 		"TEMP " + num(stats.temperature, 2) + "  MOIST " + num(stats.moisture, 2),

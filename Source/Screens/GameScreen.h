@@ -26,6 +26,7 @@ private:
 	bool debug_export_key_was_down = false;
 	bool show_perf_overlay = false;
 	bool perf_key_was_down = false;
+	bool occlusion_key_was_down = false;
 	double last_frame_time = 0.0;
 	float smoothed_frame_ms = 16.7f;
 	int frames_since_shadow_update = 1000;
@@ -76,6 +77,12 @@ public:
 			show_perf_overlay = !show_perf_overlay;
 		}
 		perf_key_was_down = perf_key_down;
+
+		bool occlusion_key_down = glfwGetKey(window_setting->window, GLFW_KEY_F4) == GLFW_PRESS;
+		if (occlusion_key_down && !occlusion_key_was_down) {
+			terrain.occlusion_culling = !terrain.occlusion_culling;
+		}
+		occlusion_key_was_down = occlusion_key_down;
 
 		//smoothed so the readout is legible instead of flickering every frame
 		double now = glfwGetTime();
