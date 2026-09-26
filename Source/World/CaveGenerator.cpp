@@ -1,6 +1,8 @@
 #include "CaveGenerator.h"
 #include <algorithm>
 #include <cmath>
+#include <fstream>
+#include <iomanip>
 
 using namespace std;
 
@@ -229,6 +231,111 @@ void CaveGenerator::carve(vector<Block>& blocks, const vector<int>& heights,
 			}
 		}
 	}
+}
+
+namespace {
+	void write_ppm(const std::string& path, int w, int h, const vector<unsigned char>& rgb) {
+		std::ofstream file(path, std::ios::binary);
+		file << "P6\n" << w << " " << h << "\n255\n";
+		file.write(reinterpret_cast<const char*>(rgb.data()), rgb.size());
+	}
+}
+
+void CaveGenerator::export_debug_slices(const std::string& path_prefix, const TerrainGenerator& terrain, int center_x, int center_z, int size) const {
+	const int chunks = std::max(size / 16, 1);
+	const int span = chunks * 16;
+	const int x0 = center_x - span / 2, z0 = center_z - span / 2;
+
+	vector<int> surface((size_t)span * span);
+	int top = sea_level + 1;
+	for (int x = 0; x < span; ++x) {
+		for (int z = 0; z < span; ++z) {
+			int h = std::max(terrain.sample_height(x0 + x, z0 + z), 0);
+			surface[(size_t)x * span + z] = h;
+			top = std::max(top, h + 1);
+		}
+	}
+
+	enum cell_kind : unsigned char { air, rock, wet, cave };
+	vector<unsigned char> volume((size_t)span * top * span);
+	auto vi = [&](int x, int y, int z) { return ((size_t)x * top + y) * span + z; };
+
+	const int w = 18, l = 18;
+	vector<Block> blocks((size_t)w * top * l);
+	vector<int> heights((size_t)w * l);
+	for (int cx = 0; cx < chunks; ++cx) {
+		for (int cz = 0; cz < chunks; ++cz) {
+			int ox = x0 + cx * 16 - 1, oz = z0 + cz * 16 - 1;
+			for (int x = 0; x < w; ++x) {
+				for (int z = 0; z < l; ++z) {
+					int h = glm::clamp(terrain.sample_height(ox + x, oz + z), 0, top);
+					heights[(size_t)x * l + z] = h;
+					for (int y = 0; y < top; ++y) {
+						block_type t = y == 0 ? bedrock : y <= h ? stone : y <= sea_level ? water : none;
+						blocks[((size_t)x * top + y) * l + z].type = t;
+					}
+				}
+			}
+			carve(blocks, heights, ox, oz, w, top, l, terrain);
+
+			for (int x = 1; x < w - 1; ++x) {
+				for (int z = 1; z < l - 1; ++z) {
+					int rx = cx * 16 + x - 1, rz = cz * 16 + z - 1;
+					int h = heights[(size_t)x * l + z];
+					for (int y = 0; y < top; ++y) {
+						block_type t = blocks[((size_t)x * top + y) * l + z].type;
+						unsigned char k = t == water ? wet : t != none ? rock : y <= h ? cave : air;
+						volume[vi(rx, y, rz)] = k;
+					}
+				}
+			}
+		}
+	}
+
+	auto paint = [](unsigned char k, unsigned char* px) {
+		static const unsigned char colors[4][3] = { {150, 200, 255}, {110, 110, 110}, {40, 80, 200}, {235, 60, 40} };
+		px[0] = colors[k][0]; px[1] = colors[k][1]; px[2] = colors[k][2];
+	};
+
+	const int levels[] = { config.floor_y + 5, sea_level / 2, sea_level - 5 };
+	for (int y : levels) {
+		vector<unsigned char> img((size_t)span * span * 3);
+		for (int x = 0; x < span; ++x)
+			for (int z = 0; z < span; ++z)
+				paint(volume[vi(x, y, z)], &img[((size_t)z * span + x) * 3]);
+		write_ppm(path_prefix + "_y" + std::to_string(y) + ".ppm", span, span, img);
+	}
+
+	vector<unsigned char> cut((size_t)span * top * 3);
+	for (int x = 0; x < span; ++x)
+		for (int y = 0; y < top; ++y)
+			paint(volume[vi(x, y, span / 2)], &cut[((size_t)(top - 1 - y) * span + x) * 3]);
+	write_ppm(path_prefix + "_cut.ppm", span, top, cut);
+
+	long long underground = 0, carved = 0, openings = 0;
+	long long band_rock[4] = {}, band_cave[4] = {};
+	for (int x = 0; x < span; ++x) {
+		for (int z = 0; z < span; ++z) {
+			int h = surface[(size_t)x * span + z];
+			if (volume[vi(x, h, z)] == cave) openings++;
+			for (int y = config.floor_y + 1; y < h && y < top; ++y) {
+				unsigned char k = volume[vi(x, y, z)];
+				if (k != rock && k != cave) continue;
+				int band = std::min(3, y * 4 / std::max(sea_level, 1));
+				underground++; band_rock[band]++;
+				if (k == cave) { carved++; band_cave[band]++; }
+			}
+		}
+	}
+
+	std::ofstream stats(path_prefix + "_stats.txt");
+	stats << std::fixed << std::setprecision(2);
+	stats << "area " << span << "x" << span << " centred on (" << center_x << ", " << center_z << ")\n";
+	stats << "underground carved: " << 100.0 * carved / std::max(underground, 1LL) << "%\n";
+	for (int b = 0; b < 4; ++b) {
+		stats << "  y " << b * sea_level / 4 << "+: " << 100.0 * band_cave[b] / std::max(band_rock[b], 1LL) << "%\n";
+	}
+	stats << "surface columns opened: " << openings << "\n";
 }
 
 const CaveGenerator& get_cave_generator() {

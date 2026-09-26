@@ -3,6 +3,7 @@
 #include "Texture/Texture.h"
 #include "Entity/Player.h"
 #include "World/Terrain.h"
+#include "World/CaveGenerator.h"
 #include "PlayerRenderer.h"
 #include "Audio/AudioManager.h"
 #include <GLFW/glfw3.h>
@@ -89,6 +90,7 @@ public:
 		if (debug_export_key_down && !debug_export_key_was_down) {
 			ivec3 p = ivec3(player.position);
 			get_terrain_generator().export_debug_maps("terrain_debug", p.x, p.z, 512);
+			get_cave_generator().export_debug_slices("cave_debug", get_terrain_generator(), p.x, p.z, 256);
 		}
 		debug_export_key_was_down = debug_export_key_down;
 

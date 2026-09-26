@@ -1,5 +1,6 @@
 #pragma once
 #include <FastNoise/FastNoiseLite.h>
+#include <string>
 #include <vector>
 #include "Block/Block.h"
 #include "World/TerrainGenerator.h"
@@ -54,6 +55,9 @@ public:
 	void carve(std::vector<Block>& blocks, const std::vector<int>& heights,
 		int origin_x, int origin_z, int width, int height, int length,
 		const TerrainGenerator& terrain) const;
+
+	//horizontal slices, a vertical cut and a stats file for a size x size area, through the same carve() the game uses
+	void export_debug_slices(const std::string& path_prefix, const TerrainGenerator& terrain, int center_x, int center_z, int size) const;
 
 	const CaveConfig config;
 	const int sea_level;
