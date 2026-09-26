@@ -229,17 +229,26 @@ void Terrain::draw_shadow_casters(const mat4& light_space_matrix) {
 	Frustum light_frustum;
 	light_frustum.from_matrix(light_space_matrix);
 
+	//sections, not whole columns: the light's view is a long slanted box, and a 112-block column
+	//clips it far more often than the 16-block sections that actually hold geometry inside it
+	vector<Chunk*> casters;
 	for (Chunk* c : visible_chunks) {
 		if (!is_chunk_visible(c, light_frustum)) continue;
-		c->shadow_sections = ~0u;
-		if (occlusion_culling && !c->has_cave_opening) {
-			for (int s = 0; s < c->section_count; ++s) {
-				if ((s + 1) * section_size <= c->lowest_surface_y - shadow_bury_depth) c->shadow_sections &= ~(1u << s);
-			}
+		c->shadow_sections = 0;
+		for (int s = 0; s < c->section_count; ++s) {
+			bool buried = occlusion_culling && !c->has_cave_opening
+				&& (s + 1) * section_size <= c->lowest_surface_y - shadow_bury_depth;
+			vec3 lo = c->world_position + vec3(-1.0f, s * section_size - 1.0f, -1.0f);
+			vec3 hi = lo + vec3(chunk_size + 2.0f, section_size + 2.0f, chunk_size + 2.0f);
+			if (!buried && light_frustum.intersects_aabb(lo, hi)) c->shadow_sections |= 1u << s;
 		}
-		c->draw_opaque_depth();
-		c->draw_foliage_depth();
+		if (c->shadow_sections) casters.push_back(c);
 	}
+
+	sm.shadow_shader.set_uniform_1f("sway_scale", 0.0f);
+	for (Chunk* c : casters) c->draw_opaque_depth();
+	sm.shadow_shader.set_uniform_1f("sway_scale", 1.0f);
+	for (Chunk* c : casters) c->draw_foliage_depth();
 }
 
 /*
