@@ -339,6 +339,6 @@ void CaveGenerator::export_debug_slices(const std::string& path_prefix, const Te
 }
 
 const CaveGenerator& get_cave_generator() {
-	static const CaveGenerator instance(TerrainConfig().world_seed, TerrainConfig().sea_level);
+	static const CaveGenerator instance(get_terrain_generator().config.world_seed, get_terrain_generator().config.sea_level);
 	return instance;
 }

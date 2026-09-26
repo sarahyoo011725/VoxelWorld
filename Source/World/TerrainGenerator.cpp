@@ -251,3 +251,8 @@ void TerrainGenerator::export_debug_maps(const std::string& path_prefix, int cen
 	write_ppm(path_prefix + "_temperature.ppm", size, temperature_img);
 	write_ppm(path_prefix + "_biome.ppm", size, biome_img);
 }
+
+TerrainGenerator& get_terrain_generator() {
+	static TerrainGenerator instance;
+	return instance;
+}

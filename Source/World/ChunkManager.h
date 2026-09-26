@@ -73,11 +73,6 @@ namespace {
 	//derived from TerrainConfig so sea level has a single source of truth
 	const static int water_level = TerrainConfig().sea_level;
 
-	static TerrainGenerator& get_terrain_generator() {
-		static TerrainGenerator instance;
-		return instance;
-	}
-
 	int get_noise(int x, int z) {
 		return get_terrain_generator().sample_height(x, z);
 	}

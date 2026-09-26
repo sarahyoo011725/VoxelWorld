@@ -113,3 +113,6 @@ private:
 	FastNoiseLite moisture_noise;
 	FastNoiseLite temperature_noise;
 };
+
+//the one generator the whole game shares; everything seeded from the world reads its config
+TerrainGenerator& get_terrain_generator();
