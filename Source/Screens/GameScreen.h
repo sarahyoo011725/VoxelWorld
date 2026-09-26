@@ -34,7 +34,7 @@ public:
 	* initializes GL settings for the game. This must be called only once before drawing the screen
 	*/
 	GameScreen(WindowSetting *setting)
-	: sm(ShaderManager::get_instance()), window_setting(setting), player(setting, vec3(0, 90, 0)), terrain(player.position), renderer(setting) {
+	: sm(ShaderManager::get_instance()), window_setting(setting), player(setting, vec3(0, 122, 0)), terrain(player.position), renderer(setting) {
 		sm.default_shader.activate();
 		sm.default_shader.set_uniform_1i("texture1", 1);
 		sm.wave_shader.activate();

@@ -6,7 +6,7 @@
 
 struct TerrainConfig {
 	int world_seed = 1337;
-	int sea_level = 10;
+	int sea_level = 42; //leaves ~40 blocks of rock under the land for caves
 
 	float continental_frequency = 0.0012f;
 	int continental_octaves = 3;
@@ -35,7 +35,7 @@ struct TerrainConfig {
 
 	float river_density = 0.02f;
 	float river_min_length = 0.028f; //half-width of the carved channel at its narrowest
-	float river_source_elevation = 20.0f;
+	float river_source_elevation = 10.0f; //above sea level
 	float river_fade_range = 8.0f;
 	float river_mouth_widening = 2.5f;
 

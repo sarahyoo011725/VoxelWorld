@@ -84,7 +84,7 @@ TerrainGenerator::elevation_result TerrainGenerator::compute_elevation(int x, in
 	float landform = baseline + mountains * config.mountain_strength + extreme_bonus;
 	float land_height = landform + hill_contribution + detail;
 
-	const float ocean_floor = 3.0f;
+	const float ocean_floor = (float)config.sea_level - 7.0f;
 	float ocean_t = glm::clamp((continent - config.coast_inner_edge) / (config.coast_outer_edge - config.coast_inner_edge), 0.0f, 1.0f);
 	float height = mix(ocean_floor, land_height, ocean_t);
 	float landform_height = mix(ocean_floor, landform, ocean_t);
@@ -94,8 +94,8 @@ TerrainGenerator::elevation_result TerrainGenerator::compute_elevation(int x, in
 	if (is_ocean) feature = terrain_feature::ocean;
 
 	float river_strength = 1.0f - smoothstep(
-		config.river_source_elevation - config.river_fade_range,
-		config.river_source_elevation, height);
+		config.sea_level + config.river_source_elevation - config.river_fade_range,
+		config.sea_level + config.river_source_elevation, height);
 
 	if (!is_ocean && height > (float)config.sea_level && river_strength > 0.0f) {
 		float river_v = river_noise.GetNoise(mx, mz);
@@ -221,7 +221,7 @@ void TerrainGenerator::export_debug_maps(const std::string& path_prefix, int cen
 			ClimateSample s = sample_climate(wx, wz);
 			size_t idx = (static_cast<size_t>(row) * size + col) * 3;
 
-			unsigned char e = (unsigned char)glm::clamp((float)s.elevation / 90.0f * 255.0f, 0.0f, 255.0f);
+			unsigned char e = (unsigned char)glm::clamp((float)s.elevation / 122.0f * 255.0f, 0.0f, 255.0f);
 			elevation_img[idx + 0] = e;
 			elevation_img[idx + 1] = e;
 			elevation_img[idx + 2] = e;

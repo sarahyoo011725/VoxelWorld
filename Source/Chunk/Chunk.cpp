@@ -13,7 +13,7 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	id = chunk_id;
 	world_position = vec3(chunk_id.x * chunk_size, 0, chunk_id.y * chunk_size);
 	width = chunk_size + 2;
-	height = 80; //tall enough to leave headroom above rare extreme-peak mountains
+	height = 112; //sea level + tallest extreme peak, with the underground below
 	length = chunk_size + 2;
 
 	opaque_vao.bind();
