@@ -89,7 +89,6 @@ private:
 	//light from glowing blocks, indexed like blocks; only filled while has_block_light
 	vector<unsigned char> block_light;
 	bool has_block_light = false;
-	bool opaque_face_visible(int x, int y, int z, block_face face) const;
 	void update_face_indices(bool has_transparency, bool is_water);
 	void add_foliage_quad_indices();
 	void update_nonblock_structure_vertices_and_indices(int y_lo, int y_hi);

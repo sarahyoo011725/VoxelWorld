@@ -5,6 +5,38 @@
 #include "World/StructureGenerator.h"
 #include "World/ChunkGeneration.h"
 
+namespace {
+	//block properties and face geometry as flat arrays, so the meshers' inner loops
+	//read an array instead of calling a switch or walking nested std::maps
+	struct mesh_tables {
+		bool opaque[256] = {}; //meshed by the greedy pass
+		bool exposes[256] = {}; //a solid face against this block is visible
+		bool textured[256] = {};
+		vec2 tile[256][6] = {};
+		vec3 corner[6][4] = {};
+
+		mesh_tables() {
+			for (int t = 0; t < 256; ++t) {
+				block_type type = (block_type)t;
+				opaque[t] = type != none && !has_transparency(type) && !is_foliage(type);
+				exposes[t] = type == none || has_transparency(type);
+			}
+			for (const auto& entry : texture_map) {
+				textured[entry.first] = true;
+				for (const auto& face : entry.second) tile[entry.first][face.first] = face.second;
+			}
+			for (const auto& entry : cw_face_map) {
+				for (int i = 0; i < 4; ++i) corner[entry.first][i] = entry.second[i].position;
+			}
+		}
+	};
+
+	const mesh_tables& tables() {
+		static const mesh_tables instance;
+		return instance;
+	}
+}
+
 /*
 	sets up the chunk's dimensions and GL buffer objects. deliberately does no
 	terrain generation - that lives in generate_terrain() so it can be moved off
@@ -309,8 +341,9 @@ void Chunk::add_foliage_quad_indices() {
 	pushes the new vertices to opaque or transparent vertices based on the block type's transparency
 */
 void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
-	if (texture_map.find(type) == texture_map.end()) return; //a type is not in texture map if it is a structure that is not cube i.e. grass
-	vec2 texture_coord = texture_map[type][face];
+	const mesh_tables& tab = tables();
+	if (!tab.textured[type]) return; //a type is not in texture map if it is a structure that is not cube i.e. grass
+	vec2 texture_coord = tab.tile[type][face];
 	vec3 tint = tint_for(type, face, (int)local_coord.x, (int)local_coord.z);
 	uint16_t light = light_key(type, face, (int)local_coord.x, (int)local_coord.y, (int)local_coord.z);
 	uint32_t packed_tint = pack_tint(tint);
@@ -322,9 +355,8 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 
 	if (type == water) {
 		//both windings, so the surface shows from above and from under the water
-		const vector<vertex>& cw_verts = cw_face_map[face];
 		for (int i = 0; i < 4; ++i) {
-			water_vertices.push_back({ cw_verts[i].position + offset,
+			water_vertices.push_back({ tab.corner[face][i] + offset,
 				pack_block_vertex(normal, light, corner_uv[i].x, corner_uv[i].y, texture_coord), packed_tint });
 		}
 		update_face_indices(true, true);
@@ -337,21 +369,21 @@ void Chunk::add_face(block_face face, block_type type, vec3 local_coord) {
 		update_face_indices(true, true);
 	}
 	else if (is_foliage(type)) {
-		const vector<vertex>& verts = cw_face_map[face];
+		const vec3* verts = tab.corner[face];
 
 		//a leaf block has no "root" side like a grass blade does, so it
 		//sways as a rigid whole - a pinned bottom would shear it into a wobbling parallelogram
-		for (int i = 0; i < verts.size(); ++i) {
-			foliage_vertices.push_back({ verts[i].position + offset, convert_to_uv(i, texture_coord), normal, 1.0f, tint });
+		for (int i = 0; i < 4; ++i) {
+			foliage_vertices.push_back({ verts[i] + offset, convert_to_uv(i, texture_coord), normal, 1.0f, tint });
 		}
 		add_foliage_quad_indices();
 	}
 	else {
-		const vector<vertex>& verts = cw_face_map[face];
+		const vec3* verts = tab.corner[face];
 		bool transparency = has_transparency(type);
 		vector<block_vertex>& target = transparency ? transp_vertices : opaque_vertices;
 		for (int i = 0; i < 4; ++i) {
-			target.push_back({ verts[i].position + offset,
+			target.push_back({ verts[i] + offset,
 				pack_block_vertex(normal, light, corner_uv[i].x, corner_uv[i].y, texture_coord), packed_tint });
 		}
 		update_face_indices(transparency, false);
@@ -412,18 +444,6 @@ uint16_t Chunk::light_key(block_type type, block_face face, int x, int y, int z)
 
 
 /*
-	is this opaque block's face exposed? mirrors the neighbour test the per-block
-	loop uses, minus the foliage case - foliage never reaches the opaque buffer
-*/
-bool Chunk::opaque_face_visible(int x, int y, int z, block_face face) const {
-	vec3 n = face_normal(face);
-	int nx = x + (int)n.x, ny = y + (int)n.y, nz = z + (int)n.z;
-	if (ny < 0 || ny >= height) return false;
-	block_type neighbour = blocks[block_index(nx, ny, nz)].type;
-	return neighbour == none || has_transparency(neighbour);
-}
-
-/*
 	emits one quad standing in for run_u x run_v block faces.
 
 	the quad is built by stretching the unit face from cw_face_map rather than
@@ -433,15 +453,16 @@ bool Chunk::opaque_face_visible(int x, int y, int z, block_face face) const {
 	fragment shader wraps back into one atlas cell.
 */
 void Chunk::add_merged_quad(block_face face, block_type type, ivec3 base_block, int run_u, int run_v, uint16_t light) {
-	if (texture_map.find(type) == texture_map.end()) return;
-	vec2 texture_coord = texture_map[type][face];
+	const mesh_tables& tab = tables();
+	if (!tab.textured[type]) return;
+	vec2 texture_coord = tab.tile[type][face];
 	uint32_t packed_tint = pack_tint(tint_for(type, face, base_block.x, base_block.z));
 
-	const vector<vertex>& unit = cw_face_map[face];
+	const vec3* unit = tab.corner[face];
 	//the face's own texture axes, read off the unit quad: corner 0 -> 1 is +u,
 	//corner 3 -> 0 is +v
-	vec3 u_axis = unit[1].position - unit[0].position;
-	vec3 v_axis = unit[0].position - unit[3].position;
+	vec3 u_axis = unit[1] - unit[0];
+	vec3 v_axis = unit[0] - unit[3];
 	vec3 normal = face_normal(face);
 
 	vec3 base_center = world_position + vec3(base_block.x - 1, base_block.y, base_block.z - 1);
@@ -449,7 +470,7 @@ void Chunk::add_merged_quad(block_face face, block_type type, ivec3 base_block, 
 	//corner order matches cw_face_map: left-top, right-top, right-bottom, left-bottom
 	const ivec2 corner_uv[4] = { ivec2(0, 1), ivec2(1, 1), ivec2(1, 0), ivec2(0, 0) };
 	for (int i = 0; i < 4; ++i) {
-		vec3 position = base_center + unit[i].position
+		vec3 position = base_center + unit[i]
 			+ u_axis * (corner_uv[i].x * (float)(run_u - 1))
 			+ v_axis * (corner_uv[i].y * (float)(run_v - 1));
 		opaque_vertices.push_back({ position,
@@ -465,20 +486,31 @@ void Chunk::add_merged_quad(block_face face, block_type type, ivec3 base_block, 
 	quad count by roughly half on typical terrain compared with one quad per face.
 */
 void Chunk::build_opaque_mesh(int y_lo, int y_hi) {
+	const mesh_tables& tab = tables();
 	const block_face faces[6] = { Front, Back, Left, Right, Top, Bottom };
+	const int step_x = height * length, step_y = length;
+
+	//reused across calls: a chunk build runs this 42 times
+	thread_local vector<block_type> mask;
+	thread_local vector<biome_id> biome_key;
+	thread_local vector<uint16_t> light_keys;
 
 	for (block_face face : faces) {
 		//one axis is swept, the other two span the mask. a runs along the mask's
-		//first axis, b along its second
+		//first axis, b along its second; the steps are how far each moves an index into blocks
 		int slice_lo, slice_hi, a_lo, a_hi, b_lo, b_hi;
+		int slice_step, a_step, b_step;
 		if (face == Front || face == Back) {
 			slice_lo = 1; slice_hi = length - 1; a_lo = 1; a_hi = width - 1; b_lo = y_lo; b_hi = y_hi;
+			slice_step = 1; a_step = step_x; b_step = step_y;
 		}
 		else if (face == Left || face == Right) {
 			slice_lo = 1; slice_hi = width - 1; a_lo = 1; a_hi = length - 1; b_lo = y_lo; b_hi = y_hi;
+			slice_step = step_x; a_step = 1; b_step = step_y;
 		}
 		else {
 			slice_lo = y_lo; slice_hi = y_hi; a_lo = 1; a_hi = width - 1; b_lo = 1; b_hi = length - 1;
+			slice_step = step_y; a_step = step_x; b_step = 1;
 		}
 		int a_count = a_hi - a_lo, b_count = b_hi - b_lo;
 		if (a_count <= 0 || b_count <= 0) continue;
@@ -487,13 +519,18 @@ void Chunk::build_opaque_mesh(int y_lo, int y_hi) {
 		//origin can be placed at the right end of the rectangle
 		vec3 a_dir = (face == Left || face == Right) ? vec3(0, 0, 1) : vec3(1, 0, 0);
 		vec3 b_dir = (face == Top || face == Bottom) ? vec3(0, 0, 1) : vec3(0, 1, 0);
-		const vector<vertex>& unit = cw_face_map[face];
-		bool u_flipped = dot(unit[1].position - unit[0].position, a_dir) < 0.0f;
-		bool v_flipped = dot(unit[0].position - unit[3].position, b_dir) < 0.0f;
+		const vec3* unit = tab.corner[face];
+		bool u_flipped = dot(unit[1] - unit[0], a_dir) < 0.0f;
+		bool v_flipped = dot(unit[0] - unit[3], b_dir) < 0.0f;
 
-		vector<block_type> mask(static_cast<size_t>(a_count) * b_count);
-		vector<biome_id> biome_key(static_cast<size_t>(a_count) * b_count);
-		vector<uint16_t> light_keys(static_cast<size_t>(a_count) * b_count);
+		vec3 normal = face_normal(face);
+		int neighbour_step = (int)normal.x * step_x + (int)normal.y * step_y + (int)normal.z;
+		bool vertical = face == Top || face == Bottom;
+
+		size_t cells = static_cast<size_t>(a_count) * b_count;
+		mask.resize(cells);
+		biome_key.resize(cells);
+		light_keys.resize(cells);
 
 		for (int slice = slice_lo; slice < slice_hi; ++slice) {
 			auto to_block = [&](int a, int b) {
@@ -502,20 +539,23 @@ void Chunk::build_opaque_mesh(int y_lo, int y_hi) {
 				return ivec3(a_lo + a, slice, b_lo + b);
 			};
 
+			//only vertical faces can look out of the column
+			bool neighbour_inside = !vertical || (slice + (int)normal.y >= 0 && slice + (int)normal.y < height);
 			for (int a = 0; a < a_count; ++a) {
+				size_t row = static_cast<size_t>(slice) * slice_step + static_cast<size_t>(a_lo + a) * a_step;
 				for (int b = 0; b < b_count; ++b) {
+					size_t index = row + static_cast<size_t>(b_lo + b) * b_step;
+					block_type t = blocks[index].type;
+					size_t here = static_cast<size_t>(a) * b_count + b;
+					bool visible = tab.opaque[t] && neighbour_inside && tab.exposes[blocks[index + neighbour_step].type];
+					mask[here] = visible ? t : none;
+					if (!visible) continue;
+
+					//a tinted face changes colour with the biome and a face's light with its depth,
+					//so two faces may only merge where both agree
 					ivec3 p = to_block(a, b);
-					block_type t = blocks[block_index(p.x, p.y, p.z)].type;
-					bool opaque = t != none && !has_transparency(t) && !is_foliage(t);
-					mask[static_cast<size_t>(a) * b_count + b] =
-						(opaque && opaque_face_visible(p.x, p.y, p.z, face)) ? t : none;
-					//a tinted face changes colour with the biome, so two columns
-					//may only merge if they also share one. untinted faces keep a
-					//single biome key and merge as freely as before
-					biome_key[static_cast<size_t>(a) * b_count + b] =
-						is_tinted_face(t, face) ? get_biome(p.x, p.z) : biome_id::plains;
-					//faces only merge at equal light, or a quad would take one face's brightness everywhere
-					light_keys[static_cast<size_t>(a) * b_count + b] = mask[static_cast<size_t>(a) * b_count + b] != none ? light_key(t, face, p.x, p.y, p.z) : 0;
+					biome_key[here] = is_tinted_face(t, face) ? get_biome(p.x, p.z) : biome_id::plains;
+					light_keys[here] = light_key(t, face, p.x, p.y, p.z);
 				}
 			}
 
@@ -631,16 +671,14 @@ void Chunk::build_mesh() {
 	foliage - for the rows y_lo..y_hi
 */
 void Chunk::build_block_faces(int y_lo, int y_hi) {
+	const mesh_tables& tab = tables();
 	//check x and z from 1 to 16 (boundaries at 0 and 17)
 	for (int x = 1; x < width - 1; ++x) {
 		for (int z = 1; z < length - 1; ++z) {
 			for (int y = y_lo; y < y_hi; ++y) {
 				const Block &current = blocks[block_index(x, y, z)];
-				if (current.type == none) {
-					continue;
-				}
-				//already handled by the greedy pass
-				if (current.type != none && !has_transparency(current.type) && !is_foliage(current.type)) continue;
+				//air, or solid and already handled by the greedy pass
+				if (current.type == none || tab.opaque[current.type]) continue;
 
 				bool am_i_transparent = has_transparency(current.type);
 				//foliage blocks sway independently, so a neighbor can no longer be trusted
