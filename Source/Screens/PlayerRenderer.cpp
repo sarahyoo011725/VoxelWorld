@@ -19,6 +19,10 @@ PlayerRenderer::PlayerRenderer(WindowSetting* setting)
 	quad_vao.link_attrib(quad_vbo, 0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)0);
 	quad_vao.link_attrib(quad_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)(2 * sizeof(float)));
 
+	text_vao.bind();
+	text_vao.link_attrib(text_vbo, 0, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)0);
+	text_vao.link_attrib(text_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_2d), (void*)(2 * sizeof(float)));
+
 	cloud_vao.bind();
 	cloud_vao.link_attrib(cloud_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0);
 	cloud_vao.link_attrib(cloud_vbo, 1, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)(3 * sizeof(float)));
@@ -163,17 +167,13 @@ void PlayerRenderer::draw_hotbar(const Inventory& inventory) {
 }
 
 /*
-	draws a string as one small quad per lit bit of the 5x7 font, growing right
-	and down from top_left. the caller is expected to have activated HUD_shader,
-	bound quad_vao, set use_texture to false, and disabled depth testing
+	appends a string to text_vertices as one small quad per lit bit of the 5x7
+	font, growing right and down from top_left
 */
-void PlayerRenderer::draw_text(const string& text, vec2 top_left, float pixel_size, vec4 color) {
+void PlayerRenderer::add_text(const string& text, vec2 top_left, float pixel_size) {
 	float aspect = (float)window_setting->height / (float)window_setting->width;
 	float advance = (bitmap_font::glyph_width + 1) * pixel_size;
-
-	sm.HUD_shader.set_uniform_4f("color", 1, color);
-	sm.HUD_shader.set_uniform_2f("uv_offset", 1, vec2(0.0f));
-	sm.HUD_shader.set_uniform_2f("uv_scale", 1, vec2(1.0f));
+	vec2 half = vec2(pixel_size * 0.5f * aspect, pixel_size * 0.5f);
 
 	for (size_t ci = 0; ci < text.size(); ++ci) {
 		auto glyph = bitmap_font::glyphs.find(text[ci]);
@@ -187,9 +187,9 @@ void PlayerRenderer::draw_text(const string& text, vec2 top_left, float pixel_si
 					glyph_x + (col + 0.5f) * pixel_size * aspect,
 					top_left.y - (row + 0.5f) * pixel_size
 				);
-				sm.HUD_shader.set_uniform_2f("offset", 1, center);
-				sm.HUD_shader.set_uniform_2f("scale", 1, vec2(pixel_size * 0.5f * aspect, pixel_size * 0.5f));
-				glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
+				for (const vertex_2d& corner : quad_vertices) {
+					text_vertices.push_back({ center + corner.position * half, corner.texture });
+				}
 			}
 		}
 	}
@@ -201,7 +201,6 @@ void PlayerRenderer::draw_text(const string& text, vec2 top_left, float pixel_si
 void PlayerRenderer::draw_perf_overlay(const PerfStats& stats) {
 	sm.HUD_shader.activate();
 	sm.HUD_shader.set_uniform_1i("use_texture", GL_FALSE);
-	quad_vao.bind();
 	glDisable(GL_DEPTH_TEST);
 
 	auto num = [](float v, int decimals) {
@@ -227,9 +226,19 @@ void PlayerRenderer::draw_perf_overlay(const PerfStats& stats) {
 	vec4 color = over_budget ? vec4(1.0f, 0.6f, 0.4f, 1.0f) : vec4(0.85f, 1.0f, 0.85f, 1.0f);
 
 	float line_step = (bitmap_font::glyph_height + 2) * overlay_pixel_size;
+	text_vertices.clear();
 	for (size_t i = 0; i < lines.size(); ++i) {
-		draw_text(lines[i], vec2(-0.98f, 0.95f - i * line_step), overlay_pixel_size, color);
+		add_text(lines[i], vec2(-0.98f, 0.95f - i * line_step), overlay_pixel_size);
 	}
+
+	sm.HUD_shader.set_uniform_4f("color", 1, color);
+	sm.HUD_shader.set_uniform_2f("offset", 1, vec2(0.0f));
+	sm.HUD_shader.set_uniform_2f("scale", 1, vec2(1.0f));
+	sm.HUD_shader.set_uniform_2f("uv_offset", 1, vec2(0.0f));
+	sm.HUD_shader.set_uniform_2f("uv_scale", 1, vec2(1.0f));
+	text_vao.bind();
+	text_vbo.reset_vertices(text_vertices.data(), sizeof(vertex_2d) * text_vertices.size(), GL_DYNAMIC_DRAW);
+	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)text_vertices.size());
 
 	glEnable(GL_DEPTH_TEST);
 }

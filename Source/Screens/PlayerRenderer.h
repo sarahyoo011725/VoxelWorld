@@ -34,7 +34,7 @@ public:
 	void draw_perf_overlay(const PerfStats& stats);
 	void post_process();
 private:
-	void draw_text(const string& text, vec2 top_left, float pixel_size, vec4 color);
+	void add_text(const string& text, vec2 top_left, float pixel_size);
 	void outline_hovered_cube(Block* hovered_block, vec3 hovered_position);
 	void generate_cloud_mesh(vec2 center);
 	void add_cloud_face(block_face face, vec3 center, float half_x, float half_z, float half_y);
@@ -84,6 +84,10 @@ private:
 	VBO HUD_vbo = VBO(crosshair_vertices.data(), sizeof(vertex_2d) * crosshair_vertices.size(), GL_STATIC_DRAW);
 	VAO quad_vao = VAO();
 	VBO quad_vbo = VBO(quad_vertices.data(), sizeof(vertex_2d) * quad_vertices.size(), GL_STATIC_DRAW);
+	//every lit font pixel of the overlay, already in screen space, so all of it is one draw call
+	VAO text_vao = VAO();
+	VBO text_vbo = VBO(nullptr, 0, GL_DYNAMIC_DRAW);
+	vector<vertex_2d> text_vertices;
 	VAO cloud_vao = VAO();
 	VBO cloud_vbo = VBO(nullptr, sizeof(vertex) * 0, GL_STATIC_DRAW);
 	FBO fbo = FBO();
