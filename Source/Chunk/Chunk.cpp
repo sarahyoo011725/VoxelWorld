@@ -18,6 +18,8 @@ Chunk::Chunk(ivec2 chunk_id) : cm(ChunkManager::get_instance()), sm(ShaderManage
 	width = chunk_size + 2;
 	height = 112; //sea level + tallest extreme peak, with the underground below
 	length = chunk_size + 2;
+	section_count = (height + section_size - 1) / section_size;
+	section_connectivity.assign(section_count, all_links);
 
 	opaque_vao.bind();
 	opaque_vao.link_attrib(opaque_vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)0); //vertex positions coords
@@ -82,6 +84,7 @@ void Chunk::generate_terrain() {
 		if (h > highest) highest = h;
 	}
 	max_occupied_y = std::min(highest, height - 1);
+	lowest_surface_y = *std::min_element(height_map.begin(), height_map.end());
 
 	const TerrainConfig& config = get_terrain_generator().config;
 	for (int x = 0; x < width; ++x) {
@@ -177,7 +180,7 @@ void Chunk::draw_opaque_blocks() {
 	//the shader is activated once by the caller for the whole pass, not per chunk
 	opaque_vao.bind();
 	opaque_ebo.bind();
-	glDrawElements(GL_TRIANGLES, opaque_indices.size(), GL_UNSIGNED_INT, 0);
+	draw_sections(opaque_ranges, visible_sections);
 }
 
 /*
@@ -189,7 +192,7 @@ void Chunk::draw_transparent_blocks() {
 	sm.default_shader.activate();
 	transp_vao.bind();
 	transp_ebo.bind();
-	glDrawElements(GL_TRIANGLES, transp_indices.size(), GL_UNSIGNED_INT, 0);
+	draw_sections(transp_ranges, visible_sections);
 }
 
 void Chunk::draw_water() {
@@ -197,7 +200,7 @@ void Chunk::draw_water() {
 	sm.wave_shader.activate();
 	water_vao.bind();
 	water_ebo.bind();
-	glDrawElements(GL_TRIANGLES, water_indices.size(), GL_UNSIGNED_INT, 0);
+	draw_sections(water_ranges, visible_sections);
 }
 
 void Chunk::draw_foliage() {
@@ -205,7 +208,7 @@ void Chunk::draw_foliage() {
 	sm.foliage_shader.activate();
 	foliage_vao.bind();
 	foliage_ebo.bind();
-	glDrawElements(GL_TRIANGLES, foliage_indices.size(), GL_UNSIGNED_INT, 0);
+	draw_sections(foliage_ranges, visible_sections);
 }
 
 //depth-only draws for the shadow map pass - the shadow shader is activated
@@ -214,14 +217,30 @@ void Chunk::draw_opaque_depth() {
 	if (opaque_indices.empty()) return;
 	opaque_vao.bind();
 	opaque_ebo.bind();
-	glDrawElements(GL_TRIANGLES, opaque_indices.size(), GL_UNSIGNED_INT, 0);
+	draw_sections(opaque_ranges, shadow_sections);
 }
 
 void Chunk::draw_foliage_depth() {
 	if (foliage_indices.empty()) return;
 	foliage_vao.bind();
 	foliage_ebo.bind();
-	glDrawElements(GL_TRIANGLES, foliage_indices.size(), GL_UNSIGNED_INT, 0);
+	draw_sections(foliage_ranges, shadow_sections);
+}
+
+void Chunk::draw_sections(const vector<index_range>& ranges, uint32_t mask) const {
+	size_t s = 0;
+	while (s < ranges.size()) {
+		if (!(mask & (1u << s))) { ++s; continue; }
+		GLuint first = ranges[s].first;
+		GLsizei count = 0;
+		while (s < ranges.size() && (mask & (1u << s))) {
+			count += ranges[s].count;
+			++s;
+		}
+		if (count > 0) {
+			glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)(first * sizeof(GLuint)));
+		}
+	}
 }
 
 /*
@@ -278,8 +297,9 @@ void Chunk::remove_structure(ivec3 local_coord) {
 	after adding vertices of non-block structures, update their indices.
 	All objects, including non-block structures in this game, are expected to be made of 'faces'
 */
-void Chunk::update_nonblock_structure_vertices_and_indices() {
+void Chunk::update_nonblock_structure_vertices_and_indices(int y_lo, int y_hi) {
 	for (const auto &e : nonblock_structure_vertices) {
+		if (e.first.y < y_lo || e.first.y >= y_hi) continue;
 		for (int i = 1; i <= e.second.size(); ++i) {
 			foliage_vertices.push_back(e.second[i - 1]);
 			if (i > 1 && i % 4 == 0) {
@@ -504,8 +524,7 @@ void Chunk::add_merged_quad(block_face face, block_type type, ivec3 base_block, 
 	faces of the same block type into the largest rectangles that fit. cuts the
 	quad count by roughly half on typical terrain compared with one quad per face.
 */
-void Chunk::build_opaque_mesh() {
-	int top = std::min(max_occupied_y + 1, height);
+void Chunk::build_opaque_mesh(int y_lo, int y_hi) {
 	const block_face faces[6] = { Front, Back, Left, Right, Top, Bottom };
 
 	for (block_face face : faces) {
@@ -513,13 +532,13 @@ void Chunk::build_opaque_mesh() {
 		//first axis, b along its second
 		int slice_lo, slice_hi, a_lo, a_hi, b_lo, b_hi;
 		if (face == Front || face == Back) {
-			slice_lo = 1; slice_hi = length - 1; a_lo = 1; a_hi = width - 1; b_lo = 0; b_hi = top;
+			slice_lo = 1; slice_hi = length - 1; a_lo = 1; a_hi = width - 1; b_lo = y_lo; b_hi = y_hi;
 		}
 		else if (face == Left || face == Right) {
-			slice_lo = 1; slice_hi = width - 1; a_lo = 1; a_hi = length - 1; b_lo = 0; b_hi = top;
+			slice_lo = 1; slice_hi = width - 1; a_lo = 1; a_hi = length - 1; b_lo = y_lo; b_hi = y_hi;
 		}
 		else {
-			slice_lo = 0; slice_hi = top; a_lo = 1; a_hi = width - 1; b_lo = 1; b_hi = length - 1;
+			slice_lo = y_lo; slice_hi = y_hi; a_lo = 1; a_hi = width - 1; b_lo = 1; b_hi = length - 1;
 		}
 		int a_count = a_hi - a_lo, b_count = b_hi - b_lo;
 		if (a_count <= 0 || b_count <= 0) continue;
@@ -616,13 +635,49 @@ void Chunk::build_mesh() {
 	foliage_vertices.clear();
 	foliage_indices.clear();
 
-	build_opaque_mesh();
+	opaque_ranges.assign(section_count, {});
+	transp_ranges.assign(section_count, {});
+	water_ranges.assign(section_count, {});
+	foliage_ranges.assign(section_count, {});
 
-	//check x and z from 1 to 16 (boundaries at 0 and 17)
+	//built one section at a time so each section's geometry is a contiguous
+	//slice of every buffer, which is what lets hidden sections be skipped
 	int top = std::min(max_occupied_y + 1, height);
+	for (int section = 0; section < section_count; ++section) {
+		int y_lo = section * section_size;
+		int y_hi = std::min(y_lo + section_size, top);
+		GLuint opaque_start = (GLuint)opaque_indices.size();
+		GLuint transp_start = (GLuint)transp_indices.size();
+		GLuint water_start = (GLuint)water_indices.size();
+		GLuint foliage_start = (GLuint)foliage_indices.size();
+
+		if (y_lo < y_hi) {
+			build_opaque_mesh(y_lo, y_hi);
+			build_block_faces(y_lo, y_hi);
+		}
+		update_nonblock_structure_vertices_and_indices(y_lo, y_lo + section_size);
+
+		opaque_ranges[section] = { opaque_start, (GLsizei)(opaque_indices.size() - opaque_start) };
+		transp_ranges[section] = { transp_start, (GLsizei)(transp_indices.size() - transp_start) };
+		water_ranges[section] = { water_start, (GLsizei)(water_indices.size() - water_start) };
+		foliage_ranges[section] = { foliage_start, (GLsizei)(foliage_indices.size() - foliage_start) };
+
+		section_connectivity[section] = y_lo > max_occupied_y
+			? all_links
+			: compute_section_links(blocks, width, height, length, y_lo);
+	}
+	mesh_ready = true;
+}
+
+/*
+	faces of the blocks the greedy pass leaves out - transparent blocks, water and
+	foliage - for the rows y_lo..y_hi
+*/
+void Chunk::build_block_faces(int y_lo, int y_hi) {
+	//check x and z from 1 to 16 (boundaries at 0 and 17)
 	for (int x = 1; x < width - 1; ++x) {
 		for (int z = 1; z < length - 1; ++z) {
-			for (int y = 0; y < top; ++y) {
+			for (int y = y_lo; y < y_hi; ++y) {
 				const Block &current = blocks[block_index(x, y, z)];
 				if (current.type == none) {
 					continue;
@@ -669,8 +724,4 @@ void Chunk::build_mesh() {
 			}
 		}
 	}
-
-	update_nonblock_structure_vertices_and_indices(); //must be called after spawn_structures() is called in Terrain
-	mesh_ready = true;
 }
-

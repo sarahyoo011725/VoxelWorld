@@ -198,6 +198,12 @@ void Terrain::draw_shadow_casters(const mat4& light_space_matrix) {
 
 	for (Chunk* c : visible_chunks) {
 		if (!is_chunk_visible(c, light_frustum)) continue;
+		c->shadow_sections = ~0u;
+		if (occlusion_culling) {
+			for (int s = 0; s < c->section_count; ++s) {
+				if ((s + 1) * section_size <= c->lowest_surface_y - shadow_bury_depth) c->shadow_sections &= ~(1u << s);
+			}
+		}
 		c->draw_opaque_depth();
 		c->draw_foliage_depth();
 	}
@@ -215,6 +221,66 @@ bool Terrain::is_chunk_visible(Chunk* chunk, const Frustum& frustum) const {
 }
 
 /*
+	marks which sections of each chunk the camera could possibly see. a chunk that
+	has not been meshed yet is treated as open so it cannot hide what lies behind it.
+*/
+void Terrain::update_section_visibility(const Frustum& frustum) {
+	auto start = chrono::steady_clock::now();
+	stats.occlusion_culling = occlusion_culling;
+	stats.sections_drawn = 0;
+	stats.sections_total = 0;
+
+	if (!occlusion_culling || visible_chunks.empty()) {
+		for (Chunk* c : visible_chunks) {
+			c->visible_sections = is_chunk_visible(c, frustum) ? ~0u : 0u;
+			stats.sections_total += c->section_count;
+			if (c->visible_sections) stats.sections_drawn += c->section_count;
+		}
+		stats.visibility_ms = 0.0f;
+		return;
+	}
+
+	VisibilityGrid& grid = visibility_grid;
+	grid.span = render_dist * 2 + 1;
+	grid.sections = visible_chunks.front()->section_count;
+	grid.min_chunk = origin - ivec2(render_dist);
+	grid.links.assign((size_t)grid.span * grid.span * grid.sections, all_links);
+	grid.present.assign((size_t)grid.span * grid.span, 0);
+
+	for (Chunk* c : visible_chunks) {
+		ivec2 g = c->id - grid.min_chunk;
+		if (g.x < 0 || g.y < 0 || g.x >= grid.span || g.y >= grid.span) continue;
+		size_t column = (size_t)g.x * grid.span + g.y;
+		grid.present[column] = 1;
+		if (c->has_built) {
+			std::copy(c->section_connectivity.begin(), c->section_connectivity.end(), grid.links.begin() + column * grid.sections);
+		}
+	}
+
+	//the hitbox is centred on player_pos, so both the feet and the eyes get a starting section
+	vector<ivec3> starts = {
+		ivec3(origin.x, (int)floor((player_pos->y + 0.72f) / section_size), origin.y),
+		ivec3(origin.x, (int)floor((player_pos->y - 0.9f) / section_size), origin.y),
+	};
+
+	auto in_view = [&frustum](ivec3 s) {
+		vec3 lo = vec3(s.x * chunk_size - 1.0f, s.y * section_size - 1.0f, s.z * chunk_size - 1.0f);
+		vec3 hi = lo + vec3(chunk_size + 2.0f, section_size + 2.0f, chunk_size + 2.0f);
+		return frustum.intersects_aabb(lo, hi);
+	};
+	find_visible_sections(grid, starts, in_view, visible_masks);
+
+	for (Chunk* c : visible_chunks) {
+		ivec2 g = c->id - grid.min_chunk;
+		bool inside = g.x >= 0 && g.y >= 0 && g.x < grid.span && g.y < grid.span;
+		c->visible_sections = inside ? visible_masks[(size_t)g.x * grid.span + g.y] : 0u;
+		stats.sections_total += c->section_count;
+		for (uint32_t m = c->visible_sections; m; m &= m - 1) stats.sections_drawn++;
+	}
+	stats.visibility_ms = chrono::duration<float, milli>(chrono::steady_clock::now() - start).count();
+}
+
+/*
 	draws the chunks streamed by update_chunks() and clears visible_chunks.
 	chunks outside the camera frustum are skipped, which also keeps them out of
 	the transparency sort below
@@ -223,10 +289,12 @@ void Terrain::draw(const mat4& view_projection) {
 	Frustum camera_frustum;
 	camera_frustum.from_matrix(view_projection);
 
+	update_section_visibility(camera_frustum);
+
 	vector<Chunk*> drawn;
 	drawn.reserve(visible_chunks.size());
 	for (Chunk* c : visible_chunks) {
-		if (is_chunk_visible(c, camera_frustum)) drawn.push_back(c);
+		if (c->visible_sections != 0) drawn.push_back(c);
 	}
 	stats.chunks_drawn = (int)drawn.size();
 

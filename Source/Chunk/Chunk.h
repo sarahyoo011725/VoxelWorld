@@ -6,6 +6,7 @@
 #include <vector>
 #include "Block/Block.h"
 #include "World/Biome.h"
+#include "World/SectionVisibility.h"
 #include "Buffers/VAO.h"
 #include "Buffers/VBO.h"
 #include "Buffers/EBO.h"
@@ -54,6 +55,18 @@ private:
 	VBO foliage_vbo = VBO(nullptr, sizeof(foliage_vertex) * 0, GL_STATIC_DRAW);
 	EBO foliage_ebo = EBO(nullptr, sizeof(GLuint) * 0, GL_STATIC_DRAW);
 
+	//each section's slice of an index buffer; sections are emitted in order, so
+	//neighbouring visible sections draw as one call
+	struct index_range {
+		GLuint first = 0;
+		GLsizei count = 0;
+	};
+	vector<index_range> opaque_ranges;
+	vector<index_range> transp_ranges;
+	vector<index_range> water_ranges;
+	vector<index_range> foliage_ranges;
+	void draw_sections(const vector<index_range>& ranges, uint32_t mask) const;
+
 	vector<Block> blocks;
 	vector<int> height_map;
 	//one biome per column, not per block - biome is a 2D property, so resolving
@@ -64,12 +77,13 @@ private:
 	vector<int> get_heightmap();
 	void add_face(block_face face, block_type type, vec3 local_coord);
 	vec3 tint_for(block_type type, block_face face, int x, int z) const;
-	void build_opaque_mesh();
+	void build_opaque_mesh(int y_lo, int y_hi);
+	void build_block_faces(int y_lo, int y_hi);
 	void add_merged_quad(block_face face, block_type type, ivec3 base_block, int run_u, int run_v);
 	bool opaque_face_visible(int x, int y, int z, block_face face) const;
 	void update_face_indices(bool has_transparency, bool is_water);
 	void add_foliage_quad_indices();
-	void update_nonblock_structure_vertices_and_indices();
+	void update_nonblock_structure_vertices_and_indices(int y_lo, int y_hi);
 	void update_buffers_data();
 public:
 	bool should_rebuild = false;
@@ -80,6 +94,13 @@ public:
 	//there instead of scanning the ~65% of each chunk that is empty sky
 	int max_occupied_y = 0;
 	int width, length, height;
+	int section_count = 0;
+	vector<section_links> section_connectivity;
+	//set by Terrain each frame; the draw calls only emit sections whose bit is set
+	uint32_t visible_sections = ~0u;
+	uint32_t shadow_sections = ~0u;
+	//lowest ground across the chunk and its border, for telling buried sections apart
+	int lowest_surface_y = 0;
 	vec3 world_position = vec3(0.0f);
 	ivec2 id = ivec2(0);
 

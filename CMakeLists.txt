@@ -55,6 +55,7 @@ add_executable(VoxelWorld
 	Source/World/ChunkManager.cpp
 	Source/World/StructureGenerator.cpp
 	Source/World/Biome.cpp
+	Source/World/SectionVisibility.cpp
 	Source/World/Terrain.cpp
 	Source/World/TerrainGenerator.cpp
 )

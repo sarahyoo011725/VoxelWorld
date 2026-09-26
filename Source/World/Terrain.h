@@ -5,6 +5,7 @@
 #include "PerfStats.h"
 #include "ThreadPool.h"
 #include "Camera/Frustum.h"
+#include "SectionVisibility.h"
 
 using namespace std;
 using namespace glm;
@@ -25,12 +26,18 @@ private:
 	void unload_distant_chunks();
 	void restore_player_edits(Chunk* chunk);
 	bool is_chunk_visible(Chunk* chunk, const Frustum& frustum) const;
+	void update_section_visibility(const Frustum& frustum);
+	VisibilityGrid visibility_grid;
+	vector<uint32_t> visible_masks;
 public:
 	int render_dist = 9;
 	//kept beyond render_dist so that stepping back and forth over a chunk
 	//border doesn't repeatedly discard and regenerate the same chunks
 	int keep_dist = 12;
 	float build_budget_ms = 3.0f; //per-frame ceiling on new chunk building
+	bool occlusion_culling = true;
+	//sections lying wholly this far below a chunk's lowest ground cannot throw a shadow anyone sees
+	int shadow_bury_depth = 16;
 	PerfStats stats;
 	vec3* player_pos;
 	ivec2 origin = ivec2(0); //player's pos converted into chunk coord. it is the origin of player's render range.

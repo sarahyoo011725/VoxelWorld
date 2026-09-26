@@ -17,6 +17,10 @@ struct PerfStats {
 	int chunks_visible = 0;
 	int chunks_drawn = 0;
 	int chunks_loaded = 0;
+	int sections_drawn = 0;
+	int sections_total = 0;
+	float visibility_ms = 0.0f;
+	bool occlusion_culling = true;
 	const char* biome_name = "";
 	float temperature = 0.0f;
 	float moisture = 0.0f;
