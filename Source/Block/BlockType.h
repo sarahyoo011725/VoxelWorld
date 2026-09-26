@@ -24,6 +24,15 @@ enum block_type : unsigned char {
 	flower_purple,
 	flower_white,
 	bedrock,
+	gravel,
+	mossy_stone,
+	//ores stay contiguous so a range check finds them
+	coal_ore,
+	iron_ore,
+	gold_ore,
+	redstone_ore,
+	diamond_ore,
+	lava,
 };
 
 //names block faces
@@ -88,5 +97,13 @@ namespace {
 		{water, {{Front,vec2(16,14)},{Back,vec2(16,14)},{Left,vec2(16,14)},{Right,vec2(16,14)},{Top,vec2(16,14)},{Bottom,vec2(16,14)}}},
 		{glass, {{Front,vec2(2,4)},{Back,vec2(2,4)},{Left,vec2(2,4)},{Right,vec2(2,4)},{Top,vec2(2,4)},{Bottom,vec2(2,4)}}},
 		{bedrock, {{Front,vec2(2,2)},{Back,vec2(2,2)},{Left,vec2(2,2)},{Right,vec2(2,2)},{Top,vec2(2,2)},{Bottom,vec2(2,2)}}},
+		{gravel, {{Front,vec2(4,2)},{Back,vec2(4,2)},{Left,vec2(4,2)},{Right,vec2(4,2)},{Top,vec2(4,2)},{Bottom,vec2(4,2)}}},
+		{mossy_stone, {{Front,vec2(5,3)},{Back,vec2(5,3)},{Left,vec2(5,3)},{Right,vec2(5,3)},{Top,vec2(5,3)},{Bottom,vec2(5,3)}}},
+		{coal_ore, {{Front,vec2(3,3)},{Back,vec2(3,3)},{Left,vec2(3,3)},{Right,vec2(3,3)},{Top,vec2(3,3)},{Bottom,vec2(3,3)}}},
+		{iron_ore, {{Front,vec2(2,3)},{Back,vec2(2,3)},{Left,vec2(2,3)},{Right,vec2(2,3)},{Top,vec2(2,3)},{Bottom,vec2(2,3)}}},
+		{gold_ore, {{Front,vec2(1,3)},{Back,vec2(1,3)},{Left,vec2(1,3)},{Right,vec2(1,3)},{Top,vec2(1,3)},{Bottom,vec2(1,3)}}},
+		{redstone_ore, {{Front,vec2(4,4)},{Back,vec2(4,4)},{Left,vec2(4,4)},{Right,vec2(4,4)},{Top,vec2(4,4)},{Bottom,vec2(4,4)}}},
+		{diamond_ore, {{Front,vec2(3,4)},{Back,vec2(3,4)},{Left,vec2(3,4)},{Right,vec2(3,4)},{Top,vec2(3,4)},{Bottom,vec2(3,4)}}},
+		{lava, {{Front,vec2(14,15)},{Back,vec2(14,15)},{Left,vec2(14,15)},{Right,vec2(14,15)},{Top,vec2(14,15)},{Bottom,vec2(14,15)}}},
 	};
 }

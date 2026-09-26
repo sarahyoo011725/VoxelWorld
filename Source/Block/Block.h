@@ -62,11 +62,16 @@ namespace {
 		return has_transparency(block->type);
 	}
 
+	bool is_liquid(block_type type) {
+		return type == water || type == lava;
+	}
+
 	//checks if a block type is solid
 	bool is_solid(block_type type) {
 		switch (type) {
 		case none:
 		case water:
+		case lava:
 		case grass:
 		case flower_red:
 		case flower_yellow:
@@ -97,7 +102,7 @@ namespace {
 	}
 
 	bool is_breakable(block_type type) {
-		return type != none && type != bedrock;
+		return type != none && type != bedrock && type != lava;
 	}
 
 	//checks if a block type should wave in the wind

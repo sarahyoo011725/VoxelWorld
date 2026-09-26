@@ -145,7 +145,7 @@ void BlockInteractor::interact() {
 	left_click_was_down = left_click_down;
 
 	if (right_clicked) {
-		bool target_is_hovered = hovered_block->type == water;
+		bool target_is_hovered = is_liquid(hovered_block->type);
 		Block* target = target_is_hovered ? hovered_block : placement_block;
 		vec3 target_position = target_is_hovered ? hovered_position : placement_position;
 
@@ -154,7 +154,7 @@ void BlockInteractor::interact() {
 			ivec3 target_local_coord = world_to_local_coord(target_position);
 
 			if (is_nonblock(holding_block_type)) {
-				if (target->type == water && !can_be_placed_underwater(holding_block_type)) {
+				if (is_liquid(target->type) && !can_be_placed_underwater(holding_block_type)) {
 					return;
 				}
 				else {

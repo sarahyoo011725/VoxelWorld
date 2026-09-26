@@ -19,9 +19,16 @@ void audio::play_block_sound_effect(block_type type) {
 		break;
 	case stone:
 	case bedrock:
+	case mossy_stone:
+	case coal_ore:
+	case iron_ore:
+	case gold_ore:
+	case redstone_ore:
+	case diamond_ore:
 		sound = sound_effect::stone;
 		break;
 	case sand:
+	case gravel:
 		sound = sound_effect::sand;
 		break;
 	case water:
