@@ -170,7 +170,7 @@ void BlockInteractor::interact() {
 		}
 	}
 	if (left_clicked) {
-		if (hovered_block->type != none) {
+		if (is_breakable(hovered_block->type)) {
 			inventory.add_item(hovered_block->type);
 			if (is_nonblock(hovered_block->type)) {
 				chunk->remove_structure(local_coord);

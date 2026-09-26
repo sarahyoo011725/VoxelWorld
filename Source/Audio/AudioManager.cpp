@@ -18,6 +18,7 @@ void audio::play_block_sound_effect(block_type type) {
 		sound = sound_effect::wood;
 		break;
 	case stone:
+	case bedrock:
 		sound = sound_effect::stone;
 		break;
 	case sand:

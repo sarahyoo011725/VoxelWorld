@@ -7,6 +7,7 @@
 struct TerrainConfig {
 	int world_seed = 1337;
 	int sea_level = 42; //leaves ~40 blocks of rock under the land for caves
+	int bedrock_height = 2; //bottom row is solid bedrock, the one above it ragged
 
 	float continental_frequency = 0.0012f;
 	int continental_octaves = 3;

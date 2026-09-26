@@ -96,6 +96,10 @@ namespace {
 		return false;
 	}
 
+	bool is_breakable(block_type type) {
+		return type != none && type != bedrock;
+	}
+
 	//checks if a block type should wave in the wind
 	bool is_foliage(block_type type) {
 		switch (type) {

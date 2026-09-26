@@ -23,6 +23,7 @@ enum block_type : unsigned char {
 	flower_yellow,
 	flower_purple,
 	flower_white,
+	bedrock,
 };
 
 //names block faces
@@ -86,5 +87,6 @@ namespace {
 		{leaf, {{Front,vec2(6,4)},{Back,vec2(6,4)},{Left,vec2(6,4)},{Right,vec2(6,4)},{Top,vec2(6,4)},{Bottom,vec2(6,4)}}},
 		{water, {{Front,vec2(16,14)},{Back,vec2(16,14)},{Left,vec2(16,14)},{Right,vec2(16,14)},{Top,vec2(16,14)},{Bottom,vec2(16,14)}}},
 		{glass, {{Front,vec2(2,4)},{Back,vec2(2,4)},{Left,vec2(2,4)},{Right,vec2(2,4)},{Top,vec2(2,4)},{Bottom,vec2(2,4)}}},
+		{bedrock, {{Front,vec2(2,2)},{Back,vec2(2,2)},{Left,vec2(2,2)},{Right,vec2(2,2)},{Top,vec2(2,2)},{Bottom,vec2(2,2)}}},
 	};
 }

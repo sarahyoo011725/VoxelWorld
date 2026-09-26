@@ -3,6 +3,8 @@
 #include "World/ChunkManager.h"
 #include "World/StructureGenerator.h"
 
+static const uint32_t bedrock_salt = 0xBED0;
+
 /*
 	sets up the chunk's dimensions and GL buffer objects. deliberately does no
 	terrain generation - that lives in generate_terrain() so it can be moved off
@@ -80,10 +82,13 @@ void Chunk::generate_terrain() {
 	}
 	max_occupied_y = std::min(highest, height - 1);
 
+	const TerrainConfig& config = get_terrain_generator().config;
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
 			int h = get_height(x, z);
 			const BiomeDefinition& biome = biome_of(get_biome(x, z));
+			WorldRandom rng(config.world_seed, (int)world_position.x + x - 1, (int)world_position.z + z - 1, bedrock_salt);
+			int bedrock_top = config.bedrock_height - 1 - rng.next_int(2);
 
 			for (int y = 0; y < height; ++y) {
 				block_type type = none;
@@ -103,6 +108,9 @@ void Chunk::generate_terrain() {
 				//shores read as shores instead of grass running into the sea
 				if (y <= h && y >= h - 2 && y + 1 < height && y + 1 <= water_level) {
 					type = sand;
+				}
+				if (y <= bedrock_top) {
+					type = bedrock;
 				}
 				blocks[block_index(x, y, z)].type = type;
 			}
