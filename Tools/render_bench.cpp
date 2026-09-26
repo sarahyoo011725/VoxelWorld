@@ -163,6 +163,21 @@ namespace {
 		return r;
 	}
 
+	GLuint make_target(int width, int height) {
+		GLuint target, color, depth;
+		glGenFramebuffers(1, &target);
+		glBindFramebuffer(GL_FRAMEBUFFER, target);
+		glGenRenderbuffers(1, &color);
+		glBindRenderbuffer(GL_RENDERBUFFER, color);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, width, height);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, color);
+		glGenRenderbuffers(1, &depth);
+		glBindRenderbuffer(GL_RENDERBUFFER, depth);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth);
+		return target;
+	}
+
 	void print_frame(const char* label, const FrameResult& r) {
 		printf("  %-26s draw %.2f ms cpu, %.2f ms gpu | %.0f draw calls, %.0fk triangles | sections %.0f/%.0f, visibility %.3f ms\n",
 			label, r.cpu_ms, r.gpu_ms, r.calls, r.triangles / 1000.0, r.sections, r.sections_total, r.visibility_ms);
@@ -308,6 +323,9 @@ int main(int argc, char** argv) {
 		terrain.update_chunks();
 	}
 
+	double shadow_cpu_ms = 0, shadow_gpu_ms = 0;
+	GLuint shadow_texture = 0;
+	mat4 shadow_light = mat4(1.0f);
 	{
 		//mirrors GameScreen's shadow pass and Camera::update_light_space_matrix
 		const int resolution = 2048;
@@ -317,6 +335,8 @@ int main(int argc, char** argv) {
 		glGenTextures(1, &shadow_depth);
 		glBindTexture(GL_TEXTURE_2D, shadow_depth);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, resolution, resolution, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glBindFramebuffer(GL_FRAMEBUFFER, shadow_fbo);
 		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, shadow_depth, 0);
 		glDrawBuffer(GL_NONE);
@@ -351,6 +371,58 @@ int main(int argc, char** argv) {
 			cpu / frames, gpu / frames, calls / frames, triangles / frames / 1000.0);
 		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 		glViewport(0, 0, 1200, 700);
+		shadow_cpu_ms = cpu / frames;
+		shadow_gpu_ms = gpu / frames;
+		shadow_texture = shadow_depth;
+		shadow_light = light_matrix;
+	}
+
+	{
+		//from here the main pass samples the shadow map, as it does in the game
+		glActiveTexture(GL_TEXTURE4);
+		glBindTexture(GL_TEXTURE_2D, shadow_texture);
+		glActiveTexture(GL_TEXTURE0);
+		Shader* shaded[3] = { &sm.default_shader, &sm.wave_shader, &sm.foliage_shader };
+		for (Shader* s : shaded) {
+			s->activate();
+			s->set_uniform_1i("shadow_map", 4);
+			s->set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shadow_light);
+		}
+		vec3 eye = position + vec3(0, 1.6f, 0);
+
+		printf("\nwhere the GPU time goes (surface camera, main pass with shadows sampled)\n");
+		const int sizes[4][2] = { {160, 93}, {600, 350}, {1200, 700}, {2400, 1400} };
+		for (const auto& size : sizes) {
+			glBindFramebuffer(GL_FRAMEBUFFER, make_target(size[0], size[1]));
+			glViewport(0, 0, size[0], size[1]);
+			FrameResult r = measure_frames(terrain, sm, eye, query, 6);
+			printf("  %4dx%-4d (%5.2f Mpx): %.2f ms gpu\n", size[0], size[1], size[0] * size[1] / 1e6, r.gpu_ms);
+		}
+		glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+		glViewport(0, 0, 1200, 700);
+
+		terrain.sort_opaque_front_to_back = false;
+		FrameResult unsorted = measure_frames(terrain, sm, eye, query, 12);
+		terrain.sort_opaque_front_to_back = true;
+		FrameResult sorted = measure_frames(terrain, sm, eye, query, 12);
+		printf("  solid chunks in grid order:     %.2f ms gpu, %.2f ms cpu\n", unsorted.gpu_ms, unsorted.cpu_ms);
+		printf("  solid chunks nearest first:     %.2f ms gpu, %.2f ms cpu\n", sorted.gpu_ms, sorted.cpu_ms);
+
+		//a settled frame: nothing to generate or build, just the per-frame bookkeeping
+		double idle_ms = 0;
+		for (int i = 0; i < 20; ++i) {
+			double a = now_ms();
+			terrain.update_chunks();
+			idle_ms += now_ms() - a;
+			terrain.draw(mat4(1.0f));
+		}
+		idle_ms /= 20;
+		double cpu_frame = idle_ms + sorted.cpu_ms + shadow_cpu_ms / 3.0;
+		double gpu_frame = sorted.gpu_ms + shadow_gpu_ms / 3.0;
+		printf("\nper-frame split at 1200x700 (shadows averaged over their 3-frame interval)\n");
+		printf("  CPU %.2f ms  = update %.2f + draw submission %.2f + shadow submission %.2f\n",
+			cpu_frame, idle_ms, sorted.cpu_ms, shadow_cpu_ms / 3.0);
+		printf("  GPU %.2f ms  = main pass %.2f + shadow pass %.2f\n", gpu_frame, sorted.gpu_ms, shadow_gpu_ms / 3.0);
 	}
 
 	printf("\nstreaming (walking east one chunk at a time, %.0f ms build budget)\n", 3.0f);
