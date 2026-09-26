@@ -320,7 +320,7 @@ int main(int argc, char** argv) {
 		position.x += chunk_size;
 		position.y = (float)get_terrain_generator().sample_height((int)position.x, (int)position.z) + 2.0f;
 		int frames = 0, built = 0, generated = 0, worst_built = 0, worst_rebuilt = 0;
-		double total_ms = 0, worst_ms = 0, worst_gen = 0, worst_build = 0, worst_rebuild = 0;
+		double total_ms = 0, worst_ms = 0, worst_gen = 0, worst_build = 0, worst_rebuild = 0, worst_structures = 0;
 		do {
 			double a = now_ms();
 			terrain.update_chunks();
@@ -334,6 +334,7 @@ int main(int argc, char** argv) {
 				worst_build = terrain.stats.chunk_build_ms;
 				worst_built = terrain.stats.chunks_built;
 				worst_rebuild = terrain.stats.rebuild_ms;
+				worst_structures = terrain.stats.structures_ms;
 				worst_rebuilt = terrain.stats.chunks_rebuilt;
 			}
 			built += terrain.stats.chunks_built;
@@ -341,8 +342,8 @@ int main(int argc, char** argv) {
 		} while (terrain.stats.chunks_pending > 0 && frames < 500);
 		printf("  step %d: %d generated, %d meshes built (incl. relights) over %d frames, update %.1f ms total\n",
 			step + 1, generated, built, frames, total_ms);
-		printf("          worst frame %.1f ms = generate %.1f + build %.1f (%d meshes) + immediate rebuild %.1f (%d) + other %.1f\n",
-			worst_ms, worst_gen, worst_build, worst_built, worst_rebuild, worst_rebuilt, worst_ms - worst_gen - worst_build - worst_rebuild);
+		printf("          worst frame %.1f ms = generate %.1f + build %.1f (%d meshes) + structures %.1f + immediate rebuild %.1f (%d) + other %.1f\n",
+			worst_ms, worst_gen, worst_build, worst_built, worst_structures, worst_rebuild, worst_rebuilt, worst_ms - worst_gen - worst_build - worst_structures - worst_rebuild);
 	}
 
 	glfwDestroyWindow(window);
