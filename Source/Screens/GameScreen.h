@@ -69,7 +69,9 @@ public:
 		player.limit_reach(target != nullptr ? distance : player.reach());
 
 		bool attack_down = glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-		if (target != nullptr && attack_down && !attack_was_down) target->hurt(attack_damage, player.position);
+		if (target != nullptr && attack_down && !attack_was_down && target->hurt(attack_damage, player.position)) {
+			audio::play_attack(target->dying());
+		}
 		attack_was_down = attack_down;
 	}
 
@@ -141,6 +143,7 @@ public:
 		if (window_setting->window_active) {
 			update_attack();
 			player.update();
+			audio::update_water(player.feet_in_water(), player.is_underwater(), player.velocity.y);
 			sm.frame_buffer_shader.activate();
 			sm.frame_buffer_shader.set_uniform_1i("is_underwater", player.is_underwater());
 		}

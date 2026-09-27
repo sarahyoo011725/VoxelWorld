@@ -19,6 +19,7 @@ public:
 	vec3 hovered_position() const { return block_interactor.hovered_position; }
 	const Inventory& inventory() const { return block_interactor.inventory; }
 	bool is_underwater() { return physics.is_underwater(eye_position()); }
+	bool feet_in_water() { return physics.is_underwater(position - vec3(0.0f, size.y * 0.5f - 0.1f, 0.0f)); }
 	vec3 eye_position() const { return position + vec3(0.0f, eye_height, 0.0f); }
 	float reach() const { return block_interactor.reach(); }
 	void limit_reach(float distance) { block_interactor.reach_limit = distance; }

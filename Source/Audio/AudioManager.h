@@ -21,6 +21,10 @@ namespace audio {
 	void play_block_sound_effect(block_type type);
 	void play_block_walked(block_type type);
 	void play_random_music();
+	//a hit that landed on a mob; a killing blow sounds heavier
+	void play_attack(bool killed);
+	//splash on hitting the water hard, a loop of ambience while the head is under, and a gasp on surfacing
+	void update_water(bool feet_in_water, bool eye_in_water, float vertical_speed);
 }
 
 /*
