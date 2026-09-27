@@ -2,7 +2,7 @@
 
 PlayerPhysics::PlayerPhysics() : cm(ChunkManager::get_instance()) {}
 
-void PlayerPhysics::integrate(GameObject& target, float dt, bool enabled) {
+void PlayerPhysics::integrate(GameObject& target, float dt, bool enabled, float gravity_scale) {
 	if (!enabled) {
 		target.position += target.velocity * dt;
 		return;
@@ -42,7 +42,7 @@ void PlayerPhysics::integrate(GameObject& target, float dt, bool enabled) {
 	try_auto_step(target, dt);
 
 	on_ground = false;
-	target.velocity.y += gravity * dt;
+	target.velocity.y += gravity * gravity_scale * dt;
 
 	float remaining_dt = dt;
 	vector<vec3> resolved;

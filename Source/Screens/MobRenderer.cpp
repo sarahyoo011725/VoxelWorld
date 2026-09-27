@@ -99,14 +99,22 @@ MobRenderer::TypeMesh& MobRenderer::mesh_for(const MobType& type) {
 //a matrix per part, parents first, then the daylight at the mob and whether it flashes red
 void MobRenderer::pose(const Mob& mob, vector<vec4>& out) const {
 	const vector<ModelPart>& parts = mob.type.model.parts;
-	mat4 root = rotate(translate(mat4(1.0f), mob.feet()), mob.yaw, vec3(0, 1, 0));
-	if (mob.dying()) {
-		//topples onto its side, fast at first like a fall
-		float topple = sqrt(glm::min(1.0f, mob.death_time / 0.6f));
+	//turned and pitched about the middle of the body, then down to the feet the model is built from
+	mat4 root = translate(mat4(1.0f), mob.position);
+	root = rotate(rotate(root, mob.yaw, vec3(0, 1, 0)), -mob.pitch, vec3(1, 0, 0));
+	root = translate(root, vec3(0.0f, -mob.size.y * 0.5f, 0.0f));
+	//dying topples onto its side, fast at first like a fall; a stranded fish just lies there
+	float roll = 0.0f;
+	if (mob.dying()) roll = sqrt(glm::min(1.0f, mob.death_time / 0.6f));
+	else if (mob.stranded()) roll = 1.0f;
+	if (roll > 0.0f) {
 		//raised as it goes over, so the flank it lands on rests on the ground instead of in it
-		root = rotate(translate(root, vec3(0.0f, topple * size_of_flank(mob), 0.0f)), topple * 1.5707963f, vec3(0, 0, 1));
+		root = rotate(translate(root, vec3(0.0f, roll * size_of_flank(mob), 0.0f)), roll * 1.5707963f, vec3(0, 0, 1));
 	}
-	float swing = sin(mob.walk_phase) * 0.5f * mob.leg_swing;
+	float wave = sin(mob.walk_phase);
+	float swing = wave * 0.5f * mob.leg_swing;
+	float tail = wave * (0.25f + 0.3f * mob.leg_swing);
+	float flap = wave * (0.2f + 0.4f * mob.leg_swing);
 
 	vector<mat4> matrices(parts.size());
 	for (size_t i = 0; i < parts.size(); ++i) {
@@ -121,6 +129,18 @@ void MobRenderer::pose(const Mob& mob, vector<vec4>& out) const {
 			break;
 		case part_motion::leg_back:
 			m = rotate(m, -swing, vec3(1, 0, 0));
+			break;
+		case part_motion::tail_sway:
+			m = rotate(m, tail, vec3(0, 1, 0));
+			break;
+		case part_motion::tail_beat:
+			m = rotate(m, tail * 0.7f, vec3(1, 0, 0));
+			break;
+		case part_motion::flipper_left:
+			m = rotate(m, flap, vec3(0, 0, 1));
+			break;
+		case part_motion::flipper_right:
+			m = rotate(m, -flap, vec3(0, 0, 1));
 			break;
 		default:
 			break;

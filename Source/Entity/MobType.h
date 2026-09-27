@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include "World/Biome.h"
+#include "Block/BlockType.h"
 
 using namespace std;
 using namespace glm;
@@ -12,7 +13,21 @@ using namespace glm;
 class Goal;
 
 //how a part moves on its own, on top of following its parent
-enum class part_motion { none, head, leg_forward, leg_back };
+enum class part_motion {
+	none,
+	head,
+	leg_forward, leg_back, //swing forward and back, in diagonal pairs
+	tail_sway, //side to side, like a fish
+	tail_beat, //up and down, like a dolphin's flukes
+	flipper_left, flipper_right, //flap up and down, mirrored
+};
+
+//where a mob can move under its own power
+enum class habitat {
+	land, //walks; stays out of water
+	water, //swims; stranded on land it flops about and dries out
+	amphibious, //walks on land and swims in water
+};
 
 /*
 	one box of a model, in pixels (1/16 of a block). the box hangs off a pivot that
@@ -53,6 +68,9 @@ struct SpawnRule {
 	int weight = 10; //relative odds against other types that can spawn in the same place
 	int min_group = 2;
 	int max_group = 4;
+	vector<block_type> ground = { dirt_grass }; //what a land or amphibious mob spawns standing on
+	int min_depth = 2; //water deep enough for a water mob's school
+	int shore_distance = -1; //a land mob only spawns within this many blocks of water; negative anywhere
 };
 
 /*
@@ -66,6 +84,9 @@ struct MobType {
 	float walk_speed = 1.0f; //blocks per second
 	float turn_rate = 2.5f; //radians per second
 	float max_health = 10.0f;
+	habitat lives = habitat::land;
+	float swim_speed = 0.0f; //blocks per second
+	float dry_out_time = -1.0f; //seconds a water mob lasts out of water before it starts to suffocate; negative never
 	MobModel model;
 	MobSounds sounds;
 	SpawnRule spawn;

@@ -1,5 +1,7 @@
 #pragma once
 #include <glm/glm.hpp>
+#include <memory>
+#include <vector>
 
 using namespace glm;
 
@@ -8,6 +10,7 @@ class Mob;
 //what a mob can see of the world beyond the blocks around it
 struct MobContext {
 	vec3 player_eye = vec3(0.0f);
+	const std::vector<std::unique_ptr<Mob>>* mobs = nullptr; //everything alive, for flocking
 };
 
 /*
@@ -72,6 +75,69 @@ public:
 
 private:
 	float chance;
+};
+
+//swims a few blocks on a random heading, keeping off the surface and the bottom
+class SwimGoal : public Goal {
+public:
+	SwimGoal(int priority, float chance_per_second = 0.6f) : Goal(priority), chance(chance_per_second) {}
+	bool can_start(Mob& mob, const MobContext& context, float dt) override;
+	bool keep_going(Mob& mob, const MobContext& context) override;
+	void start(Mob& mob, const MobContext& context) override;
+	void tick(Mob& mob, const MobContext& context, float dt) override;
+	void stop(Mob& mob) override;
+
+private:
+	void pick_heading(Mob& mob);
+	float chance;
+};
+
+//heads back toward the middle of nearby mobs of the same kind when it strays from them
+class SchoolGoal : public Goal {
+public:
+	SchoolGoal(int priority, float range = 8.0f, float chance_per_second = 0.8f) : Goal(priority), range(range), chance(chance_per_second) {}
+	bool can_start(Mob& mob, const MobContext& context, float dt) override;
+	void start(Mob& mob, const MobContext& context) override;
+	void tick(Mob& mob, const MobContext& context, float dt) override;
+	void stop(Mob& mob) override;
+
+private:
+	//false when it's alone, or already close enough to the others
+	bool school_centre(const Mob& mob, const MobContext& context, vec3& centre) const;
+	float range, chance;
+};
+
+//near the surface, swims up hard and leaps clear of the water
+class BreachGoal : public Goal {
+public:
+	BreachGoal(int priority, float chance_per_second = 0.3f) : Goal(priority), chance(chance_per_second) {}
+	bool can_start(Mob& mob, const MobContext& context, float dt) override;
+	bool keep_going(Mob& mob, const MobContext& context) override;
+	void start(Mob& mob, const MobContext& context) override;
+	void tick(Mob& mob, const MobContext& context, float dt) override;
+	void stop(Mob& mob) override;
+
+private:
+	float chance;
+	bool leapt = false;
+	bool left_water = false;
+};
+
+//swims to the nearest shore at the waterline and heaves itself out onto it
+class HaulOutGoal : public Goal {
+public:
+	HaulOutGoal(int priority, float chance_per_second = 0.25f) : Goal(priority), chance(chance_per_second) {}
+	bool can_start(Mob& mob, const MobContext& context, float dt) override;
+	bool keep_going(Mob& mob, const MobContext& context) override;
+	void start(Mob& mob, const MobContext& context) override;
+	void tick(Mob& mob, const MobContext& context, float dt) override;
+	void stop(Mob& mob) override;
+
+private:
+	bool find_shore(const Mob& mob, vec3& shore) const;
+	float chance;
+	vec3 shore = vec3(0.0f);
+	bool leapt = false;
 };
 
 //turns the head to follow a nearby player

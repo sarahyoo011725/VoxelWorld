@@ -2,6 +2,17 @@
 #include "Chunk/Chunk.h"
 #include <algorithm>
 
+namespace {
+	bool is_water_mob(const MobType& type) {
+		return type.lives == habitat::water;
+	}
+
+	template <class T>
+	bool contains(const vector<T>& list, T value) {
+		return find(list.begin(), list.end(), value) != list.end();
+	}
+}
+
 MobManager::MobManager() : cm(ChunkManager::get_instance()), rng(std::random_device{}()) {}
 
 //a mob only moves where its chunk is meshed; outside it there are no blocks to stand on
@@ -10,8 +21,8 @@ bool MobManager::chunk_ready(vec3 world_position) const {
 	return chunk != nullptr && chunk->has_built;
 }
 
-//grass on top with two blocks of air above it
-bool MobManager::can_stand_at(int x, int z, int& ground_y) const {
+//dry ground on top with two blocks of air above it
+bool MobManager::can_stand_at(int x, int z, int& ground_y, block_type& ground_type) const {
 	vec3 column = vec3(x, 0, z);
 	Chunk* chunk = cm.get_chunk(column);
 	if (chunk == nullptr || !chunk->has_built) return false;
@@ -21,53 +32,137 @@ bool MobManager::can_stand_at(int x, int z, int& ground_y) const {
 	Block* ground = chunk->get_block(ivec3(local.x, h, local.z));
 	Block* body = chunk->get_block(ivec3(local.x, h + 1, local.z));
 	Block* head = chunk->get_block(ivec3(local.x, h + 2, local.z));
-	if (ground == nullptr || ground->type != dirt_grass) return false;
+	if (ground == nullptr || !is_solid(ground->type)) return false;
 	if (body == nullptr || is_solid(body->type) || body->type == water) return false;
 	if (head == nullptr || is_solid(head->type)) return false;
 	ground_y = h;
+	ground_type = ground->type;
 	return true;
 }
 
-//a weighted draw among the types that spawn in this biome
-const MobType* MobManager::pick_type(biome_id biome) {
+//open water over this column, from the floor up to the surface
+int MobManager::water_depth(int x, int z, int& floor_y) const {
+	vec3 column = vec3(x, 0, z);
+	Chunk* chunk = cm.get_chunk(column);
+	if (chunk == nullptr || !chunk->has_built) return 0;
+	ivec3 local = world_to_local_coord(column);
+	floor_y = chunk->get_height(local.x, local.z);
+	int depth = 0;
+	for (int y = floor_y + 1; y <= water_level; ++y) {
+		Block* b = chunk->get_block(ivec3(local.x, y, local.z));
+		if (b == nullptr || b->type != water) break;
+		depth++;
+	}
+	return depth;
+}
+
+/*
+	a weighted draw among the types that could spawn here: in this biome, and
+	either standing on this ground or swimming in water this deep
+*/
+const MobType* MobManager::pick_type(biome_id biome, bool in_water, block_type ground, int depth) {
+	auto fits_here = [&](const MobType& type) {
+		if (!contains(type.spawn.biomes, biome) || is_water_mob(type) != in_water) return false;
+		return in_water ? depth >= type.spawn.min_depth : contains(type.spawn.ground, ground);
+	};
 	int total = 0;
 	for (const MobType& type : mob_types()) {
-		if (find(type.spawn.biomes.begin(), type.spawn.biomes.end(), biome) != type.spawn.biomes.end()) total += type.spawn.weight;
+		if (fits_here(type)) total += type.spawn.weight;
 	}
 	if (total == 0) return nullptr;
 	int pick = std::uniform_int_distribution<int>(0, total - 1)(rng);
 	for (const MobType& type : mob_types()) {
-		if (find(type.spawn.biomes.begin(), type.spawn.biomes.end(), biome) == type.spawn.biomes.end()) continue;
+		if (!fits_here(type)) continue;
 		pick -= type.spawn.weight;
 		if (pick < 0) return &type;
 	}
 	return nullptr;
 }
 
-void MobManager::try_spawn_herd(vec3 player_position) {
+bool MobManager::near_water(int x, int z, int distance) const {
+	for (int dx = -distance; dx <= distance; ++dx) {
+		for (int dz = -distance; dz <= distance; ++dz) {
+			Block* b = cm.get_block_worldspace(vec3(x + dx, water_level, z + dz));
+			if (b != nullptr && b->type == water) return true;
+		}
+	}
+	return false;
+}
+
+biome_id MobManager::biome_at(int x, int z) const {
+	vec3 column = vec3(x, 0, z);
+	ivec3 local = world_to_local_coord(column);
+	return cm.get_chunk(column)->get_biome(local.x, local.z);
+}
+
+ivec2 MobManager::random_column(vec3 player_position) {
 	std::uniform_real_distribution<float> unit(0.0f, 1.0f);
 	float angle = unit(rng) * 6.2831853f;
 	float distance = spawn_min_distance + unit(rng) * (spawn_max_distance - spawn_min_distance);
-	int cx = (int)std::round(player_position.x + cos(angle) * distance);
-	int cz = (int)std::round(player_position.z + sin(angle) * distance);
+	return ivec2((int)std::round(player_position.x + cos(angle) * distance), (int)std::round(player_position.z + sin(angle) * distance));
+}
 
+int MobManager::count(bool water_mobs) const {
+	return (int)count_if(mobs.begin(), mobs.end(), [&](const unique_ptr<Mob>& m) { return is_water_mob(m->type) == water_mobs; });
+}
+
+void MobManager::try_spawn_herd(vec3 player_position) {
+	ivec2 centre = random_column(player_position);
 	int ground_y;
-	if (!can_stand_at(cx, cz, ground_y)) return;
-	Chunk* chunk = cm.get_chunk(vec3(cx, 0, cz));
-	ivec3 local = world_to_local_coord(vec3(cx, 0, cz));
-	const MobType* type = pick_type(chunk->get_biome(local.x, local.z));
+	block_type ground;
+	if (!can_stand_at(centre.x, centre.y, ground_y, ground)) return;
+	const MobType* type = pick_type(biome_at(centre.x, centre.y), false, ground, 0);
 	if (type == nullptr) return;
+	if (type->spawn.shore_distance >= 0 && !near_water(centre.x, centre.y, type->spawn.shore_distance)) return;
 
-	int count = std::uniform_int_distribution<int>(type->spawn.min_group, type->spawn.max_group)(rng);
-	for (int i = 0; i < count && (int)mobs.size() < max_mobs; ++i) {
-		int x = cx + (int)std::round((unit(rng) - 0.5f) * 6.0f);
-		int z = cz + (int)std::round((unit(rng) - 0.5f) * 6.0f);
-		if (!can_stand_at(x, z, ground_y)) continue;
+	std::uniform_real_distribution<float> unit(0.0f, 1.0f);
+	int group = std::uniform_int_distribution<int>(type->spawn.min_group, type->spawn.max_group)(rng);
+	for (int i = 0, land = count(false); i < group && land < max_land_mobs; ++i) {
+		int x = centre.x + (int)std::round((unit(rng) - 0.5f) * 6.0f);
+		int z = centre.y + (int)std::round((unit(rng) - 0.5f) * 6.0f);
+		if (!can_stand_at(x, z, ground_y, ground) || !contains(type->spawn.ground, ground)) continue;
 		//the ground block spans ground_y - 0.5 to ground_y + 0.5, so feet rest on its top
 		vec3 feet = vec3(x, ground_y + 0.5f + 0.01f, z);
 		auto mob = make_unique<Mob>(*type, feet, rng());
-		if (mob->fits()) mobs.push_back(std::move(mob));
+		if (mob->fits()) {
+			mobs.push_back(std::move(mob));
+			land++;
+		}
 	}
+}
+
+void MobManager::try_spawn_school(vec3 player_position) {
+	ivec2 centre = random_column(player_position);
+	int floor_y;
+	int depth = water_depth(centre.x, centre.y, floor_y);
+	if (depth < 2) return;
+	const MobType* type = pick_type(biome_at(centre.x, centre.y), true, none, depth);
+	if (type == nullptr) return;
+
+	std::uniform_real_distribution<float> unit(0.0f, 1.0f);
+	int group = std::uniform_int_distribution<int>(type->spawn.min_group, type->spawn.max_group)(rng);
+	for (int i = 0, swimming = count(true); i < group && swimming < max_water_mobs; ++i) {
+		int x = centre.x + (int)std::round((unit(rng) - 0.5f) * 5.0f);
+		int z = centre.y + (int)std::round((unit(rng) - 0.5f) * 5.0f);
+		if (water_depth(x, z, floor_y) < type->spawn.min_depth) continue;
+		//anywhere in the column with the whole body under the surface
+		float lowest = floor_y + 0.5f + 0.05f;
+		float highest = water_level + 0.5f - type->hitbox.y - 0.05f;
+		if (highest < lowest) continue;
+		vec3 feet = vec3(x, lowest + unit(rng) * (highest - lowest), z);
+		auto mob = make_unique<Mob>(*type, feet, rng());
+		if (mob->fits() && mob->in_water) {
+			mobs.push_back(std::move(mob));
+			swimming++;
+		}
+	}
+}
+
+Mob* MobManager::add(const MobType& type, vec3 feet) {
+	auto mob = make_unique<Mob>(type, feet, rng());
+	if (!mob->fits()) return nullptr;
+	mobs.push_back(std::move(mob));
+	return mobs.back().get();
 }
 
 Mob* MobManager::pick(vec3 origin, vec3 direction, float max_distance, float& distance) const {
@@ -103,12 +198,15 @@ void MobManager::update(float dt, const MobContext& context) {
 		return m->finished_dying() || length(offset) > despawn_distance || !chunk_ready(m->position) || m->position.y < -10.0f;
 	}), mobs.end());
 
-	for (auto& m : mobs) m->update(dt, context);
+	MobContext shared = context;
+	shared.mobs = &mobs;
+	for (auto& m : mobs) m->update(dt, shared);
 
-	//a few attempts a second, so herds appear gradually as the world loads in
+	//a few attempts a second, so herds and schools appear gradually as the world loads in
 	spawn_timer -= dt;
-	if (spawn_timer <= 0.0f && (int)mobs.size() < max_mobs) {
+	if (spawn_timer <= 0.0f) {
 		spawn_timer = 0.25f;
-		try_spawn_herd(player);
+		if (count(false) < max_land_mobs) try_spawn_herd(player);
+		if (count(true) < max_water_mobs) try_spawn_school(player);
 	}
 }

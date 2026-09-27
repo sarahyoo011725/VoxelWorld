@@ -13,7 +13,8 @@ class PlayerPhysics
 public:
 	PlayerPhysics();
 	bool on_ground = false;
-	void integrate(GameObject& target, float dt, bool enabled);
+	//gravity_scale 0 for something swimming, which moves as freely up as down
+	void integrate(GameObject& target, float dt, bool enabled, float gravity_scale = 1.0f);
 	bool is_underwater(vec3 position);
 	bool is_position_clear(const GameObject& probe);
 private:
