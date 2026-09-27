@@ -48,6 +48,7 @@ add_executable(VoxelWorld
 	Source/Entity/Player.cpp
 	Source/Entity/PlayerPhysics.cpp
 	Source/Entity/Mob.cpp
+	Source/Entity/VoxModel.cpp
 	Source/Entity/Goal.cpp
 	Source/Entity/MobTypes.cpp
 	Source/Audio/MobSoundPlayer.cpp
@@ -131,6 +132,7 @@ add_executable(render_bench
 	Source/Entity/Collision.cpp
 	Source/Entity/PlayerPhysics.cpp
 	Source/Entity/Mob.cpp
+	Source/Entity/VoxModel.cpp
 	Source/Entity/Goal.cpp
 	Source/Entity/MobTypes.cpp
 	Source/Screens/MobRenderer.cpp

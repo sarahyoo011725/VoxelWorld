@@ -51,8 +51,15 @@ struct ModelPart {
 	ivec2 uv = ivec2(0);
 	part_motion motion = part_motion::none;
 	vec3 rest = vec3(0.0f); //radians about x, y, z the part is turned by before it moves, e.g. a neck angled up
+	//a sculpted part instead of a box: a MagicaVoxel file (from, size and uv then go unused), each voxel this many pixels across
+	string voxels;
+	float voxel_size = 0.5f;
 };
 
+/*
+	a model is either boxes on a skin, or sculpted voxel parts coloured from the
+	palette of the first of them; one texture per model, so the two don't mix
+*/
 struct MobModel {
 	string skin; //png path
 	ivec2 skin_size = ivec2(64, 64);

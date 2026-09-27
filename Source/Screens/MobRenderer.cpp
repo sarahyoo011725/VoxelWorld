@@ -1,6 +1,7 @@
 #include "MobRenderer.h"
 #include "Chunk/Chunk.h"
 #include "World/ChunkGeneration.h"
+#include "Entity/VoxModel.h"
 #include <cstddef>
 #include <glm/gtc/matrix_transform.hpp>
 
@@ -67,8 +68,33 @@ MobRenderer::TypeMesh& MobRenderer::mesh_for(const MobType& type) {
 	vec2 skin_size = vec2(model.skin_size);
 	vector<mob_vertex> vertices;
 	const vec2 corners[6] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(1, 1), vec2(0, 1), vec2(0, 0) };
+	const VoxModel* palette_source = nullptr;
 	for (size_t p = 0; p < model.parts.size(); ++p) {
 		const ModelPart& part = model.parts[p];
+		if (!part.voxels.empty()) {
+			//a face for every side of a voxel that isn't covered by another, coloured from the palette texel
+			const VoxModel& vox = load_vox(part.voxels);
+			if (palette_source == nullptr) palette_source = &vox;
+			const ivec3 step[6] = { ivec3(1, 0, 0), ivec3(0, 0, 1), ivec3(-1, 0, 0), ivec3(0, 0, -1), ivec3(0, 1, 0), ivec3(0, -1, 0) };
+			float scale = part.voxel_size / 16.0f;
+			for (int x = 0; x < vox.size.x; ++x) {
+				for (int y = 0; y < vox.size.y; ++y) {
+					for (int z = 0; z < vox.size.z; ++z) {
+						uint8_t colour = vox.at(x, y, z);
+						if (colour == 0) continue;
+						vec2 uv = vec2((colour + 0.5f) / 256.0f, 0.5f);
+						for (int face = 0; face < 6; ++face) {
+							if (vox.at(x + step[face].x, y + step[face].y, z + step[face].z) != 0) continue;
+							for (vec2 c : corners) {
+								vec3 local = (vox.origin + vec3(x, y, z) + face_point(face, c.x, c.y)) * scale;
+								vertices.push_back({ local, face_normals[face], uv, (float)p });
+							}
+						}
+					}
+				}
+			}
+			continue;
+		}
 		for (int face = 0; face < 6; ++face) {
 			vec4 rect = face_rect(face, part.size);
 			for (vec2 c : corners) {
@@ -89,7 +115,19 @@ MobRenderer::TypeMesh& MobRenderer::mesh_for(const MobType& type) {
 	mesh->vao.link_attrib(mesh->vbo, 2, 2, GL_FLOAT, GL_FALSE, sizeof(mob_vertex), (void*)offsetof(mob_vertex, uv));
 	mesh->vao.link_attrib(mesh->vbo, 3, 1, GL_FLOAT, GL_FALSE, sizeof(mob_vertex), (void*)offsetof(mob_vertex, part));
 	mesh->vao.unbind();
-	mesh->skin = make_unique<Texture>(model.skin.c_str(), GL_TEXTURE0 + skin_unit, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+	if (palette_source != nullptr) {
+		glGenTextures(1, &mesh->palette);
+		glBindTexture(GL_TEXTURE_2D, mesh->palette);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, palette_source->palette.data());
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glBindTexture(GL_TEXTURE_2D, 0);
+	}
+	else {
+		mesh->skin = make_unique<Texture>(model.skin.c_str(), GL_TEXTURE0 + skin_unit, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+	}
 
 	TypeMesh& result = *mesh;
 	meshes[&type] = std::move(mesh);
@@ -211,8 +249,14 @@ void MobRenderer::draw_all(Shader& shader, bool with_skin, bool overlay) {
 		TypeMesh& mesh = *entry.second;
 		if (mesh.instances == 0 || entry.first->overlay != overlay) continue;
 		if (with_skin) {
-			mesh.skin->activate();
-			mesh.skin->bind();
+			if (mesh.palette != 0) {
+				glActiveTexture(GL_TEXTURE0 + skin_unit);
+				glBindTexture(GL_TEXTURE_2D, mesh.palette);
+			}
+			else {
+				mesh.skin->activate();
+				mesh.skin->bind();
+			}
 		}
 		shader.set_uniform_1i("first_texel", mesh.first_texel);
 		shader.set_uniform_1i("texels_per_mob", mesh.texels_per_mob);

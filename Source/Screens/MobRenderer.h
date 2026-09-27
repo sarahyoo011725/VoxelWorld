@@ -42,6 +42,7 @@ private:
 		VAO vao;
 		VBO vbo = VBO(nullptr, 0, GL_STATIC_DRAW);
 		unique_ptr<Texture> skin;
+		GLuint palette = 0; //for a sculpted model: its colours, one texel each
 		GLsizei vertex_count = 0;
 		int texels_per_mob = 0;
 		int first_texel = 0;
