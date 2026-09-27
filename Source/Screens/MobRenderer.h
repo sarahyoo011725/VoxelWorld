@@ -1,41 +1,57 @@
 #pragma once
 #include <glm/glm.hpp>
+#include <map>
 #include <memory>
 #include <vector>
 #include "Buffers/VAO.h"
 #include "Buffers/VBO.h"
-#include "Entity/Sheep.h"
+#include "Entity/Mob.h"
 #include "Shader/ShaderManager.h"
+#include "Texture/Texture.h"
 
 using namespace glm;
 
 struct mob_vertex {
-	vec3 position;
+	vec3 position; //blocks, relative to the part's pivot
 	vec3 normal;
-	vec2 uv; //0..1 across the face; default.frag maps it into tile_origin's atlas cell
-	vec2 tile_origin;
-	float light; //daylight at the mob, so it darkens in caves like the terrain around it
+	vec2 uv; //into the type's skin
+	float part;
 };
 
 /*
-	draws every mob as boxes built in world space on the CPU each frame. a sheep
-	is under 400 vertices, so rebuilding them all costs less than a draw call
-	per body part would, and the whole herd goes out in one draw
+	each mob type's mesh is built once from its model and stays on the GPU; a
+	frame only uploads where every part of every mob is (a matrix per part, in a
+	texture buffer) and draws each type in one instanced call
 */
 class MobRenderer {
 public:
 	MobRenderer();
-	void build(const vector<unique_ptr<Sheep>>& sheep);
+	~MobRenderer();
+	void build(const vector<unique_ptr<Mob>>& mobs);
 	void draw();
-	//for the shadow pass; the caller has the shadow shader active
-	void draw_depth();
+	void draw_depth(const mat4& light_space_matrix);
+
+	static const int skin_unit = 5;
+	static const int matrix_unit = 6;
 
 private:
-	void add_sheep(const Sheep& sheep);
-	void add_box(const mat4& transform, vec2 tile, float light);
+	struct TypeMesh {
+		VAO vao;
+		VBO vbo = VBO(nullptr, 0, GL_STATIC_DRAW);
+		unique_ptr<Texture> skin;
+		GLsizei vertex_count = 0;
+		int texels_per_mob = 0;
+		int first_texel = 0;
+		int instances = 0;
+	};
+
+	TypeMesh& mesh_for(const MobType& type);
+	void pose(const Mob& mob, vector<vec4>& out) const;
+	void draw_all(Shader& shader, bool with_skin);
 
 	ShaderManager& sm;
-	VAO vao = VAO();
-	VBO vbo = VBO(nullptr, 0, GL_DYNAMIC_DRAW);
-	vector<mob_vertex> vertices;
+	map<const MobType*, unique_ptr<TypeMesh>> meshes;
+	vector<vec4> texels;
+	GLuint matrix_buffer = 0;
+	GLuint matrix_texture = 0;
 };

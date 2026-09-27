@@ -7,6 +7,7 @@
 #include "PlayerRenderer.h"
 #include "MobRenderer.h"
 #include "World/MobManager.h"
+#include "Audio/MobSoundPlayer.h"
 #include "Audio/AudioManager.h"
 #include <GLFW/glfw3.h>
 
@@ -23,6 +24,7 @@ private:
 	PlayerRenderer renderer;
 	MobManager mobs;
 	MobRenderer mob_renderer;
+	MobSoundPlayer mob_sounds;
 	double last_mob_update = 0.0;
 	Texture texture = Texture("Resources/Textures/texture_atlas_blocks.png", GL_TEXTURE1, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 	bool wireframe = false;
@@ -49,7 +51,10 @@ public:
 		sm.foliage_shader.activate();
 		sm.foliage_shader.set_uniform_1i("texture1", 1);
 		sm.mob_shader.activate();
-		sm.mob_shader.set_uniform_1i("texture1", 1);
+		sm.mob_shader.set_uniform_1i("texture1", MobRenderer::skin_unit);
+		sm.mob_shader.set_uniform_1i("part_matrices", MobRenderer::matrix_unit);
+		sm.mob_shadow_shader.activate();
+		sm.mob_shadow_shader.set_uniform_1i("part_matrices", MobRenderer::matrix_unit);
 	}
 
 	void gl_settings() {
@@ -127,8 +132,13 @@ public:
 		double mob_now = glfwGetTime();
 		float mob_dt = last_mob_update > 0.0 ? (float)std::min(mob_now - last_mob_update, 0.1) : 0.0f;
 		last_mob_update = mob_now;
-		mobs.update(mob_dt, player.position);
-		mob_renderer.build(mobs.sheep());
+		MobContext mob_context;
+		mob_context.player_eye = player.eye_position();
+		mobs.update(mob_dt, mob_context);
+		for (const auto& m : mobs.all()) {
+			if (m->ambient_sound >= 0) mob_sounds.play(m->type.sounds.ambient[m->ambient_sound], m->position, player.camera.view, 0.8f + 0.4f * (rand() / (float)RAND_MAX));
+		}
+		mob_renderer.build(mobs.all());
 
 		//shadow pass: render opaque + foliage geometry depth-only from the sun's POV.
 		//refreshed on an interval, or immediately when geometry changed
@@ -158,7 +168,7 @@ public:
 			sm.shadow_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shadow_matrix);
 			sm.shadow_shader.set_uniform_1f("time", (float)glfwGetTime());
 			terrain.draw_shadow_casters(shadow_matrix);
-			mob_renderer.draw_depth();
+			mob_renderer.draw_depth(shadow_matrix);
 			renderer.unbind_shadow_fbo();
 			glViewport(0, 0, window_setting->width, window_setting->height);
 		}

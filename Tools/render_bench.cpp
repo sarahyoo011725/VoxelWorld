@@ -534,63 +534,71 @@ int main(int argc, char** argv) {
 
 	{
 		const int frames = 1800;
-		printf("\nsheep (%d frames simulated at 60 fps)\n", frames);
+		printf("\nmobs (%d frames simulated at 60 fps)\n", frames);
 		MobManager mobs;
 		MobRenderer mob_renderer;
-		map<const Sheep*, vec3> first_seen;
-		long overlap_frames = 0, sheep_frames = 0;
+		MobContext context;
+		context.player_eye = position + vec3(0.0f, 0.72f, 0.0f);
+		map<const Mob*, vec3> first_seen;
+		long overlap_frames = 0, mob_frames = 0;
 		PlayerPhysics probe_physics;
-		//a resting sheep touches its floor to within float error, so only count real penetration
-		auto penetrates = [&](const Sheep& s) { GameObject probe = s; probe.size -= vec3(0.02f); return !probe_physics.is_position_clear(probe); };
+		//a resting mob touches its floor to within float error, so only count real penetration
+		auto penetrates = [&](const Mob& m) { GameObject probe = m; probe.size -= vec3(0.02f); return !probe_physics.is_position_clear(probe); };
 		auto block_at = [&](vec3 p) { return cm.get_block_worldspace(vec3(std::round(p.x), std::round(p.y), std::round(p.z))); };
 		double update_ms = 0, build_ms = 0;
 		for (int f = 0; f < frames; ++f) {
 			double a = now_ms();
-			mobs.update(1.0f / 60.0f, position);
+			mobs.update(1.0f / 60.0f, context);
 			double b = now_ms();
-			mob_renderer.build(mobs.sheep());
+			mob_renderer.build(mobs.all());
 			build_ms += now_ms() - b;
 			update_ms += b - a;
-			for (const auto& s : mobs.sheep()) {
-				first_seen.emplace(s.get(), s->position);
-				sheep_frames++;
-				if (penetrates(*s)) overlap_frames++;
+			for (const auto& m : mobs.all()) {
+				first_seen.emplace(m.get(), m->position);
+				mob_frames++;
+				if (penetrates(*m)) overlap_frames++;
 			}
 		}
 		int standing = 0, wet = 0, embedded = 0;
 		float moved_total = 0, moved_max = 0;
-		for (const auto& s : mobs.sheep()) {
-			vec3 feet = s->feet();
+		map<string, int> per_type;
+		for (const auto& m : mobs.all()) {
+			per_type[m->type.name]++;
+			vec3 feet = m->feet();
 			Block* ground = block_at(feet - vec3(0, 0.5f, 0));
 			float ground_top = std::round(feet.y - 0.5f) + 0.5f;
 			if (ground && is_solid(ground->type) && std::abs(feet.y - ground_top) < 0.05f) standing++;
-			if (penetrates(*s)) embedded++;
-			Block* body = block_at(s->position);
+			if (penetrates(*m)) embedded++;
+			Block* body = block_at(m->position);
 			if (body && body->type == water) wet++;
-			float moved = length(vec2(s->position.x, s->position.z) - vec2(first_seen[s.get()].x, first_seen[s.get()].z));
+			float moved = length(vec2(m->position.x, m->position.z) - vec2(first_seen[m.get()].x, first_seen[m.get()].z));
 			moved_total += moved;
 			moved_max = std::max(moved_max, moved);
 		}
-		int n = (int)mobs.sheep().size();
-		printf("  %d sheep alive (%zu spawned in total), %d standing on solid ground, %d overlapping a block, %d in water\n",
-			n, first_seen.size(), standing, embedded, wet);
-		printf("  hitbox overlapped a block in %ld of %ld sheep-frames\n", overlap_frames, sheep_frames);
+		int n = (int)mobs.all().size();
+		printf("  %d mobs alive (%zu spawned in total):", n, first_seen.size());
+		for (const auto& entry : per_type) printf(" %d %s", entry.second, entry.first.c_str());
+		printf("\n  %d standing on solid ground, %d overlapping a block, %d in water\n", standing, embedded, wet);
+		printf("  hitbox overlapped a block in %ld of %ld mob-frames\n", overlap_frames, mob_frames);
 		printf("  distance from spawn: %.1f blocks on average, %.1f at most\n", n ? moved_total / n : 0.0f, moved_max);
-		printf("  cost per frame: update %.3f ms, mesh build %.3f ms (%d vertices)\n", update_ms / frames, build_ms / frames, n * 11 * 36);
+		printf("  cost per frame: update %.3f ms, pose upload %.3f ms\n", update_ms / frames, build_ms / frames);
 
-		//close looks at the nearest sheep, inside the player's shadow map and loaded chunks
-		vector<const Sheep*> nearest;
-		for (const auto& s : mobs.sheep()) nearest.push_back(s.get());
-		sort(nearest.begin(), nearest.end(), [&](const Sheep* a, const Sheep* b) { return distance(a->position, position) < distance(b->position, position); });
-		for (int shot = 0; shot < std::min(n, 3); ++shot) {
-			const Sheep& subject = *nearest[shot];
+		//a close look at the nearest mob of each type, inside the player's shadow map and loaded chunks
+		map<string, const Mob*> subjects;
+		for (const auto& m : mobs.all()) {
+			const Mob*& best = subjects[m->type.name];
+			if (best == nullptr || distance(m->position, position) < distance(best->position, position)) best = m.get();
+		}
+		for (const auto& entry : subjects) {
+			const Mob& subject = *entry.second;
 			vec3 side = vec3(cos(subject.yaw), 0.0f, -sin(subject.yaw));
-			//the first spot beside the sheep with a clear line of sight to it
-			vec3 eye = subject.position + side * 3.5f + vec3(0.0f, 0.6f, 0.0f);
+			vec3 ahead = vec3(sin(subject.yaw), 0.0f, cos(subject.yaw));
+			//the first spot beside the mob, a little ahead so the face shows, with a clear line of sight to it
+			vec3 eye = subject.position + side * 3.0f + vec3(0.0f, 0.6f, 0.0f);
 			bool found = false;
 			for (float lift : { 0.6f, 1.6f, 2.6f, 4.0f }) {
 				for (float flip : { 1.0f, -1.0f }) {
-					vec3 candidate = subject.position + side * (3.5f * flip) + vec3(0.0f, lift, 0.0f);
+					vec3 candidate = subject.position + side * (3.0f * flip) + ahead * 1.5f + vec3(0.0f, lift, 0.0f);
 					bool clear = true;
 					for (float t = 0.15f; t <= 1.0f && clear; t += 0.05f) {
 						Block* b = cm.get_block_worldspace(round(mix(subject.position, candidate, t)));
@@ -599,15 +607,16 @@ int main(int argc, char** argv) {
 					if (clear && !found) { eye = candidate; found = true; }
 				}
 			}
-			mat4 view_projection = perspective(radians(70.0f), 1200.0f / 700.0f, 0.1f, 180.0f)
+			mat4 view_projection = perspective(radians(60.0f), 1200.0f / 700.0f, 0.1f, 180.0f)
 				* lookAt(eye, subject.position, vec3(0, 1, 0));
 			Texture atlas("Resources/Textures/texture_atlas_blocks.png", GL_TEXTURE1, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 			for (Shader* s : { &sm.default_shader, &sm.wave_shader, &sm.foliage_shader, &sm.mob_shader }) {
 				s->activate();
-				s->set_uniform_1i("texture1", 1);
+				s->set_uniform_1i("texture1", s == &sm.mob_shader ? MobRenderer::skin_unit : 1);
 				s->set_uniform_1i("shadow_map", 4);
 				s->set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shadow_light);
 			}
+			sm.mob_shader.set_uniform_1i("part_matrices", MobRenderer::matrix_unit);
 			glActiveTexture(GL_TEXTURE4);
 			glBindTexture(GL_TEXTURE_2D, shadow_texture);
 			//visibility is traced from the player, not this camera
@@ -624,7 +633,7 @@ int main(int argc, char** argv) {
 			vector<unsigned char> pixels(1200 * 700 * 3);
 			glPixelStorei(GL_PACK_ALIGNMENT, 1);
 			glReadPixels(0, 0, 1200, 700, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
-			ofstream file("bench_sheep_" + to_string(shot) + ".ppm", ios::binary);
+			ofstream file("bench_mob_" + entry.first + ".ppm", ios::binary);
 			file << "P6\n1200 700\n255\n";
 			for (int y = 699; y >= 0; --y) file.write(reinterpret_cast<const char*>(&pixels[(size_t)y * 1200 * 3]), 1200 * 3);
 		}

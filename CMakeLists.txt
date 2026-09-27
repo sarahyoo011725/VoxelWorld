@@ -47,7 +47,10 @@ add_executable(VoxelWorld
 	Source/Entity/Collision.cpp
 	Source/Entity/Player.cpp
 	Source/Entity/PlayerPhysics.cpp
-	Source/Entity/Sheep.cpp
+	Source/Entity/Mob.cpp
+	Source/Entity/Goal.cpp
+	Source/Entity/MobTypes.cpp
+	Source/Audio/MobSoundPlayer.cpp
 	Source/Screens/MobRenderer.cpp
 	Source/Screens/PlayerRenderer.cpp
 	Source/Shader/Shader.cpp
@@ -125,7 +128,9 @@ add_executable(render_bench
 	Source/stb.cpp
 	Source/Entity/Collision.cpp
 	Source/Entity/PlayerPhysics.cpp
-	Source/Entity/Sheep.cpp
+	Source/Entity/Mob.cpp
+	Source/Entity/Goal.cpp
+	Source/Entity/MobTypes.cpp
 	Source/Screens/MobRenderer.cpp
 	Source/World/MobManager.cpp
 	Source/Screens/PlayerRenderer.cpp

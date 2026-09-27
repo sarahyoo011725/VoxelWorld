@@ -23,4 +23,5 @@ public:
 	Shader clouds_shader = Shader("Resources/Shaders/clouds.vert", "Resources/Shaders/clouds.frag");
 	//mobs share the terrain's lighting, so they reuse its fragment shader
 	Shader mob_shader = Shader("Resources/Shaders/mob.vert", "Resources/Shaders/default.frag");
+	Shader mob_shadow_shader = Shader("Resources/Shaders/mob_shadow.vert", "Resources/Shaders/shadow.frag");
 };

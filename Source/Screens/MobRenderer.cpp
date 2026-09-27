@@ -5,116 +5,172 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace {
-	struct cube_face {
-		vec3 normal, u, v;
-	};
+	const vec3 face_normals[6] = { vec3(1, 0, 0), vec3(0, 0, 1), vec3(-1, 0, 0), vec3(0, 0, -1), vec3(0, 1, 0), vec3(0, -1, 0) };
 
-	//each face spans u and v from its centre at normal * 0.5
-	const cube_face cube_faces[6] = {
-		{ vec3(1, 0, 0), vec3(0, 0, -1), vec3(0, 1, 0) },
-		{ vec3(-1, 0, 0), vec3(0, 0, 1), vec3(0, 1, 0) },
-		{ vec3(0, 1, 0), vec3(1, 0, 0), vec3(0, 0, -1) },
-		{ vec3(0, -1, 0), vec3(1, 0, 0), vec3(0, 0, 1) },
-		{ vec3(0, 0, 1), vec3(1, 0, 0), vec3(0, 1, 0) },
-		{ vec3(0, 0, -1), vec3(-1, 0, 0), vec3(0, 1, 0) },
-	};
-
-	const vec2 white_wool = vec2(1, 5);
-	const vec2 skin = vec2(15, 18); //white terracotta, a pale beige
-	const vec2 black_wool = vec2(2, 8);
-
-	//a box of the given size whose origin sits at `at` in the parent's space
-	mat4 box(const mat4& parent, vec3 at, vec3 size) {
-		return scale(translate(parent, at), size);
+	//where each face sits in the box's unwrap (x, y, width, height in pixels); see ModelPart
+	vec4 face_rect(int face, vec3 size) {
+		float w = size.x, h = size.y, d = size.z;
+		switch (face) {
+		case 0: return vec4(0, d, d, h);
+		case 1: return vec4(d, d, w, h);
+		case 2: return vec4(d + w, d, d, h);
+		case 3: return vec4(2 * d + w, d, w, h);
+		case 4: return vec4(d, 0, w, d);
+		default: return vec4(d + w, 0, w, d);
+		}
 	}
-}
 
-MobRenderer::MobRenderer() : sm(ShaderManager::get_instance()) {
-	vao.bind();
-	vao.link_attrib(vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(mob_vertex), (void*)offsetof(mob_vertex, position));
-	vao.link_attrib(vbo, 1, 3, GL_FLOAT, GL_FALSE, sizeof(mob_vertex), (void*)offsetof(mob_vertex, normal));
-	vao.link_attrib(vbo, 2, 2, GL_FLOAT, GL_FALSE, sizeof(mob_vertex), (void*)offsetof(mob_vertex, uv));
-	vao.link_attrib(vbo, 3, 2, GL_FLOAT, GL_FALSE, sizeof(mob_vertex), (void*)offsetof(mob_vertex, tile_origin));
-	vao.link_attrib(vbo, 4, 1, GL_FLOAT, GL_FALSE, sizeof(mob_vertex), (void*)offsetof(mob_vertex, light));
-}
-
-void MobRenderer::add_box(const mat4& transform, vec2 tile, float light) {
-	vec2 origin = tile_uv_origin(tile);
-	mat3 rotation = mat3(transform);
-	const vec2 corner_uv[4] = { vec2(0, 1), vec2(1, 1), vec2(1, 0), vec2(0, 0) };
-	const int order[6] = { 0, 1, 2, 2, 3, 0 };
-	for (const cube_face& face : cube_faces) {
-		vec3 corners[4] = {
-			face.normal * 0.5f + (-face.u + face.v) * 0.5f,
-			face.normal * 0.5f + (face.u + face.v) * 0.5f,
-			face.normal * 0.5f + (face.u - face.v) * 0.5f,
-			face.normal * 0.5f + (-face.u - face.v) * 0.5f,
-		};
-		//scaling a box leaves its face normals pointing the same way, so the
-		//rotation part of the transform is enough once renormalised
-		vec3 normal = normalize(rotation * face.normal);
-		for (int i : order) {
-			vertices.push_back({ vec3(transform * vec4(corners[i], 1.0f)), normal, corner_uv[i], origin, light });
+	//a point on a face of the unit box, from s across the skin rect (left to right) and t down it
+	vec3 face_point(int face, float s, float t) {
+		switch (face) {
+		case 0: return vec3(1, 1 - t, s);
+		case 1: return vec3(1 - s, 1 - t, 1);
+		case 2: return vec3(0, 1 - t, 1 - s);
+		case 3: return vec3(s, 1 - t, 0);
+		case 4: return vec3(1 - s, 1, t);
+		default: return vec3(1 - s, 0, t);
 		}
 	}
 }
 
-/*
-	a sheep facing +z with its feet at the origin: a wool body on four legs that
-	swing in diagonal pairs, and a beige face that dips down to graze
-*/
-void MobRenderer::add_sheep(const Sheep& sheep) {
+MobRenderer::MobRenderer() : sm(ShaderManager::get_instance()) {
+	glGenBuffers(1, &matrix_buffer);
+	glBindBuffer(GL_TEXTURE_BUFFER, matrix_buffer);
+	glBufferData(GL_TEXTURE_BUFFER, sizeof(vec4), nullptr, GL_STREAM_DRAW);
+	glGenTextures(1, &matrix_texture);
+	glBindTexture(GL_TEXTURE_BUFFER, matrix_texture);
+	glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, matrix_buffer);
+	glBindTexture(GL_TEXTURE_BUFFER, 0);
+	glBindBuffer(GL_TEXTURE_BUFFER, 0);
+}
+
+MobRenderer::~MobRenderer() {
+	glDeleteTextures(1, &matrix_texture);
+	glDeleteBuffers(1, &matrix_buffer);
+}
+
+MobRenderer::TypeMesh& MobRenderer::mesh_for(const MobType& type) {
+	auto found = meshes.find(&type);
+	if (found != meshes.end()) return *found->second;
+
+	auto mesh = make_unique<TypeMesh>();
+	const MobModel& model = type.model;
+	vec2 skin_size = vec2(model.skin_size);
+	vector<mob_vertex> vertices;
+	const vec2 corners[6] = { vec2(0, 0), vec2(1, 0), vec2(1, 1), vec2(1, 1), vec2(0, 1), vec2(0, 0) };
+	for (size_t p = 0; p < model.parts.size(); ++p) {
+		const ModelPart& part = model.parts[p];
+		for (int face = 0; face < 6; ++face) {
+			vec4 rect = face_rect(face, part.size);
+			for (vec2 c : corners) {
+				vec3 local = (part.from + face_point(face, c.x, c.y) * part.size) / 16.0f;
+				vec2 pixel = vec2(part.uv) + vec2(rect.x + c.x * rect.z, rect.y + c.y * rect.w);
+				//skins load flipped, so the image's top row is v = 1
+				vec2 uv = vec2(pixel.x / skin_size.x, 1.0f - pixel.y / skin_size.y);
+				vertices.push_back({ local, face_normals[face], uv, (float)p });
+			}
+		}
+	}
+	mesh->vertex_count = (GLsizei)vertices.size();
+	mesh->texels_per_mob = (int)model.parts.size() * 4 + 1;
+	mesh->vbo.reset_vertices(vertices.data(), sizeof(mob_vertex) * vertices.size(), GL_STATIC_DRAW);
+	mesh->vao.bind();
+	mesh->vao.link_attrib(mesh->vbo, 0, 3, GL_FLOAT, GL_FALSE, sizeof(mob_vertex), (void*)offsetof(mob_vertex, position));
+	mesh->vao.link_attrib(mesh->vbo, 1, 3, GL_FLOAT, GL_FALSE, sizeof(mob_vertex), (void*)offsetof(mob_vertex, normal));
+	mesh->vao.link_attrib(mesh->vbo, 2, 2, GL_FLOAT, GL_FALSE, sizeof(mob_vertex), (void*)offsetof(mob_vertex, uv));
+	mesh->vao.link_attrib(mesh->vbo, 3, 1, GL_FLOAT, GL_FALSE, sizeof(mob_vertex), (void*)offsetof(mob_vertex, part));
+	mesh->vao.unbind();
+	mesh->skin = make_unique<Texture>(model.skin.c_str(), GL_TEXTURE0 + skin_unit, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
+
+	TypeMesh& result = *mesh;
+	meshes[&type] = std::move(mesh);
+	return result;
+}
+
+//a matrix per part, parents first, then the daylight at the mob
+void MobRenderer::pose(const Mob& mob, vector<vec4>& out) const {
+	const vector<ModelPart>& parts = mob.type.model.parts;
+	mat4 root = rotate(translate(mat4(1.0f), mob.feet()), mob.yaw, vec3(0, 1, 0));
+	float swing = sin(mob.walk_phase) * 0.5f * mob.leg_swing;
+
+	vector<mat4> matrices(parts.size());
+	for (size_t i = 0; i < parts.size(); ++i) {
+		const ModelPart& part = parts[i];
+		mat4 m = translate(part.parent < 0 ? root : matrices[part.parent], part.pivot / 16.0f);
+		switch (part.motion) {
+		case part_motion::head:
+			m = rotate(rotate(m, mob.head_yaw, vec3(0, 1, 0)), mob.head_pitch, vec3(1, 0, 0));
+			break;
+		case part_motion::leg_forward:
+			m = rotate(m, swing, vec3(1, 0, 0));
+			break;
+		case part_motion::leg_back:
+			m = rotate(m, -swing, vec3(1, 0, 0));
+			break;
+		default:
+			break;
+		}
+		matrices[i] = m;
+		for (int c = 0; c < 4; ++c) out.push_back(m[c]);
+	}
+
 	float light = 1.0f;
-	Chunk* chunk = ChunkManager::get_instance().get_chunk(sheep.position);
+	Chunk* chunk = ChunkManager::get_instance().get_chunk(mob.position);
 	if (chunk != nullptr) {
-		ivec3 local = world_to_local_coord(sheep.position);
-		light = daylight_level(chunk->get_height(local.x, local.z), (int)std::round(sheep.position.y)) / 15.0f;
+		ivec3 local = world_to_local_coord(mob.position);
+		light = daylight_level(chunk->get_height(local.x, local.z), (int)std::round(mob.position.y)) / 15.0f;
 	}
-
-	mat4 root = rotate(translate(mat4(1.0f), sheep.feet()), sheep.yaw, vec3(0, 1, 0));
-
-	float swing = sin(sheep.walk_phase) * 0.4f * sheep.leg_swing;
-	const float leg_height = 0.7f;
-	const vec3 hips[4] = { vec3(0.18f, leg_height, 0.32f), vec3(-0.18f, leg_height, -0.32f),
-		vec3(-0.18f, leg_height, 0.32f), vec3(0.18f, leg_height, -0.32f) };
-	for (int i = 0; i < 4; ++i) {
-		float angle = i < 2 ? swing : -swing;
-		mat4 hip = rotate(translate(root, hips[i]), angle, vec3(1, 0, 0));
-		add_box(box(hip, vec3(0, -leg_height * 0.5f, 0), vec3(0.24f, leg_height, 0.24f)), skin, light);
-	}
-
-	add_box(box(root, vec3(0, leg_height + 0.3f, 0), vec3(0.62f, 0.6f, 1.0f)), white_wool, light);
-
-	mat4 neck = rotate(translate(root, vec3(0, leg_height + 0.45f, 0.45f)), sheep.head_pitch, vec3(1, 0, 0));
-	add_box(box(neck, vec3(0, 0.08f, 0.2f), vec3(0.4f, 0.4f, 0.42f)), skin, light);
-	for (float side : { -1.0f, 1.0f }) {
-		add_box(box(neck, vec3(side * 0.11f, 0.14f, 0.415f), vec3(0.1f, 0.08f, 0.02f)), white_wool, light);
-		add_box(box(neck, vec3(side * 0.13f, 0.14f, 0.425f), vec3(0.05f, 0.08f, 0.02f)), black_wool, light);
-	}
+	out.push_back(vec4(light, 0.0f, 0.0f, 0.0f));
 }
 
-void MobRenderer::build(const vector<unique_ptr<Sheep>>& sheep) {
-	vertices.clear();
-	for (const auto& s : sheep) add_sheep(*s);
-	vbo.reset_vertices(vertices.data(), sizeof(mob_vertex) * vertices.size(), GL_DYNAMIC_DRAW);
+void MobRenderer::build(const vector<unique_ptr<Mob>>& mobs) {
+	for (auto& entry : meshes) entry.second->instances = 0;
+	map<const MobType*, vector<const Mob*>> by_type;
+	for (const auto& m : mobs) by_type[&m->type].push_back(m.get());
+
+	texels.clear();
+	for (auto& entry : by_type) {
+		TypeMesh& mesh = mesh_for(*entry.first);
+		mesh.first_texel = (int)texels.size();
+		mesh.instances = (int)entry.second.size();
+		for (const Mob* m : entry.second) pose(*m, texels);
+	}
+	if (texels.empty()) return;
+	glBindBuffer(GL_TEXTURE_BUFFER, matrix_buffer);
+	glBufferData(GL_TEXTURE_BUFFER, sizeof(vec4) * texels.size(), texels.data(), GL_STREAM_DRAW);
+	glBindBuffer(GL_TEXTURE_BUFFER, 0);
 }
 
-//both passes draw with culling off: the boxes are closed, so the depth test already hides their far sides
+//culling stays off: the boxes are closed, so the depth test already hides their far sides
+void MobRenderer::draw_all(Shader& shader, bool with_skin) {
+	glActiveTexture(GL_TEXTURE0 + matrix_unit);
+	glBindTexture(GL_TEXTURE_BUFFER, matrix_texture);
+	glDisable(GL_CULL_FACE);
+	for (auto& entry : meshes) {
+		TypeMesh& mesh = *entry.second;
+		if (mesh.instances == 0) continue;
+		if (with_skin) {
+			mesh.skin->activate();
+			mesh.skin->bind();
+		}
+		shader.set_uniform_1i("first_texel", mesh.first_texel);
+		shader.set_uniform_1i("texels_per_mob", mesh.texels_per_mob);
+		mesh.vao.bind();
+		glDrawArraysInstanced(GL_TRIANGLES, 0, mesh.vertex_count, mesh.instances);
+	}
+	glEnable(GL_CULL_FACE);
+	glActiveTexture(GL_TEXTURE0);
+}
+
 void MobRenderer::draw() {
-	if (vertices.empty()) return;
+	if (texels.empty()) return;
 	sm.mob_shader.activate();
-	glDisable(GL_CULL_FACE);
-	vao.bind();
-	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertices.size());
-	glEnable(GL_CULL_FACE);
+	draw_all(sm.mob_shader, true);
 }
 
-void MobRenderer::draw_depth() {
-	if (vertices.empty()) return;
-	//attribute 3 is the tile origin here, not a sway weight
-	sm.shadow_shader.set_uniform_1f("sway_scale", 0.0f);
-	glDisable(GL_CULL_FACE);
-	vao.bind();
-	glDrawArrays(GL_TRIANGLES, 0, (GLsizei)vertices.size());
-	glEnable(GL_CULL_FACE);
+void MobRenderer::draw_depth(const mat4& light_space_matrix) {
+	if (texels.empty()) return;
+	sm.mob_shadow_shader.activate();
+	sm.mob_shadow_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, light_space_matrix);
+	draw_all(sm.mob_shadow_shader, false);
 }
