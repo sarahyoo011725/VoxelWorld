@@ -123,12 +123,17 @@ def head():
         z = rng.uniform(-4, 3)
         top = 5.6 * math.sqrt(max(0.0, 1 - (x / 5.8) ** 2 - ((z - 5) / 7.5) ** 2)) + 2
         mane_tuft(g, (x, top - 1, z), rng.uniform(11, 18), 0.7, 1.4, 1.3)
-    #long silver whiskers from the muzzle, streaming out and back in a loose wave
+    return g
+
+
+def whiskers():
+    """long silver whiskers streaming out and back in a loose wave, hung from the muzzle so they can trail"""
+    g = Grid((-22, -8, -96), (23, 22, 6))
     for s in (1, -1):
         pts = []
         for k in range(25):
             t = k / 24.0
-            pts.append((s * (2.4 + 26 * t - 10 * t * t), -0.5 + 10 * math.sin(t * math.pi * 1.4) * t, 20 - 92 * t))
+            pts.append((s * (2.4 + 26 * t - 10 * t * t), 10 * math.sin(t * math.pi * 1.4) * t, -92 * t))
         g.strand(pts, 0.6, 0.45, WHISKER)
     return g
 
@@ -171,6 +176,7 @@ if __name__ == '__main__':
     for i in range(16):
         total += link(i).save(OUT, 'body_%02d' % i, PALETTE)
     total += head().save(OUT, 'head', PALETTE)
+    total += whiskers().save(OUT, 'whiskers', PALETTE)
     total += leg().save(OUT, 'leg', PALETTE)
     total += tail().save(OUT, 'tail', PALETTE)
     print('%d voxels' % total)

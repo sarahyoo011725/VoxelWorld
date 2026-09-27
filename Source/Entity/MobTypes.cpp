@@ -228,7 +228,6 @@ namespace {
 		t.hovers = true;
 		t.fly_speed = 12.0f;
 		t.rideable = true;
-		t.seat = vec3(0, 19.5f, -14);
 		t.pet = true;
 		vector<ModelPart>& p = t.model.parts;
 		auto sculpted = [&](int parent, vec3 pivot, const string& file, part_motion motion = part_motion::none, vec3 rest = vec3(0.0f)) {
@@ -241,22 +240,38 @@ namespace {
 			p.push_back(part);
 			return (int)p.size() - 1;
 		};
-		//the neck lifts a little from the body, and the head bows gently on it
+		//the body follows its own flight path (Mob::animate_spine), so the links carry no bends of their own
 		vector<int> links;
-		links.push_back(sculpted(-1, vec3(0, 17, 0), "body_00", part_motion::none, vec3(-0.3f, 0, 0)));
-		sculpted(links[0], vec3(0), "head", part_motion::head, vec3(0.45f, 0, 0));
+		links.push_back(sculpted(-1, vec3(0, 17, 0), "body_00"));
+		int head = sculpted(links[0], vec3(0), "head", part_motion::head, vec3(0.15f, 0, 0));
+		int whiskers = sculpted(head, vec3(0, -0.25f, 10), "whiskers");
 		for (int i = 1; i < 16; ++i) {
 			char name[16];
 			snprintf(name, sizeof(name), "body_%02d", i);
-			links.push_back(sculpted(links.back(), vec3(0, 0, -8), name, part_motion::serpent, vec3(i == 1 ? 0.3f : 0.0f, 0, 0)));
+			links.push_back(sculpted(links.back(), vec3(0, 0, -8), name, part_motion::serpent));
 		}
-		sculpted(links.back(), vec3(0, 0, -8), "tail", part_motion::tail_sway);
-		for (int pair : { 2, 11 }) {
+		int tail = sculpted(links.back(), vec3(0, 0, -8), "tail", part_motion::tail_sway);
+		for (int pair : { 4, 12 }) {
 			for (float side : { 1.0f, -1.0f }) {
 				sculpted(links[pair], vec3(2.2f * side, -1.5f, -4), "leg", side > 0.0f ? part_motion::leg_forward : part_motion::leg_back);
 			}
 		}
-		t.goals = { goal<FollowOwnerGoal>(2), goal<ReturnHomeGoal>(3), goal<DriftGoal>(5), goal<LookAtPlayerGoal>(5, 12.0f) };
+		t.leg_tuck = 1.2f;
+		t.seat_part = links[5];
+		t.seat = vec3(0, 3.5f, -4);
+		//resting on the ground as in the film: the body level on its four legs, the neck rearing up in a loop
+		//from the front legs and curling over so the head bows, the end of the tail curled up
+		t.perch_rest.assign(p.size(), vec3(0.0f));
+		t.perch_rest[links[0]] = vec3(0.5f, 0, 0);
+		t.perch_rest[head] = vec3(0.55f, 0, 0);
+		t.perch_rest[whiskers] = vec3(-1.1f, 0, 0); //trailing back from the bowed head, not standing up
+		const float neck[4] = { -1.2f, -0.75f, 0.25f, 1.2f };
+		for (int i = 0; i < 4; ++i) t.perch_rest[links[i + 1]] = vec3(neck[i], 0, 0);
+		for (int i = 13; i < 16; ++i) t.perch_rest[links[i]] = vec3(0.3f, 0, 0);
+		t.perch_rest[tail] = vec3(0.5f, 0, 0);
+		//the root rises so the level body stands at 13 pixels, where the talons meet the ground
+		t.perch_offset = vec3(0, 12.7f, 0);
+		t.goals = { goal<FollowOwnerGoal>(2), goal<ReturnHomeGoal>(3), goal<DriftGoal>(5, 0.1f, true), goal<LookAtPlayerGoal>(5, 12.0f) };
 		return t;
 	}
 
