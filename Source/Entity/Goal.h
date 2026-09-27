@@ -140,19 +140,22 @@ private:
 	bool leapt = false;
 };
 
-//a pet heading back to the player once it's strayed too far, flying if it can
+//a pet coming over to the player now and then, flying if it can; it always comes back if it's
+//about to be left far behind, but otherwise leads its own life
 class FollowOwnerGoal : public Goal {
 public:
-	FollowOwnerGoal(int priority, float start_distance = 10.0f, float stop_distance = 4.0f)
-		: Goal(priority), start_distance(start_distance), stop_distance(stop_distance) {}
+	FollowOwnerGoal(int priority, float chance_per_second = 0.04f, float start_distance = 10.0f, float stop_distance = 5.0f)
+		: Goal(priority), chance(chance_per_second), start_distance(start_distance), stop_distance(stop_distance) {}
 	bool can_start(Mob& mob, const MobContext& context, float dt) override;
 	bool keep_going(Mob& mob, const MobContext& context) override;
 	void start(Mob& mob, const MobContext& context) override;
 	void tick(Mob& mob, const MobContext& context, float dt) override;
 	void stop(Mob& mob) override;
 
+	static constexpr float leash = 96.0f; //further than this it heads back regardless
+
 private:
-	float start_distance, stop_distance;
+	float chance, start_distance, stop_distance;
 };
 
 //a mob with a home heading back once it's strayed too far from it, flying if it can
@@ -169,10 +172,11 @@ private:
 	float leash;
 };
 
-//a hovering flier drifting about in the air, keeping a few blocks off the ground
+//a flier drifting about in the air, keeping a few blocks off the ground. with take_off, one that
+//has landed also rises to soar about for a while now and then, and settles again after
 class DriftGoal : public Goal {
 public:
-	DriftGoal(int priority, float chance_per_second = 0.5f) : Goal(priority), chance(chance_per_second) {}
+	DriftGoal(int priority, float chance_per_second = 0.5f, bool take_off = false) : Goal(priority), chance(chance_per_second), take_off(take_off) {}
 	bool can_start(Mob& mob, const MobContext& context, float dt) override;
 	void start(Mob& mob, const MobContext& context) override;
 	void tick(Mob& mob, const MobContext& context, float dt) override;
@@ -180,6 +184,7 @@ public:
 
 private:
 	float chance;
+	bool take_off;
 };
 
 //turns the head to follow a nearby player

@@ -248,7 +248,9 @@ void HaulOutGoal::stop(Mob& mob) {
 }
 
 bool FollowOwnerGoal::can_start(Mob& mob, const MobContext& context, float dt) {
-	return mob.owned && distance(mob.position, context.player_eye) > start_distance;
+	if (!mob.owned) return false;
+	float away = distance(mob.position, context.player_eye);
+	return away > leash || (away > start_distance && roll(mob, chance, dt));
 }
 
 bool FollowOwnerGoal::keep_going(Mob& mob, const MobContext& context) {
@@ -300,10 +302,13 @@ void ReturnHomeGoal::stop(Mob& mob) {
 }
 
 bool DriftGoal::can_start(Mob& mob, const MobContext& context, float dt) {
-	return mob.flying && roll(mob, chance, dt);
+	bool airborne = mob.flying || (take_off && mob.type.flies && !mob.in_water);
+	return airborne && roll(mob, chance, dt);
 }
 
 void DriftGoal::start(Mob& mob, const MobContext& context) {
+	bool rising = !mob.flying;
+	mob.flying = true;
 	mob.target_yaw = mob.wrap_angle(mob.yaw + mob.random_between(-1.8f, 1.8f));
 	int clearance = 0;
 	ChunkManager& cm = ChunkManager::get_instance();
@@ -314,8 +319,10 @@ void DriftGoal::start(Mob& mob, const MobContext& context) {
 	if (clearance < 3) mob.target_pitch = mob.random_between(0.2f, 0.4f);
 	else if (clearance > 9) mob.target_pitch = mob.random_between(-0.4f, -0.2f);
 	else mob.target_pitch = mob.random_between(-0.2f, 0.2f);
-	mob.move = 0.5f;
-	time_left = mob.random_between(3.0f, 6.0f);
+	//a flight from the ground is a proper soar: up, faster, and for longer
+	if (rising) mob.target_pitch = mob.random_between(0.3f, 0.5f);
+	mob.move = rising ? 0.8f : 0.5f;
+	time_left = rising ? mob.random_between(8.0f, 14.0f) : mob.random_between(3.0f, 6.0f);
 }
 
 void DriftGoal::tick(Mob& mob, const MobContext& context, float dt) {
