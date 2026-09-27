@@ -160,6 +160,12 @@ void Mob::swim(float dt, float turn) {
 		}
 		else {
 			blocked = true;
+			//a bank in front needn't stop it rising or sinking, e.g. up to the waterline to climb out
+			vec3 vertical = vec3(0.0f, pitch > 0.0f ? 1.0f : -1.0f, 0.0f);
+			if (std::abs(pitch) > 0.2f && water_ahead(vertical)) {
+				heading = vertical;
+				speed = type.swim_speed * move * std::abs(sin(pitch));
+			}
 		}
 	}
 	//water resists: the body eases toward the speed it's swimming at rather than jumping to it
