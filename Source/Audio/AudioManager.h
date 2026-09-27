@@ -19,7 +19,8 @@ namespace audio {
 	static MusicBuffer *current_music = nullptr;
 
 	void play_block_sound_effect(block_type type);
-	void play_block_walked(block_type type);
+	//loops footsteps for the block underfoot while walking; none stops them
+	void update_footsteps(block_type ground);
 	void play_random_music();
 	//a hit that landed on a mob; a killing blow sounds heavier
 	void play_attack(bool killed);
@@ -47,12 +48,12 @@ namespace music {
 */
 namespace sound_effect {
 	//make maps into function to load sound effects lazily
-	const static ALuint grass = SE_LOAD("Resources/Sound Effects/place_and_break_grass.wav");
-	const static ALuint dirt = SE_LOAD("Resources/Sound Effects/place_and_break_dirt.wav");
-	const static ALuint sand = SE_LOAD("Resources/Sound Effects/place_and_break_sand.wav");
-	const static ALuint stone = SE_LOAD("Resources/Sound Effects/place_and_break_stone.wav");
-	const static ALuint water = SE_LOAD("Resources/Sound Effects/place_water.wav");
-	const static ALuint wood = SE_LOAD("Resources/Sound Effects/place_and_break_wood.wav");
+	const static ALuint grass = SE_LOAD("Resources/Sound Effects/place_and_break_grass.ogg");
+	const static ALuint dirt = SE_LOAD("Resources/Sound Effects/place_and_break_dirt.ogg");
+	const static ALuint sand = SE_LOAD("Resources/Sound Effects/place_and_break_sand.ogg");
+	const static ALuint stone = SE_LOAD("Resources/Sound Effects/place_and_break_stone.ogg");
+	const static ALuint water = SE_LOAD("Resources/Sound Effects/place_water.ogg");
+	const static ALuint wood = SE_LOAD("Resources/Sound Effects/place_and_break_wood.ogg");
 
-	const static ALuint walk_grass = SE_LOAD("Resources/Sound Effects/walk_grass.wav");
+	const static ALuint walk_grass = SE_LOAD("Resources/Sound Effects/walk_grass.ogg");
 }
