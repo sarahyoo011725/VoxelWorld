@@ -46,8 +46,8 @@ void PanicGoal::stop(Mob& mob) {
 }
 
 bool WanderGoal::can_start(Mob& mob, const MobContext& context, float dt) {
-	//in the water, a swimmer's own goals take over
-	if (mob.in_water && mob.type.lives != habitat::land) return false;
+	//in the water or the air, a swimmer's or flier's own goals take over
+	if (mob.flying || (mob.in_water && mob.type.lives != habitat::land)) return false;
 	return roll(mob, chance, dt);
 }
 
@@ -243,6 +243,63 @@ void HaulOutGoal::tick(Mob& mob, const MobContext& context, float dt) {
 }
 
 void HaulOutGoal::stop(Mob& mob) {
+	mob.move = 0.0f;
+	mob.target_pitch = 0.0f;
+}
+
+bool FollowOwnerGoal::can_start(Mob& mob, const MobContext& context, float dt) {
+	return mob.owned && distance(mob.position, context.player_eye) > start_distance;
+}
+
+bool FollowOwnerGoal::keep_going(Mob& mob, const MobContext& context) {
+	return distance(mob.position, context.player_eye) > stop_distance;
+}
+
+void FollowOwnerGoal::start(Mob& mob, const MobContext& context) {
+	if (mob.type.flies) mob.flying = true;
+}
+
+void FollowOwnerGoal::tick(Mob& mob, const MobContext& context, float dt) {
+	//a little above the player, so a flier comes in over their head rather than into them
+	vec3 to = context.player_eye + vec3(0.0f, mob.flying ? 2.0f : 0.0f, 0.0f) - mob.position;
+	float far = length(to);
+	mob.target_yaw = atan2(to.x, to.z);
+	mob.target_pitch = mob.flying ? glm::clamp(atan2(to.y, length(vec2(to.x, to.z))), -0.7f, 0.7f) : 0.0f;
+	mob.move = far > 24.0f ? 1.6f : 1.0f;
+	mob.turn_boost = 2.0f;
+}
+
+void FollowOwnerGoal::stop(Mob& mob) {
+	mob.move = 0.0f;
+	mob.target_pitch = 0.0f;
+	mob.turn_boost = 1.0f;
+}
+
+bool DriftGoal::can_start(Mob& mob, const MobContext& context, float dt) {
+	return mob.flying && roll(mob, chance, dt);
+}
+
+void DriftGoal::start(Mob& mob, const MobContext& context) {
+	mob.target_yaw = mob.wrap_angle(mob.yaw + mob.random_between(-1.8f, 1.8f));
+	int clearance = 0;
+	ChunkManager& cm = ChunkManager::get_instance();
+	for (; clearance < 12; ++clearance) {
+		Block* b = cm.get_block_worldspace(round(mob.position - vec3(0.0f, clearance + 1.0f, 0.0f)));
+		if (b != nullptr && (is_solid(b->type) || b->type == water)) break;
+	}
+	if (clearance < 3) mob.target_pitch = mob.random_between(0.2f, 0.4f);
+	else if (clearance > 9) mob.target_pitch = mob.random_between(-0.4f, -0.2f);
+	else mob.target_pitch = mob.random_between(-0.2f, 0.2f);
+	mob.move = 0.5f;
+	time_left = mob.random_between(3.0f, 6.0f);
+}
+
+void DriftGoal::tick(Mob& mob, const MobContext& context, float dt) {
+	Goal::tick(mob, context, dt);
+	if (mob.blocked) mob.target_pitch = 0.4f;
+}
+
+void DriftGoal::stop(Mob& mob) {
 	mob.move = 0.0f;
 	mob.target_pitch = 0.0f;
 }

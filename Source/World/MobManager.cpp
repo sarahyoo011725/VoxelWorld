@@ -108,7 +108,8 @@ ivec2 MobManager::random_column(vec3 player_position) {
 }
 
 int MobManager::count(bool water_mobs) const {
-	return (int)count_if(mobs.begin(), mobs.end(), [&](const unique_ptr<Mob>& m) { return is_water_mob(m->type) == water_mobs; });
+	//pets are the player's, not part of the wild population the caps keep in check
+	return (int)count_if(mobs.begin(), mobs.end(), [&](const unique_ptr<Mob>& m) { return !m->owned && is_water_mob(m->type) == water_mobs; });
 }
 
 void MobManager::try_spawn_herd(vec3 player_position) {
@@ -170,11 +171,11 @@ Mob* MobManager::add(const MobType& type, vec3 feet) {
 	return mobs.back().get();
 }
 
-Mob* MobManager::pick(vec3 origin, vec3 direction, float max_distance, float& distance) const {
+Mob* MobManager::pick(vec3 origin, vec3 direction, float max_distance, float& distance, const Mob* ignore) const {
 	Mob* nearest = nullptr;
 	distance = max_distance;
 	for (const auto& m : mobs) {
-		if (m->dying()) continue;
+		if (m->dying() || m.get() == ignore) continue;
 		//slab test: the ray is inside the box between its latest entry and earliest exit
 		vec3 low = m->position - m->size * 0.5f, high = m->position + m->size * 0.5f;
 		float enter = 0.0f, exit = max_distance;
@@ -200,7 +201,10 @@ void MobManager::update(float dt, const MobContext& context) {
 	vec3 player = context.player_eye;
 	mobs.erase(remove_if(mobs.begin(), mobs.end(), [&](const unique_ptr<Mob>& m) {
 		vec2 offset = vec2(m->position.x - player.x, m->position.z - player.z);
-		return m->finished_dying() || length(offset) > despawn_distance || !chunk_ready(m->position) || m->position.y < -10.0f;
+		if (m->finished_dying()) return true;
+		//a pet, or anything being ridden, stays with the player however far they go
+		if (m->owned || m->ridden) return false;
+		return length(offset) > despawn_distance || !chunk_ready(m->position) || m->position.y < -10.0f;
 	}), mobs.end());
 
 	MobContext shared = context;

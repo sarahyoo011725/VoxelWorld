@@ -6,14 +6,14 @@ namespace {
 	const vector<biome_id> grassy = { biome_id::plains, biome_id::savanna, biome_id::forest, biome_id::autumn_forest, biome_id::taiga };
 
 	//four legs of the given size under a body: diagonal pairs swing together
-	void add_legs(vector<ModelPart>& parts, vec3 leg_size, float hip_height, float half_width, float half_length) {
+	void add_legs(vector<ModelPart>& parts, vec3 leg_size, float hip_height, float half_width, float half_length, ivec2 uv = ivec2(0, 32)) {
 		const float sides[4][2] = { { 1, 1 }, { -1, -1 }, { -1, 1 }, { 1, -1 } };
 		for (int i = 0; i < 4; ++i) {
 			ModelPart leg;
 			leg.pivot = vec3(sides[i][0] * half_width, hip_height, sides[i][1] * half_length);
 			leg.from = vec3(-leg_size.x * 0.5f, -leg_size.y, -leg_size.z * 0.5f);
 			leg.size = leg_size;
-			leg.uv = ivec2(0, 32);
+			leg.uv = uv;
 			leg.motion = i < 2 ? part_motion::leg_forward : part_motion::leg_back;
 			parts.push_back(leg);
 		}
@@ -206,13 +206,98 @@ namespace {
 		};
 		add_legs(t.model.parts, vec3(4, 11, 4), 11, 3, 7);
 		t.spawn = { { biome_id::plains, biome_id::savanna }, 5, 2, 4 };
+		t.rideable = true;
+		t.seat = vec3(0, 20, -1);
+		t.ride_speed = 8.0f;
+		t.jump_speed = 9.0f;
 		t.goals = { goal<PanicGoal>(1), goal<WanderGoal>(5), goal<GrazeGoal>(5), goal<LookAtPlayerGoal>(5) };
+		return t;
+	}
+
+	//a long wingless river dragon that swims through the air, after Haku
+	MobType eastern_dragon() {
+		MobType t;
+		t.name = "eastern_dragon";
+		t.hitbox = vec3(1.0f, 0.8f, 1.0f);
+		t.walk_speed = 0.0f;
+		t.turn_rate = 2.5f;
+		t.max_health = 50.0f;
+		t.flies = true;
+		t.hovers = true;
+		t.fly_speed = 12.0f;
+		t.rideable = true;
+		t.seat = vec3(0, 11, -9);
+		t.pet = true;
+		t.model.skin = "Resources/Textures/Mobs/eastern_dragon.png";
+		t.model.skin_size = ivec2(128, 128);
+		vector<ModelPart>& p = t.model.parts;
+		p = {
+			{ -1, vec3(0, 8, 0), vec3(-3, -3, -6), vec3(6, 6, 6), ivec2(0, 0) },
+			//1: a long wolfish head with a snout, a jaw, swept horns, whiskers and a mane
+			{ 0, vec3(0), vec3(-3.5f, -3, 0), vec3(7, 6, 9), ivec2(24, 0), part_motion::head },
+			{ 1, vec3(0), vec3(-2.5f, -3, 9), vec3(5, 3, 5), ivec2(56, 0) },
+			{ 1, vec3(0, -3, 6), vec3(-2.5f, -1, 0), vec3(5, 1, 6), ivec2(56, 8) },
+			{ 1, vec3(2, 3, 2), vec3(-0.5f, 0, -0.5f), vec3(1, 4, 1), ivec2(78, 0), part_motion::none, vec3(-0.7f, 0, -0.25f) },
+			{ 1, vec3(-2, 3, 2), vec3(-0.5f, 0, -0.5f), vec3(1, 4, 1), ivec2(78, 0), part_motion::none, vec3(-0.7f, 0, 0.25f) },
+			{ 2, vec3(2.5f, -1, 4), vec3(-0.5f, -0.5f, 0), vec3(1, 1, 10), ivec2(82, 0), part_motion::none, vec3(0.2f, 2.5f, 0) },
+			{ 2, vec3(-2.5f, -1, 4), vec3(-0.5f, -0.5f, 0), vec3(1, 1, 10), ivec2(82, 0), part_motion::none, vec3(0.2f, -2.5f, 0) },
+			{ 1, vec3(0, 3, 0), vec3(-2.5f, 0, -4), vec3(5, 3, 8), ivec2(0, 15) },
+		};
+		//9: fifteen more links behind the first; the ripple runs down them from the head
+		int previous = 0;
+		vector<int> links = { 0 };
+		for (int i = 1; i < 16; ++i) {
+			p.push_back({ previous, vec3(0, 0, -6), vec3(-3, -3, -6), vec3(6, 6, 6), ivec2(0, 0), part_motion::serpent });
+			previous = (int)p.size() - 1;
+			links.push_back(previous);
+		}
+		for (int i = 1; i < 15; i += 2) {
+			p.push_back({ links[i], vec3(0, 3, 0), vec3(-1, 0, -5), vec3(2, 3, 5), ivec2(26, 15) });
+		}
+		for (int pair : { 2, 11 }) {
+			for (float side : { 1.0f, -1.0f }) {
+				p.push_back({ links[pair], vec3(3 * side, -2, -3), vec3(-1, -5, -1), vec3(2, 5, 2), ivec2(40, 15),
+					side > 0.0f ? part_motion::leg_forward : part_motion::leg_back, vec3(0.5f, 0, 0) });
+			}
+		}
+		p.push_back({ links.back(), vec3(0, 0, -6), vec3(-0.5f, -2.5f, -6), vec3(1, 5, 6), ivec2(48, 15), part_motion::tail_sway });
+		t.goals = { goal<FollowOwnerGoal>(2), goal<DriftGoal>(5), goal<LookAtPlayerGoal>(5, 12.0f) };
+		return t;
+	}
+
+	MobType rider() {
+		MobType t;
+		t.name = "rider";
+		t.hitbox = vec3(0.6f, 1.8f, 0.6f);
+		t.model.skin = "Resources/Textures/Mobs/rider.png";
+		t.model.parts = {
+			{ -1, vec3(0), vec3(-4, 0, -2), vec3(8, 12, 4), ivec2(16, 16) },
+			{ 0, vec3(0, 12, 0), vec3(-4, 0, -4), vec3(8, 8, 8), ivec2(0, 0), part_motion::head },
+			//arms reaching forward to the reins, legs astride the mount
+			{ 0, vec3(5, 11, 0), vec3(-1, -11, -2), vec3(3, 12, 4), ivec2(40, 16), part_motion::none, vec3(-0.9f, 0, 0.1f) },
+			{ 0, vec3(-5, 11, 0), vec3(-2, -11, -2), vec3(3, 12, 4), ivec2(40, 16), part_motion::none, vec3(-0.9f, 0, -0.1f) },
+			{ 0, vec3(2, 0, 0), vec3(-2, -12, -2), vec3(4, 12, 4), ivec2(0, 16), part_motion::none, vec3(-0.5f, 0, 0.45f) },
+			{ 0, vec3(-2, 0, 0), vec3(-2, -12, -2), vec3(4, 12, 4), ivec2(0, 16), part_motion::none, vec3(-0.5f, 0, -0.45f) },
+		};
 		return t;
 	}
 }
 
 const vector<MobType>& mob_types() {
 	static const vector<MobType> types = { sheep(), cow(), pig(), horse(), seal("seal", { biome_id::beach, biome_id::ocean }),
-		seal("snow_seal", { biome_id::tundra, biome_id::frozen_ocean }), dolphin(), cod(), salmon(), tropical_fish() };
+		seal("snow_seal", { biome_id::tundra, biome_id::frozen_ocean }), dolphin(), cod(), salmon(), tropical_fish(),
+		eastern_dragon() };
 	return types;
+}
+
+const MobType* find_mob_type(const string& name) {
+	for (const MobType& t : mob_types()) {
+		if (t.name == name) return &t;
+	}
+	return nullptr;
+}
+
+const MobType& rider_type() {
+	static const MobType type = rider();
+	return type;
 }

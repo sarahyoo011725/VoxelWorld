@@ -18,7 +18,7 @@ public:
 	//places a mob directly, outside the spawn rules and caps; null if it doesn't fit there
 	Mob* add(const MobType& type, vec3 feet);
 	//the nearest living mob whose hitbox the ray enters within max_distance, or null
-	Mob* pick(vec3 origin, vec3 direction, float max_distance, float& distance) const;
+	Mob* pick(vec3 origin, vec3 direction, float max_distance, float& distance, const Mob* ignore = nullptr) const;
 
 	//kept apart, so a sea full of fish can't crowd the animals out of the fields
 	int max_land_mobs = 20;

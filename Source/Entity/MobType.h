@@ -20,6 +20,9 @@ enum class part_motion {
 	tail_sway, //side to side, like a fish
 	tail_beat, //up and down, like a dolphin's flukes
 	flipper_left, flipper_right, //flap up and down, mirrored
+	wing_left, wing_right, //spread and beat in flight, folded back along the body on the ground
+	wing_tip_left, wing_tip_right, //the outer half of a wing, beating a little behind the inner half
+	serpent, //one link of a long body: a wave runs down the chain of them, head to tail
 };
 
 //where a mob can move under its own power
@@ -47,6 +50,7 @@ struct ModelPart {
 	vec3 size = vec3(0.0f);
 	ivec2 uv = ivec2(0);
 	part_motion motion = part_motion::none;
+	vec3 rest = vec3(0.0f); //radians about x, y, z the part is turned by before it moves, e.g. a neck angled up
 };
 
 struct MobModel {
@@ -87,6 +91,16 @@ struct MobType {
 	habitat lives = habitat::land;
 	float swim_speed = 0.0f; //blocks per second
 	float dry_out_time = -1.0f; //seconds a water mob lasts out of water before it starts to suffocate; negative never
+
+	bool flies = false; //takes to the air to follow its owner, or when ridden and told to climb
+	bool hovers = false; //a flier that never lands: it drifts in the air when idle
+	float fly_speed = 0.0f; //blocks per second
+
+	bool rideable = false;
+	vec3 seat = vec3(0.0f); //where the rider sits, in model pixels from the feet
+	float ride_speed = 0.0f; //on the ground, blocks per second
+	float jump_speed = 0.0f; //upward speed of a ridden jump
+	bool pet = false; //never spawns in the wild; one summoned is the player's, follows them and never despawns
 	MobModel model;
 	MobSounds sounds;
 	SpawnRule spawn;
@@ -94,3 +108,6 @@ struct MobType {
 };
 
 const vector<MobType>& mob_types();
+const MobType* find_mob_type(const string& name);
+//the player as seen from outside, sitting astride a mount; drawn only in third person
+const MobType& rider_type();

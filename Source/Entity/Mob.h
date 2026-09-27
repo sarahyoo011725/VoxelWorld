@@ -8,6 +8,17 @@
 #include <string>
 #include <vector>
 
+//what a rider asks of their mount this frame
+struct RideInput {
+	float forward = 0.0f; //-1 back to 1 forward
+	float strafe = 0.0f; //-1 left to 1 right
+	bool up = false; //jump, or take off and climb
+	bool down = false; //descend, and land a flier that can
+	bool sprint = false;
+	float yaw = 0.0f; //where the rider is looking
+	vec3 look = vec3(0.0f, 0.0f, 1.0f);
+};
+
 /*
 	any animal: the type says what it looks like and how it behaves, goals decide
 	where it wants to go, and this class turns that into movement, physics and
@@ -33,6 +44,12 @@ public:
 	bool stranded() const { return type.lives == habitat::water && !in_water && physics.on_ground; }
 	//a jump: straight up at `up`, plus a push along the heading that fades like knockback
 	void leap(float up, float forward);
+	//the ridden mob moves by this instead of its goals until the rider gets off
+	void steer(const RideInput& input) { control = input; }
+	//model space (feet at the origin, facing +z, in blocks) to world: turned, pitched and banked about the body's middle
+	mat4 body_matrix() const;
+	//where a rider sits, in world space
+	vec3 seat() const;
 	float random_between(float lo, float hi);
 	float wrap_angle(float a) const;
 	//a hit from something at `source`: knocks the mob away from it and sends it fleeing.
@@ -53,6 +70,9 @@ public:
 	bool blocked = false; //the last step was refused: unsafe ground, a wall, or the edge of the water
 
 	bool in_water = false; //the centre of the hitbox is in water, as of the last update
+	bool owned = false; //a pet: follows the player and never despawns
+	bool ridden = false;
+	bool flying = false;
 
 	//pose, read by the renderer
 	float yaw = 0.0f; //radians; 0 faces +z
@@ -61,6 +81,9 @@ public:
 	float head_pitch = 0.0f;
 	float walk_phase = 0.0f; //drives legs, tails and flippers
 	float leg_swing = 0.0f; //0 still, 1 moving at full speed
+	float bank = 0.0f; //roll into a turn while flying, positive to the left
+	float flap_phase = 0.0f; //drives wing beats, and the ripple down a serpent's body
+	float wing_spread = 0.0f; //0 folded on the ground, 1 open in flight
 
 	float health = 0.0f;
 	float hurt_time = 0.0f; //counts down after a hit: the red flash, and no further damage until it ends
@@ -81,6 +104,8 @@ private:
 	void locomote(float dt);
 	void walk(float dt, float turn);
 	void swim(float dt, float turn);
+	void fly(float dt, float turn);
+	void ride(float dt);
 	void dry_out(float dt);
 	void take_damage(float amount);
 	void track_fall(float y_before);
@@ -99,4 +124,5 @@ private:
 	float fall_start_y = 0.0f;
 	float time_out_of_water = 0.0f;
 	float suffocation_timer = 0.0f;
+	RideInput control;
 };

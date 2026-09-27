@@ -99,10 +99,7 @@ MobRenderer::TypeMesh& MobRenderer::mesh_for(const MobType& type) {
 //a matrix per part, parents first, then the daylight at the mob and whether it flashes red
 void MobRenderer::pose(const Mob& mob, vector<vec4>& out) const {
 	const vector<ModelPart>& parts = mob.type.model.parts;
-	//turned and pitched about the middle of the body, then down to the feet the model is built from
-	mat4 root = translate(mat4(1.0f), mob.position);
-	root = rotate(rotate(root, mob.yaw, vec3(0, 1, 0)), -mob.pitch, vec3(1, 0, 0));
-	root = translate(root, vec3(0.0f, -mob.size.y * 0.5f, 0.0f));
+	mat4 root = mob.body_matrix();
 	//dying topples onto its side, fast at first like a fall; a stranded fish just lies there
 	float roll = 0.0f;
 	if (mob.dying()) roll = sqrt(glm::min(1.0f, mob.death_time / 0.6f));
@@ -115,11 +112,21 @@ void MobRenderer::pose(const Mob& mob, vector<vec4>& out) const {
 	float swing = wave * 0.5f * mob.leg_swing;
 	float tail = wave * (0.25f + 0.3f * mob.leg_swing);
 	float flap = wave * (0.2f + 0.4f * mob.leg_swing);
+	//wings: swept back and folded on the ground, spread and beating in the air
+	float spread = mob.wing_spread;
+	float beat = sin(mob.flap_phase);
+	float wing_sweep = 1.25f * (1.0f - spread);
+	float wing_lift = mix(0.25f, 0.1f + beat * 0.75f, spread);
+	float tip_sweep = 1.0f * (1.0f - spread);
+	float tip_lift = spread * sin(mob.flap_phase - 0.9f) * 0.5f;
 
 	vector<mat4> matrices(parts.size());
 	for (size_t i = 0; i < parts.size(); ++i) {
 		const ModelPart& part = parts[i];
 		mat4 m = translate(part.parent < 0 ? root : matrices[part.parent], part.pivot / 16.0f);
+		if (part.rest != vec3(0.0f)) {
+			m = rotate(rotate(rotate(m, part.rest.z, vec3(0, 0, 1)), part.rest.y, vec3(0, 1, 0)), part.rest.x, vec3(1, 0, 0));
+		}
 		switch (part.motion) {
 		case part_motion::head:
 			m = rotate(rotate(m, mob.head_yaw, vec3(0, 1, 0)), mob.head_pitch, vec3(1, 0, 0));
@@ -142,6 +149,23 @@ void MobRenderer::pose(const Mob& mob, vector<vec4>& out) const {
 		case part_motion::flipper_right:
 			m = rotate(m, -flap, vec3(0, 0, 1));
 			break;
+		case part_motion::wing_left:
+			m = rotate(rotate(m, wing_sweep, vec3(0, 1, 0)), wing_lift, vec3(0, 0, 1));
+			break;
+		case part_motion::wing_right:
+			m = rotate(rotate(m, -wing_sweep, vec3(0, 1, 0)), -wing_lift, vec3(0, 0, 1));
+			break;
+		case part_motion::wing_tip_left:
+			m = rotate(rotate(m, tip_sweep, vec3(0, 1, 0)), tip_lift, vec3(0, 0, 1));
+			break;
+		case part_motion::wing_tip_right:
+			m = rotate(rotate(m, -tip_sweep, vec3(0, 1, 0)), -tip_lift, vec3(0, 0, 1));
+			break;
+		case part_motion::serpent:
+			//each link a little behind the one before, so the ripple travels down the body
+			m = rotate(m, sin(mob.flap_phase - i * 0.55f) * 0.3f, vec3(0, 1, 0));
+			m = rotate(m, sin(mob.flap_phase * 0.8f - i * 0.45f) * 0.1f, vec3(1, 0, 0));
+			break;
 		default:
 			break;
 		}
@@ -159,10 +183,11 @@ void MobRenderer::pose(const Mob& mob, vector<vec4>& out) const {
 	out.push_back(vec4(light, flash, 0.0f, 0.0f));
 }
 
-void MobRenderer::build(const vector<unique_ptr<Mob>>& mobs) {
+void MobRenderer::build(const vector<unique_ptr<Mob>>& mobs, const Mob* extra) {
 	for (auto& entry : meshes) entry.second->instances = 0;
 	map<const MobType*, vector<const Mob*>> by_type;
 	for (const auto& m : mobs) by_type[&m->type].push_back(m.get());
+	if (extra != nullptr) by_type[&extra->type].push_back(extra);
 
 	texels.clear();
 	for (auto& entry : by_type) {

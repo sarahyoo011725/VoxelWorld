@@ -140,6 +140,34 @@ private:
 	bool leapt = false;
 };
 
+//a pet heading back to the player once it's strayed too far, flying if it can
+class FollowOwnerGoal : public Goal {
+public:
+	FollowOwnerGoal(int priority, float start_distance = 10.0f, float stop_distance = 4.0f)
+		: Goal(priority), start_distance(start_distance), stop_distance(stop_distance) {}
+	bool can_start(Mob& mob, const MobContext& context, float dt) override;
+	bool keep_going(Mob& mob, const MobContext& context) override;
+	void start(Mob& mob, const MobContext& context) override;
+	void tick(Mob& mob, const MobContext& context, float dt) override;
+	void stop(Mob& mob) override;
+
+private:
+	float start_distance, stop_distance;
+};
+
+//a hovering flier drifting about in the air, keeping a few blocks off the ground
+class DriftGoal : public Goal {
+public:
+	DriftGoal(int priority, float chance_per_second = 0.5f) : Goal(priority), chance(chance_per_second) {}
+	bool can_start(Mob& mob, const MobContext& context, float dt) override;
+	void start(Mob& mob, const MobContext& context) override;
+	void tick(Mob& mob, const MobContext& context, float dt) override;
+	void stop(Mob& mob) override;
+
+private:
+	float chance;
+};
+
 //turns the head to follow a nearby player
 class LookAtPlayerGoal : public Goal {
 public:

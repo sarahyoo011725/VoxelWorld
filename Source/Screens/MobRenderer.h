@@ -27,7 +27,8 @@ class MobRenderer {
 public:
 	MobRenderer();
 	~MobRenderer();
-	void build(const vector<unique_ptr<Mob>>& mobs);
+	//extra: one more mob outside the list, e.g. the player seen riding in third person
+	void build(const vector<unique_ptr<Mob>>& mobs, const Mob* extra = nullptr);
 	void draw();
 	void draw_depth(const mat4& light_space_matrix);
 
