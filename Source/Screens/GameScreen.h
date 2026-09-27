@@ -217,8 +217,10 @@ public:
 		sm.default_shader.activate();
 		texture.activate();
 		texture.bind();
-		terrain.draw(player.camera.mat);
+		terrain.draw_opaque(player.camera.mat);
+		//before water, so a mob under the surface is seen through it rather than drawn over it
 		mob_renderer.draw();
+		terrain.draw_translucent();
 		renderer.draw_outlines(player.view_matrix(), player.hovered_block(), player.hovered_position());
 		renderer.draw_HUDs();
 		renderer.draw_hotbar(player.inventory());

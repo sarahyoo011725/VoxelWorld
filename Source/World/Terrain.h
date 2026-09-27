@@ -16,6 +16,7 @@ using namespace glm;
 class Terrain
 {
 private:
+	vector<Chunk*> drawn_chunks; //chosen by draw_opaque, reused by draw_translucent
 	ChunkManager& cm;
 	StructureGenerator& sg;
 	ShaderManager& sm;
@@ -51,4 +52,7 @@ public:
 	void update_chunks();
 	void draw_shadow_casters(const mat4& light_space_matrix);
 	void draw(const mat4& view_projection);
+	//draw split in two, so things that sit inside water (mobs) can go between the passes
+	void draw_opaque(const mat4& view_projection);
+	void draw_translucent();
 };

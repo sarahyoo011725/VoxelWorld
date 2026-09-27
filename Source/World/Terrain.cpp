@@ -328,12 +328,18 @@ void Terrain::update_section_visibility(const Frustum& frustum) {
 	the transparency sort below
 */
 void Terrain::draw(const mat4& view_projection) {
+	draw_opaque(view_projection);
+	draw_translucent();
+}
+
+void Terrain::draw_opaque(const mat4& view_projection) {
 	Frustum camera_frustum;
 	camera_frustum.from_matrix(view_projection);
 
 	update_section_visibility(camera_frustum);
 
-	vector<Chunk*> drawn;
+	vector<Chunk*>& drawn = drawn_chunks;
+	drawn.clear();
 	drawn.reserve(visible_chunks.size());
 	for (Chunk* c : visible_chunks) {
 		if (c->visible_sections != 0) drawn.push_back(c);
@@ -358,7 +364,10 @@ void Terrain::draw(const mat4& view_projection) {
 	if (sort_opaque_front_to_back) {
 		for (Chunk* c : drawn) c->draw_opaque_blocks();
 	}
+}
 
+void Terrain::draw_translucent() {
+	vector<Chunk*>& drawn = drawn_chunks;
 	//alpha blending needs back-to-front order, or a nearer chunk's transparent
 	//faces can wrongly show through a farther chunk's water/leaves
 	for (auto it = drawn.rbegin(); it != drawn.rend(); ++it) {
@@ -367,6 +376,7 @@ void Terrain::draw(const mat4& view_projection) {
 		(*it)->draw_water();
 	}
 
+	drawn.clear();
 	visible_chunks.clear();
 }
 
