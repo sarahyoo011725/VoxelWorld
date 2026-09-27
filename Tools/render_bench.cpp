@@ -587,15 +587,21 @@ int main(int argc, char** argv) {
 
 		//a close look at a mob, lit and shadowed like the game draws it
 		mat4 shot_light = shadow_light; //the aquatic shots are far from the shadow map and switch it off
-		//from_behind: a chase view from behind and above, which shows a flier's wingspan
-		auto shoot = [&](const Mob& subject, const string& name, const MobManager& source, const Mob* extra = nullptr, bool from_behind = false) {
+		//view 0 from the side, 1 a chase view from behind and above (a flier's wingspan), 2 face on and close
+		auto shoot = [&](const Mob& subject, const string& name, const MobManager& source, const Mob* extra = nullptr, int view = 0) {
 			vec3 side = vec3(cos(subject.yaw), 0.0f, -sin(subject.yaw));
 			vec3 ahead = vec3(sin(subject.yaw), 0.0f, cos(subject.yaw));
 			//the first spot beside the mob, a little ahead so the face shows, with a clear line of sight to it
 			float back = 3.0f + subject.size.x * 2.5f; //further out for the big ones
 			vec3 eye = subject.position + side * back + vec3(0.0f, 0.6f, 0.0f);
-			bool found = from_behind;
-			if (from_behind) eye = subject.position - ahead * back * 1.3f + vec3(0.0f, back * 0.6f, 0.0f);
+			bool found = view != 0;
+			if (view == 1) eye = subject.position - ahead * back * 1.3f + vec3(0.0f, back * 0.6f, 0.0f);
+			vec3 target = subject.position;
+			if (view == 2) {
+				//straight at the face, level with the head
+				target = subject.position + ahead * (subject.size.x * 0.6f) + vec3(0.0f, 0.2f, 0.0f);
+				eye = target + ahead * 1.8f + vec3(0.0f, 0.15f, 0.0f);
+			}
 			for (float lift : { 0.6f, 1.6f, 2.6f, 4.0f }) {
 				for (float flip : { 1.0f, -1.0f }) {
 					vec3 candidate = subject.position + side * (back * flip) + ahead * 1.5f + vec3(0.0f, lift, 0.0f);
@@ -608,7 +614,7 @@ int main(int argc, char** argv) {
 				}
 			}
 			mat4 view_projection = perspective(radians(60.0f), 1200.0f / 700.0f, 0.1f, 180.0f)
-				* lookAt(eye, subject.position, vec3(0, 1, 0));
+				* lookAt(eye, target, vec3(0, 1, 0));
 			Texture atlas("Resources/Textures/texture_atlas_blocks.png", GL_TEXTURE1, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 			for (Shader* s : { &sm.default_shader, &sm.wave_shader, &sm.foliage_shader, &sm.mob_shader }) {
 				s->activate();
@@ -923,7 +929,11 @@ int main(int argc, char** argv) {
 								}
 								printf("  a %s put in the water 3 blocks off a shore: %s\n", kind,
 									out_at >= 0.0f ? ("hauled out after " + to_string(out_at).substr(0, 4) + " s").c_str() : "still swimming after 60 s");
-								if (out_at >= 0.0f) shoot(*seal, string("sea_") + kind + "_ashore", sea_mobs);
+								if (out_at >= 0.0f) {
+									shoot(*seal, string("sea_") + kind + "_ashore", sea_mobs);
+									seal->head_yaw = seal->head_pitch = 0.0f;
+									shoot(*seal, string("sea_") + kind + "_face", sea_mobs, nullptr, 2);
+								}
 							}
 							if (shore_found) break;
 						}
@@ -1144,7 +1154,11 @@ int main(int argc, char** argv) {
 			mat4 no_shadow = mat4(0.0f);
 			no_shadow[3] = vec4(0.0f, 0.0f, 2.0f, 1.0f);
 			shot_light = no_shadow;
-			if (watched != nullptr) shoot(*watched, "polar_snow_seal", polar);
+			if (watched != nullptr) {
+				shoot(*watched, "polar_snow_seal", polar);
+				watched->head_yaw = watched->head_pitch = 0.0f;
+				shoot(*watched, "polar_snow_seal_face", polar, nullptr, 2);
+			}
 			shot_light = shadow_light;
 			load_around(home);
 		}
