@@ -590,7 +590,7 @@ int main(int argc, char** argv) {
 		mat4 shot_light = shadow_light; //the aquatic shots are far from the shadow map and switch it off
 		vec3 custom_eye = vec3(0.0f), custom_target = vec3(0.0f); //for view 3
 		//view 0 from the side, 1 a chase view from behind and above (a flier's wingspan), 2 face on and close, 3 from custom_eye at custom_target
-		auto shoot = [&](const Mob& subject, const string& name, const MobManager& source, const Mob* extra = nullptr, int view = 0) {
+		auto shoot = [&](const Mob& subject, const string& name, const MobManager& source, vector<const Mob*> extras = {}, int view = 0) {
 			vec3 side = vec3(cos(subject.yaw), 0.0f, -sin(subject.yaw));
 			vec3 ahead = vec3(sin(subject.yaw), 0.0f, cos(subject.yaw));
 			//the first spot beside the mob, a little ahead so the face shows, with a clear line of sight to it
@@ -641,9 +641,11 @@ int main(int argc, char** argv) {
 			glClearColor(0.6f, 0.75f, 0.95f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			terrain.draw_opaque(view_projection);
-			mob_renderer.build(source.all(), extra);
+			mob_renderer.build(source.all(), extras);
 			mob_renderer.draw();
 			terrain.draw_translucent();
+			glClear(GL_DEPTH_BUFFER_BIT);
+			mob_renderer.draw_overlay();
 			vector<unsigned char> pixels(1200 * 700 * 3);
 			glPixelStorei(GL_PACK_ALIGNMENT, 1);
 			glReadPixels(0, 0, 1200, 700, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
@@ -938,7 +940,7 @@ int main(int argc, char** argv) {
 								if (out_at >= 0.0f) {
 									shoot(*seal, string("sea_") + kind + "_ashore", sea_mobs);
 									seal->head_yaw = seal->head_pitch = 0.0f;
-									shoot(*seal, string("sea_") + kind + "_face", sea_mobs, nullptr, 2);
+									shoot(*seal, string("sea_") + kind + "_face", sea_mobs, {}, 2);
 								}
 							}
 							if (shore_found) break;
@@ -1015,6 +1017,42 @@ int main(int argc, char** argv) {
 			settle(60);
 			if (eastern != nullptr) shoot(*eastern, "dragon_eastern_idle", pets);
 
+			//the player's avatar walking, from outside and from their own eyes
+			{
+				float ground = (float)get_terrain_generator().sample_height(field.x, field.y);
+				Mob walker(player_type(), vec3(field.x + 0.5f, ground + 0.51f, field.y + 0.5f), 0u);
+				walker.yaw = 1.5708f;
+				walker.leg_swing = 1.0f;
+				walker.walk_phase = 1.2f;
+				walker.head_yaw = 0.35f;
+				walker.head_pitch = -0.15f;
+				shoot(walker, "avatar_side", pets, { &walker });
+				shoot(walker, "avatar_behind", pets, { &walker }, 1);
+				walker.head_yaw = 0.0f;
+				shoot(walker, "avatar_front", pets, { &walker }, 2);
+
+				//first person, looking a little down: the arm in the corner and the body below
+				Mob body(player_body_type(), walker.feet(), 0u);
+				body.yaw = walker.yaw;
+				body.leg_swing = 1.0f;
+				body.walk_phase = 1.2f;
+				vec3 look = normalize(vec3(sin(walker.yaw), -0.75f, cos(walker.yaw)));
+				vec3 eye = walker.position + vec3(0.0f, 0.72f, 0.0f);
+				body.position -= vec3(sin(walker.yaw), 0.0f, cos(walker.yaw)) * 0.22f;
+				Mob hand(player_hand_type(), vec3(0.0f), 0u);
+				vec3 right = normalize(cross(look, vec3(0.0f, 1.0f, 0.0f)));
+				vec3 up = cross(right, look);
+				hand.position = eye + right * 0.38f - up * 0.34f + look * 0.36f;
+				hand.yaw = atan2(look.x, look.z);
+				hand.pitch = asin(look.y);
+				custom_eye = eye;
+				custom_target = eye + look;
+				shoot(walker, "avatar_first_person", pets, { &body, &hand }, 3);
+				hand.head_pitch = -0.6f;
+				hand.head_yaw = 0.5f;
+				shoot(walker, "avatar_first_person_swing", pets, { &body, &hand }, 3);
+			}
+
 			//ride a mob with fixed controls for a while; returns how far it went
 			auto ride_for = [&](Mob& mount, RideInput input, int frames) {
 				vec3 start = mount.position;
@@ -1053,7 +1091,7 @@ int main(int argc, char** argv) {
 				}
 				printf("  horse ridden at a gallop for 3 s: %.1f blocks; a jump rises %.2f blocks\n", length(vec2(moved.x, moved.z)), top - (steed->position.y));
 				seat_rider(*steed);
-				shoot(*steed, "ride_horse", pets, &rider_model);
+				shoot(*steed, "ride_horse", pets, { &rider_model });
 				steed->ridden = false;
 			}
 
@@ -1065,7 +1103,7 @@ int main(int argc, char** argv) {
 				vec3 moved = ride_for(*eastern, cruise, 180);
 				printf("  eastern dragon ridden for 3 s: %.1f blocks, %.1f up\n", length(moved), moved.y);
 				seat_rider(*eastern);
-				shoot(*eastern, "ride_eastern_flying", pets, &rider_model);
+				shoot(*eastern, "ride_eastern_flying", pets, { &rider_model });
 				eastern->ridden = false;
 				float before = eastern->position.y;
 				settle(180);
@@ -1163,7 +1201,7 @@ int main(int argc, char** argv) {
 			if (watched != nullptr) {
 				shoot(*watched, "polar_snow_seal", polar);
 				watched->head_yaw = watched->head_pitch = 0.0f;
-				shoot(*watched, "polar_snow_seal_face", polar, nullptr, 2);
+				shoot(*watched, "polar_snow_seal_face", polar, {}, 2);
 			}
 			shot_light = shadow_light;
 			load_around(home);
@@ -1228,12 +1266,12 @@ int main(int argc, char** argv) {
 				custom_eye = vec3(site.centre) + vec3(9.0f, 9.0f, 20.0f);
 				if (!spring.all().empty()) {
 					const Mob& subject = resident != nullptr ? *resident : *spring.all().front();
-					shoot(subject, "onsen_overview", spring, nullptr, 3);
+					shoot(subject, "onsen_overview", spring, {}, 3);
 					custom_eye = vec3(site.centre) + vec3(-14.0f, 16.0f, -4.0f);
-					shoot(subject, "onsen_above", spring, nullptr, 3);
+					shoot(subject, "onsen_above", spring, {}, 3);
 					custom_eye = vec3(site.centre) + vec3(0.5f, 2.5f, 13.0f);
 					custom_target = vec3(site.centre) + vec3(0.5f, 2.0f, -6.0f);
-					shoot(subject, "onsen_gate", spring, nullptr, 3);
+					shoot(subject, "onsen_gate", spring, {}, 3);
 				}
 				shot_light = shadow_light;
 				load_around(onsen_home);
