@@ -80,7 +80,7 @@ namespace {
 		t.goals = { goal<PanicGoal>(1), goal<WanderGoal>(5), goal<LookAtPlayerGoal>(5) };
 		return t;
 	}
-	const vector<biome_id> seas = { biome_id::ocean, biome_id::beach };
+	const vector<biome_id> seas = { biome_id::ocean, biome_id::beach, biome_id::frozen_ocean };
 
 	//a fish: water only, a sideways tail, flops and suffocates on land
 	MobType fish(const string& name, vec3 hitbox, float speed, vector<ModelPart> parts, SpawnRule spawn) {
@@ -112,7 +112,7 @@ namespace {
 	}
 
 	MobType salmon() {
-		SpawnRule spawn = { { biome_id::ocean, biome_id::beach, biome_id::tundra, biome_id::taiga }, 6, 3, 5 };
+		SpawnRule spawn = { { biome_id::ocean, biome_id::beach, biome_id::tundra, biome_id::taiga, biome_id::frozen_ocean }, 6, 3, 5 };
 		spawn.min_depth = 3;
 		return fish("salmon", vec3(0.7f, 0.4f, 0.7f), 2.0f, {
 			{ -1, vec3(0), vec3(-1.5f, 0, -4), vec3(3, 5, 8), ivec2(0, 0) },
@@ -180,7 +180,7 @@ namespace {
 			{ -1, vec3(-1.5f, 1, -7), vec3(-1.5f, -0.5f, -5), vec3(3, 1, 5), ivec2(22, 26), part_motion::tail_beat },
 		};
 		t.spawn = { std::move(coasts), 8, 1, 3 };
-		t.spawn.ground = { sand, gravel, snow, stone };
+		t.spawn.ground = { sand, gravel, snow, stone, ice };
 		t.spawn.shore_distance = 4;
 		t.goals = { goal<PanicGoal>(1), goal<HaulOutGoal>(5), goal<SwimGoal>(5), goal<WanderGoal>(5, 0.2f), goal<LookAtPlayerGoal>(5) };
 		return t;
@@ -213,6 +213,6 @@ namespace {
 
 const vector<MobType>& mob_types() {
 	static const vector<MobType> types = { sheep(), cow(), pig(), horse(), seal("seal", { biome_id::beach, biome_id::ocean }),
-		seal("snow_seal", { biome_id::tundra }), dolphin(), cod(), salmon(), tropical_fish() };
+		seal("snow_seal", { biome_id::tundra, biome_id::frozen_ocean }), dolphin(), cod(), salmon(), tropical_fish() };
 	return types;
 }

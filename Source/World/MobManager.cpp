@@ -29,6 +29,11 @@ bool MobManager::can_stand_at(int x, int z, int& ground_y, block_type& ground_ty
 	ivec3 local = world_to_local_coord(column);
 
 	int h = chunk->get_height(local.x, local.z);
+	//the height map is the sea floor under a floe; the ice on the surface is what's stood on
+	if (h < water_level) {
+		Block* surface = chunk->get_block(ivec3(local.x, water_level, local.z));
+		if (surface != nullptr && is_solid(surface->type)) h = water_level;
+	}
 	Block* ground = chunk->get_block(ivec3(local.x, h, local.z));
 	Block* body = chunk->get_block(ivec3(local.x, h + 1, local.z));
 	Block* head = chunk->get_block(ivec3(local.x, h + 2, local.z));
