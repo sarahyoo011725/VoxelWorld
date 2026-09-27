@@ -16,6 +16,13 @@ void PlayerPhysics::integrate(GameObject& target, float dt, bool enabled) {
 	//until the rise finishes.
 	if (pending_step > 0.0f) {
 		float rise = std::min(pending_step, step_speed * dt);
+		GameObject raised = target;
+		raised.position.y += rise;
+		//sideways moves during the rise can carry the head under something; stop rising there
+		if (!is_position_clear(raised)) {
+			pending_step = 0.0f;
+			return;
+		}
 		target.position.y += rise;
 		pending_step -= rise;
 		//turning mid-rise could otherwise carry the box sideways into a wall
@@ -96,6 +103,33 @@ void PlayerPhysics::integrate(GameObject& target, float dt, bool enabled) {
 			remaining_dt = 0.0f;
 		}
 	}
+	settle_onto_ground(target);
+}
+
+/*
+	a box resting a hair inside the ground (float error, or a contact the swept test
+	counted as already overlapping) is invisible to the swept test and would sink
+	on through. a shallow overlap under the feet is lifted back out, a little clear of
+	the top: a lift of exactly the overlap can round away to nothing
+*/
+void PlayerPhysics::settle_onto_ground(GameObject& target) {
+	float feet = target.position.y - target.size.y * 0.5f;
+	float lift = 0.0f;
+	for (const vec3& block : gather_candidate_blocks(aabb::get_broad_phase(target, 0.0f))) {
+		GameObject block_box;
+		block_box.position = block;
+		block_box.size = vec3(1.0f);
+		if (!aabb::check_collision(target, block_box)) continue;
+		float depth = block.y + 0.5f - feet;
+		if (depth > 0.0f && depth < 0.25f) lift = std::max(lift, depth + 0.001f);
+	}
+	if (lift == 0.0f) return;
+	GameObject raised = target;
+	raised.position.y += lift;
+	if (!is_position_clear(raised)) return;
+	target.position.y += lift;
+	target.velocity.y = std::max(target.velocity.y, 0.0f);
+	on_ground = true;
 }
 
 bool PlayerPhysics::is_underwater(vec3 position) {

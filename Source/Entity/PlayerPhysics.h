@@ -22,6 +22,7 @@ private:
 	vector<vec3> gather_candidate_blocks(const GameObject& broadphase);
 	bool has_solid_ground_below(const GameObject& probe);
 	void try_auto_step(GameObject& target, float dt);
+	void settle_onto_ground(GameObject& target);
 
 	const float step_height = 1.0f;
 	const float step_speed = 6.0f; //units/sec the player rises during a step, so it's a visible motion instead of a teleport
