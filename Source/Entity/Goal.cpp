@@ -275,6 +275,30 @@ void FollowOwnerGoal::stop(Mob& mob) {
 	mob.turn_boost = 1.0f;
 }
 
+bool ReturnHomeGoal::can_start(Mob& mob, const MobContext& context, float dt) {
+	return mob.has_home && !mob.owned && distance(mob.position, mob.home) > leash;
+}
+
+bool ReturnHomeGoal::keep_going(Mob& mob, const MobContext& context) {
+	return distance(mob.position, mob.home) > leash * 0.4f;
+}
+
+void ReturnHomeGoal::start(Mob& mob, const MobContext& context) {
+	if (mob.type.flies) mob.flying = true;
+}
+
+void ReturnHomeGoal::tick(Mob& mob, const MobContext& context, float dt) {
+	vec3 to = mob.home - mob.position;
+	mob.target_yaw = atan2(to.x, to.z);
+	mob.target_pitch = mob.flying ? glm::clamp(atan2(to.y, length(vec2(to.x, to.z))), -0.7f, 0.7f) : 0.0f;
+	mob.move = 1.0f;
+}
+
+void ReturnHomeGoal::stop(Mob& mob) {
+	mob.move = 0.0f;
+	mob.target_pitch = 0.0f;
+}
+
 bool DriftGoal::can_start(Mob& mob, const MobContext& context, float dt) {
 	return mob.flying && roll(mob, chance, dt);
 }

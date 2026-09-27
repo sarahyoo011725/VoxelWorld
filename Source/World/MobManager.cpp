@@ -1,5 +1,6 @@
 #include "MobManager.h"
 #include "Chunk/Chunk.h"
+#include "World/Onsen.h"
 #include <algorithm>
 
 namespace {
@@ -108,8 +109,8 @@ ivec2 MobManager::random_column(vec3 player_position) {
 }
 
 int MobManager::count(bool water_mobs) const {
-	//pets are the player's, not part of the wild population the caps keep in check
-	return (int)count_if(mobs.begin(), mobs.end(), [&](const unique_ptr<Mob>& m) { return !m->owned && is_water_mob(m->type) == water_mobs; });
+	//pets and residents aren't part of the wild population the caps keep in check
+	return (int)count_if(mobs.begin(), mobs.end(), [&](const unique_ptr<Mob>& m) { return !m->owned && !m->has_home && is_water_mob(m->type) == water_mobs; });
 }
 
 void MobManager::try_spawn_herd(vec3 player_position) {
@@ -134,6 +135,24 @@ void MobManager::try_spawn_herd(vec3 player_position) {
 			mobs.push_back(std::move(mob));
 			land++;
 		}
+	}
+}
+
+//Haku lives at every onsen: one hovering over the pool of each spring near the player
+void MobManager::settle_residents(vec3 player_position) {
+	const MobType* haku = find_mob_type("eastern_dragon");
+	if (haku == nullptr) return;
+	for (const OnsenSite& site : onsen::sites_near(player_position, 80.0f)) {
+		vec3 home = vec3(site.centre) + vec3(0.0f, 4.0f, 0.0f);
+		if (!chunk_ready(home)) continue;
+		bool living_there = any_of(mobs.begin(), mobs.end(), [&](const unique_ptr<Mob>& m) {
+			return m->has_home && distance(m->home, home) < 0.5f;
+		});
+		if (living_there) continue;
+		auto mob = make_unique<Mob>(*haku, home - vec3(0.0f, haku->hitbox.y * 0.5f, 0.0f), rng());
+		mob->has_home = true;
+		mob->home = home;
+		mobs.push_back(std::move(mob));
 	}
 }
 
@@ -210,6 +229,12 @@ void MobManager::update(float dt, const MobContext& context) {
 	MobContext shared = context;
 	shared.mobs = &mobs;
 	for (auto& m : mobs) m->update(dt, shared);
+
+	resident_timer -= dt;
+	if (resident_timer <= 0.0f) {
+		resident_timer = 1.0f;
+		settle_residents(player);
+	}
 
 	//a few attempts a second, so herds and schools appear gradually as the world loads in
 	spawn_timer -= dt;

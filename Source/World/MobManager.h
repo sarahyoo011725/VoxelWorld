@@ -30,6 +30,7 @@ public:
 private:
 	void try_spawn_herd(vec3 player_position);
 	void try_spawn_school(vec3 player_position);
+	void settle_residents(vec3 player_position);
 	const MobType* pick_type(biome_id biome, bool in_water, block_type ground, int depth);
 	bool can_stand_at(int x, int z, int& ground_y, block_type& ground_type) const;
 	int water_depth(int x, int z, int& floor_y) const;
@@ -43,4 +44,5 @@ private:
 	vector<unique_ptr<Mob>> mobs;
 	std::mt19937 rng;
 	float spawn_timer = 0.0f;
+	float resident_timer = 0.0f;
 };

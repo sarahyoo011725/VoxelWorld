@@ -262,7 +262,7 @@ namespace {
 			}
 		}
 		p.push_back({ links.back(), vec3(0, 0, -6), vec3(-0.5f, -2.5f, -6), vec3(1, 5, 6), ivec2(48, 15), part_motion::tail_sway });
-		t.goals = { goal<FollowOwnerGoal>(2), goal<DriftGoal>(5), goal<LookAtPlayerGoal>(5, 12.0f) };
+		t.goals = { goal<FollowOwnerGoal>(2), goal<ReturnHomeGoal>(3), goal<DriftGoal>(5), goal<LookAtPlayerGoal>(5, 12.0f) };
 		return t;
 	}
 

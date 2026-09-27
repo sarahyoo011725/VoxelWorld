@@ -71,6 +71,8 @@ public:
 
 	bool in_water = false; //the centre of the hitbox is in water, as of the last update
 	bool owned = false; //a pet: follows the player and never despawns
+	bool has_home = false; //lives somewhere, like Haku at an onsen, and returns there when it strays
+	vec3 home = vec3(0.0f);
 	bool ridden = false;
 	bool flying = false;
 

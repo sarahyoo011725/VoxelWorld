@@ -155,6 +155,20 @@ private:
 	float start_distance, stop_distance;
 };
 
+//a mob with a home heading back once it's strayed too far from it, flying if it can
+class ReturnHomeGoal : public Goal {
+public:
+	ReturnHomeGoal(int priority, float leash = 14.0f) : Goal(priority), leash(leash) {}
+	bool can_start(Mob& mob, const MobContext& context, float dt) override;
+	bool keep_going(Mob& mob, const MobContext& context) override;
+	void start(Mob& mob, const MobContext& context) override;
+	void tick(Mob& mob, const MobContext& context, float dt) override;
+	void stop(Mob& mob) override;
+
+private:
+	float leash;
+};
+
 //a hovering flier drifting about in the air, keeping a few blocks off the ground
 class DriftGoal : public Goal {
 public:
