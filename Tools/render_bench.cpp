@@ -690,6 +690,39 @@ int main(int argc, char** argv) {
 			printf("  died after %d hits of 2 (%.0f health)\n", hits, victim->type.max_health);
 			step(20);
 			shoot(*victim, "dying", mobs);
+
+			//a horse put down near the player: it should wander without clipping into anything
+			for (const MobType& t : mob_types()) {
+				if (t.name != "horse") continue;
+				Mob* horse = nullptr;
+				for (int r = 3; r <= 20 && horse == nullptr; ++r) {
+					for (int a = 0; a < 16 && horse == nullptr; ++a) {
+						int x = (int)std::round(position.x + cos(a * 0.3927f) * r), z = (int)std::round(position.z + sin(a * 0.3927f) * r);
+						int h = get_terrain_generator().sample_height(x, z);
+						Block* top = cm.get_block_worldspace(vec3(x, h, z));
+						if (h <= water_level || top == nullptr || !is_solid(top->type)) continue;
+						horse = mobs.add(t, vec3(x, h + 0.51f, z));
+					}
+				}
+				if (horse == nullptr) {
+					printf("  no room to put a horse down\n");
+					break;
+				}
+				vec3 start_at = horse->position;
+				long horse_frames = 0, horse_overlap = 0;
+				float travelled = 0.0f;
+				vec3 last = horse->position;
+				for (int f = 0; f < 60 * 30; ++f) {
+					step(1);
+					horse_frames++;
+					if (penetrates(*horse)) horse_overlap++;
+					travelled += length(flat(horse->position - last));
+					last = horse->position;
+				}
+				printf("  a horse over 30 s: walked %.1f blocks, ends %.1f from where it started, hitbox in a block in %ld of %ld frames\n",
+					travelled, length(flat(horse->position - start_at)), horse_overlap, horse_frames);
+				shoot(*horse, "horse", mobs);
+			}
 			int frames_after = 20;
 			while (alive(victim) && frames_after < 600) {
 				step(1);
@@ -875,17 +908,20 @@ int main(int argc, char** argv) {
 						for (ivec2 step : { ivec2(3, 0), ivec2(-3, 0), ivec2(0, 3), ivec2(0, -3) }) {
 							int wx = x + step.x, wz = z + step.y;
 							if (block_type_at(wx, y, wz) != water || block_type_at(wx, y - 1, wz) != water) continue;
-							Mob* seal = sea_mobs.add(*type_named("seal"), vec3(wx, y - 1.0f, wz));
-							if (seal == nullptr) continue;
-							shore_found = true;
-							float out_at = -1.0f;
-							for (int f = 0; f < 60 * 60 && out_at < 0.0f; ++f) {
-								sea_mobs.update(1.0f / 60.0f, sea_context);
-								if (!seal->in_water && seal->on_ground()) out_at = f / 60.0f;
+							for (const char* kind : { "seal", "snow_seal" }) {
+								Mob* seal = sea_mobs.add(*type_named(kind), vec3(wx, y - 1.0f, wz));
+								if (seal == nullptr) continue;
+								shore_found = true;
+								float out_at = -1.0f;
+								for (int f = 0; f < 60 * 60 && out_at < 0.0f; ++f) {
+									sea_mobs.update(1.0f / 60.0f, sea_context);
+									if (!seal->in_water && seal->on_ground()) out_at = f / 60.0f;
+								}
+								printf("  a %s put in the water 3 blocks off a shore: %s\n", kind,
+									out_at >= 0.0f ? ("hauled out after " + to_string(out_at).substr(0, 4) + " s").c_str() : "still swimming after 60 s");
+								if (out_at >= 0.0f) shoot(*seal, string("sea_") + kind + "_ashore", sea_mobs);
 							}
-							printf("  a seal put in the water 3 blocks off a shore: %s\n",
-								out_at >= 0.0f ? ("hauled out after " + to_string(out_at).substr(0, 4) + " s").c_str() : "still swimming after 60 s");
-							break;
+							if (shore_found) break;
 						}
 					}
 				}
