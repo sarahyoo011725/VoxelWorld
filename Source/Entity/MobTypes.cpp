@@ -38,9 +38,46 @@ namespace {
 		t.goals = { goal<WanderGoal>(5), goal<GrazeGoal>(5), goal<LookAtPlayerGoal>(5) };
 		return t;
 	}
+
+	MobType cow() {
+		MobType t;
+		t.name = "cow";
+		t.hitbox = vec3(0.9f, 1.4f, 0.9f);
+		t.walk_speed = 1.0f;
+		t.turn_rate = 2.0f;
+		t.model.skin = "Resources/Textures/Mobs/cow.png";
+		t.model.parts = {
+			{ -1, vec3(0, 12, 0), vec3(-6, 0, -9), vec3(12, 10, 18), ivec2(0, 0) },
+			{ -1, vec3(0, 19, 9), vec3(-4, -4, 0), vec3(8, 8, 6), ivec2(16, 32), part_motion::head },
+			{ 1, vec3(0), vec3(4, 3, 2), vec3(1, 3, 1), ivec2(44, 32) },
+			{ 1, vec3(0), vec3(-5, 3, 2), vec3(1, 3, 1), ivec2(44, 32) },
+		};
+		add_legs(t.model.parts, vec3(4, 12, 4), 12, 4, 6);
+		t.spawn = { grassy, 8, 2, 4 };
+		t.goals = { goal<WanderGoal>(5), goal<GrazeGoal>(5), goal<LookAtPlayerGoal>(5) };
+		return t;
+	}
+
+	MobType pig() {
+		MobType t;
+		t.name = "pig";
+		t.hitbox = vec3(0.9f, 0.9f, 0.9f);
+		t.walk_speed = 1.2f;
+		t.turn_rate = 3.0f;
+		t.model.skin = "Resources/Textures/Mobs/pig.png";
+		t.model.parts = {
+			{ -1, vec3(0, 6, 0), vec3(-5, 0, -8), vec3(10, 8, 16), ivec2(0, 0) },
+			{ -1, vec3(0, 11, 8), vec3(-4, -4, 0), vec3(8, 8, 8), ivec2(16, 32), part_motion::head },
+			{ 1, vec3(0), vec3(-2, -3, 8), vec3(4, 3, 1), ivec2(48, 32) },
+		};
+		add_legs(t.model.parts, vec3(4, 6, 4), 6, 3, 5);
+		t.spawn = { grassy, 10, 2, 4 };
+		t.goals = { goal<WanderGoal>(5), goal<LookAtPlayerGoal>(5) };
+		return t;
+	}
 }
 
 const vector<MobType>& mob_types() {
-	static const vector<MobType> types = { sheep() };
+	static const vector<MobType> types = { sheep(), cow(), pig() };
 	return types;
 }
