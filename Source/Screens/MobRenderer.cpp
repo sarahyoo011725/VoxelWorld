@@ -116,6 +116,8 @@ MobRenderer::TypeMesh& MobRenderer::mesh_for(const MobType& type) {
 	mesh->vao.link_attrib(mesh->vbo, 3, 1, GL_FLOAT, GL_FALSE, sizeof(mob_vertex), (void*)offsetof(mob_vertex, part));
 	mesh->vao.unbind();
 	if (palette_source != nullptr) {
+		//on the mobs' own unit: whatever unit happens to be active may hold the block atlas or the shadow map
+		glActiveTexture(GL_TEXTURE0 + skin_unit);
 		glGenTextures(1, &mesh->palette);
 		glBindTexture(GL_TEXTURE_2D, mesh->palette);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, palette_source->palette.data());
