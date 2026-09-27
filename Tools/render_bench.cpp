@@ -556,7 +556,8 @@ int main(int argc, char** argv) {
 			for (const auto& m : mobs.all()) {
 				first_seen.emplace(m.get(), m->position);
 				mob_frames++;
-				if (penetrates(*m)) overlap_frames++;
+				bool pen = penetrates(*m);
+				if (pen) overlap_frames++;
 			}
 		}
 		int standing = 0, wet = 0, embedded = 0;
@@ -583,14 +584,8 @@ int main(int argc, char** argv) {
 		printf("  distance from spawn: %.1f blocks on average, %.1f at most\n", n ? moved_total / n : 0.0f, moved_max);
 		printf("  cost per frame: update %.3f ms, pose upload %.3f ms\n", update_ms / frames, build_ms / frames);
 
-		//a close look at the nearest mob of each type, inside the player's shadow map and loaded chunks
-		map<string, const Mob*> subjects;
-		for (const auto& m : mobs.all()) {
-			const Mob*& best = subjects[m->type.name];
-			if (best == nullptr || distance(m->position, position) < distance(best->position, position)) best = m.get();
-		}
-		for (const auto& entry : subjects) {
-			const Mob& subject = *entry.second;
+		//a close look at a mob, lit and shadowed like the game draws it
+		auto shoot = [&](const Mob& subject, const string& name) {
 			vec3 side = vec3(cos(subject.yaw), 0.0f, -sin(subject.yaw));
 			vec3 ahead = vec3(sin(subject.yaw), 0.0f, cos(subject.yaw));
 			//the first spot beside the mob, a little ahead so the face shows, with a clear line of sight to it
@@ -629,13 +624,103 @@ int main(int argc, char** argv) {
 			glClearColor(0.6f, 0.75f, 0.95f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			terrain.draw(view_projection);
+			mob_renderer.build(mobs.all());
 			mob_renderer.draw();
 			vector<unsigned char> pixels(1200 * 700 * 3);
 			glPixelStorei(GL_PACK_ALIGNMENT, 1);
 			glReadPixels(0, 0, 1200, 700, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
-			ofstream file("bench_mob_" + entry.first + ".ppm", ios::binary);
+			ofstream file("bench_mob_" + name + ".ppm", ios::binary);
 			file << "P6\n1200 700\n255\n";
 			for (int y = 699; y >= 0; --y) file.write(reinterpret_cast<const char*>(&pixels[(size_t)y * 1200 * 3]), 1200 * 3);
+		};
+
+		//the nearest mob of each type, inside the player's shadow map and loaded chunks
+		map<string, Mob*> subjects;
+		for (const auto& m : mobs.all()) {
+			Mob*& best = subjects[m->type.name];
+			if (best == nullptr || distance(m->position, position) < distance(best->position, position)) best = m.get();
+		}
+		for (const auto& entry : subjects) shoot(*entry.second, entry.first);
+
+		printf("\ncombat\n");
+		auto step = [&](int count) { for (int i = 0; i < count; ++i) mobs.update(1.0f / 60.0f, context); };
+		auto alive = [&](const Mob* m) {
+			for (const auto& x : mobs.all()) if (x.get() == m) return true;
+			return false;
+		};
+		auto flat = [](vec3 v) { return vec3(v.x, 0.0f, v.z); };
+		if (!subjects.empty()) {
+			Mob* victim = subjects.begin()->second;
+			float d = 0.0f;
+			Mob* picked = mobs.pick(victim->position + vec3(3.0f, 0.0f, 0.0f), vec3(-1.0f, 0.0f, 0.0f), 4.5f, d);
+			float miss_d = 0.0f;
+			Mob* missed = mobs.pick(victim->position + vec3(3.0f, 0.0f, 0.0f), vec3(1.0f, 0.0f, 0.0f), 4.5f, miss_d);
+			printf("  pick along a ray from 3 blocks away: %s at %.2f (hitbox side at %.2f); pointing away: %s\n",
+				picked == victim ? "hit" : "wrong mob", d, 3.0f - victim->size.x * 0.5f, missed == victim ? "hit (wrong)" : "no hit");
+
+			vec3 source = victim->position - vec3(2.0f, 0.0f, 0.0f);
+			vec3 start = victim->position;
+			float health_before = victim->health;
+			bool first = victim->hurt(2.0f, source);
+			bool second = victim->hurt(2.0f, source);
+			step(30);
+			printf("  %s %s: first hit %s, a second hit at once %s, health %.0f -> %.0f\n", victim->type.name.c_str(), "hit for 2",
+				first ? "lands" : "ignored", second ? "lands (wrong)" : "ignored", health_before, victim->health);
+			printf("  0.5 s later: %.2f blocks further from the attacker\n", length(flat(victim->position - source)) - length(flat(start - source)));
+
+			float path = 0.0f;
+			int blocked_frames = 0;
+			vec3 previous = victim->position;
+			for (int i = 0; i < 150; ++i) {
+				step(1);
+				path += length(flat(victim->position - previous));
+				previous = victim->position;
+				if (victim->blocked) blocked_frames++;
+			}
+			printf("  panicking: %.2f blocks/s over 2.5 s (walks at %.2f), turned back by a drop, water or wall in %d of 150 frames\n",
+				path / 2.5f, victim->type.walk_speed, blocked_frames);
+
+			int hits = 1;
+			while (!victim->dying() && hits < 50) {
+				step(36);
+				if (victim->hurt(2.0f, source)) hits++;
+			}
+			printf("  died after %d hits of 2 (%.0f health)\n", hits, victim->type.max_health);
+			step(20);
+			shoot(*victim, "dying");
+			int frames_after = 20;
+			while (alive(victim) && frames_after < 600) {
+				step(1);
+				frames_after++;
+			}
+			printf("  removed %.2f s after dying\n", frames_after / 60.0f);
+
+			int tested = 0;
+			for (const auto& m : mobs.all()) {
+				if (tested == 3) break;
+				Mob* faller = m.get();
+				if (faller->dying() || faller->hurt_time > 0.0f || faller->panic_time > 0.0f) continue;
+				float drop = 0.0f;
+				for (float lift : { 8.0f, 7.0f, 6.0f, 5.0f }) {
+					faller->position.y += lift;
+					if (faller->fits()) { drop = lift; break; }
+					faller->position.y -= lift;
+				}
+				if (drop == 0.0f) continue;
+				tested++;
+				float health_before_fall = faller->health, y_top = faller->position.y;
+				faller->velocity = vec3(0.0f);
+				//measured at touchdown, before it can walk up or down anything
+				bool falling = false;
+				for (int i = 0; i < 120; ++i) {
+					step(1);
+					if (falling && faller->velocity.y == 0.0f) break;
+					falling = faller->velocity.y < 0.0f;
+				}
+				float fell = y_top - faller->position.y;
+				printf("  %s fell %.2f blocks: health %.0f -> %.0f (expected %.0f)\n", faller->type.name.c_str(), fell,
+					health_before_fall, faller->health, health_before_fall - glm::max(0.0f, std::floor(fell + 0.01f - Mob::safe_fall)));
+			}
 		}
 	}
 
