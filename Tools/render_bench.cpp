@@ -619,7 +619,9 @@ int main(int argc, char** argv) {
 					if (clear && !found) { eye = candidate; found = true; }
 				}
 			}
-			mat4 view_projection = perspective(radians(60.0f), 1200.0f / 700.0f, 0.1f, 180.0f)
+			//first-person shots at the game's own field of view, so the arm sits where the player sees it
+			float fov = name.find("first_person") != string::npos ? 45.0f : 60.0f;
+			mat4 view_projection = perspective(radians(fov), 1200.0f / 700.0f, 0.1f, 180.0f)
 				* lookAt(eye, target, vec3(0, 1, 0));
 			Texture atlas("Resources/Textures/texture_atlas_blocks.png", GL_TEXTURE1, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 			for (Shader* s : { &sm.default_shader, &sm.wave_shader, &sm.foliage_shader, &sm.mob_shader }) {
@@ -1042,7 +1044,7 @@ int main(int argc, char** argv) {
 				Mob hand(player_hand_type(), vec3(0.0f), 0u);
 				vec3 right = normalize(cross(look, vec3(0.0f, 1.0f, 0.0f)));
 				vec3 up = cross(right, look);
-				hand.position = eye + right * 0.38f - up * 0.34f + look * 0.36f;
+				hand.position = eye + right * 0.35f - up * 0.27f + look * 0.6f;
 				hand.yaw = atan2(look.x, look.z);
 				hand.pitch = asin(look.y);
 				custom_eye = eye;

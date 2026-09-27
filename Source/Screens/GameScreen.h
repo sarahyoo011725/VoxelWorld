@@ -206,7 +206,8 @@ public:
 		}
 
 		if (first_person) {
-			//the right arm low in the corner, bobbing as the player walks and swinging on a click
+			//the shoulder just past the lower right corner of the 45 degree view, the arm reaching in toward the middle;
+			//it bobs as the player walks and swings on a click
 			Mob& h = make(hand, player_hand_type());
 			vec3 right = normalize(cross(look, vec3(0.0f, 1.0f, 0.0f)));
 			vec3 up = cross(right, look);
@@ -214,7 +215,7 @@ public:
 			float stride = avatar != nullptr ? avatar->leg_swing : 0.0f;
 			arm_swing = glm::min(1.0f, arm_swing + dt * 4.0f);
 			float swing = sin(arm_swing * 3.14159265f);
-			h.position = player.eye_position() + right * (0.38f + cos(bob) * 0.015f * stride) - up * (0.34f - abs(sin(bob)) * 0.02f * stride) + look * 0.36f;
+			h.position = player.eye_position() + right * (0.35f + cos(bob) * 0.015f * stride) - up * (0.27f - abs(sin(bob)) * 0.02f * stride) + look * 0.6f;
 			h.yaw = look_yaw;
 			h.pitch = look_pitch;
 			//up and in toward the crosshair, and back

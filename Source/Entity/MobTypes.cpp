@@ -326,7 +326,7 @@ namespace {
 		t.hitbox = vec3(0.1f, 0.0f, 0.1f); //no height, so the model's origin is the shoulder itself
 		t.overlay = true;
 		t.model.skin = "Resources/Textures/Mobs/player.png";
-		t.model.parts = { { -1, vec3(0), vec3(-1.5f, -12, -2), vec3(3, 12, 4), ivec2(40, 16), part_motion::head, vec3(-1.3f, 0.35f, 0) } };
+		t.model.parts = { { -1, vec3(0), vec3(-1.5f, -12, -2), vec3(3, 12, 4), ivec2(40, 16), part_motion::head, vec3(-1.62f, 0.2f, 0) } };
 		return t;
 	}
 }
