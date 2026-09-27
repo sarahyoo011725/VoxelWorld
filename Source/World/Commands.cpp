@@ -23,7 +23,7 @@ namespace {
 
 	//friendlier names for the ones people will type most
 	string resolve_alias(const string& name) {
-		if (name == "haku" || name == "eastern" || name == "serpent") return "eastern_dragon";
+		if (name == "haku" || name == "dragon" || name == "eastern" || name == "serpent") return "eastern_dragon";
 		return name;
 	}
 

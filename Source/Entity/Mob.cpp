@@ -376,7 +376,9 @@ void Mob::fly(float dt, float turn) {
 void Mob::ride(float dt) {
 	vec3 forward = vec3(sin(yaw), 0.0f, cos(yaw));
 	vec3 right = vec3(-cos(yaw), 0.0f, sin(yaw));
-	if (type.flies && !flying && control.up) {
+	//a percher can't walk: any push to move lifts it off the ground
+	bool pushed = control.forward != 0.0f || control.strafe != 0.0f;
+	if (type.flies && !flying && (control.up || (can_perch() && pushed))) {
 		flying = true;
 		velocity.y = 6.0f;
 	}

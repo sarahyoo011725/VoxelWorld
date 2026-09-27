@@ -257,8 +257,9 @@ namespace {
 			}
 		}
 		t.leg_tuck = 1.2f;
-		t.seat_part = links[5];
-		t.seat = vec3(0, 3.5f, -4);
+		//astride the neck just behind the horns, near the head
+		t.seat_part = links[0];
+		t.seat = vec3(0, 3.5f, -5);
 		//resting on the ground as in the film: the body level on its four legs, the neck rearing up in a loop
 		//from the front legs and curling over so the head bows, the end of the tail curled up
 		t.perch_rest.assign(p.size(), vec3(0.0f));
