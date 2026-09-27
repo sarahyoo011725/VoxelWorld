@@ -86,6 +86,7 @@ static int report_debug_failure(int, char* message, int*) {
 #include "Screens/PlayerRenderer.h"
 #include "Screens/MobRenderer.h"
 #include "World/MobManager.h"
+#include "World/Commands.h"
 #include <map>
 #include <functional>
 
@@ -586,15 +587,18 @@ int main(int argc, char** argv) {
 
 		//a close look at a mob, lit and shadowed like the game draws it
 		mat4 shot_light = shadow_light; //the aquatic shots are far from the shadow map and switch it off
-		auto shoot = [&](const Mob& subject, const string& name, const MobManager& source) {
+		//from_behind: a chase view from behind and above, which shows a flier's wingspan
+		auto shoot = [&](const Mob& subject, const string& name, const MobManager& source, const Mob* extra = nullptr, bool from_behind = false) {
 			vec3 side = vec3(cos(subject.yaw), 0.0f, -sin(subject.yaw));
 			vec3 ahead = vec3(sin(subject.yaw), 0.0f, cos(subject.yaw));
 			//the first spot beside the mob, a little ahead so the face shows, with a clear line of sight to it
-			vec3 eye = subject.position + side * 3.0f + vec3(0.0f, 0.6f, 0.0f);
-			bool found = false;
+			float back = 3.0f + subject.size.x * 2.5f; //further out for the big ones
+			vec3 eye = subject.position + side * back + vec3(0.0f, 0.6f, 0.0f);
+			bool found = from_behind;
+			if (from_behind) eye = subject.position - ahead * back * 1.3f + vec3(0.0f, back * 0.6f, 0.0f);
 			for (float lift : { 0.6f, 1.6f, 2.6f, 4.0f }) {
 				for (float flip : { 1.0f, -1.0f }) {
-					vec3 candidate = subject.position + side * (3.0f * flip) + ahead * 1.5f + vec3(0.0f, lift, 0.0f);
+					vec3 candidate = subject.position + side * (back * flip) + ahead * 1.5f + vec3(0.0f, lift, 0.0f);
 					bool clear = true;
 					for (float t = 0.15f; t <= 1.0f && clear; t += 0.05f) {
 						Block* b = cm.get_block_worldspace(round(mix(subject.position, candidate, t)));
@@ -625,7 +629,7 @@ int main(int argc, char** argv) {
 			glClearColor(0.6f, 0.75f, 0.95f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			terrain.draw_opaque(view_projection);
-			mob_renderer.build(source.all());
+			mob_renderer.build(source.all(), extra);
 			mob_renderer.draw();
 			terrain.draw_translucent();
 			vector<unsigned char> pixels(1200 * 700 * 3);
@@ -944,6 +948,131 @@ int main(int argc, char** argv) {
 
 			shot_light = shadow_light;
 			load_around(home);
+		}
+		//commands, riding and pet dragons, on open plains so trees don't get in the way
+		printf("\nriding and dragons\n");
+		ivec2 field = ivec2(0);
+		bool found_field = false;
+		for (int r = 0; r <= 2000 && !found_field; r += 24) {
+			for (int a = 0; a < 48 && !found_field; ++a) {
+				int x = (int)(cos(a * 0.1309f) * r), z = (int)(sin(a * 0.1309f) * r);
+				ClimateSample c = get_terrain_generator().sample_climate(x, z);
+				biome_id b = select_biome(c, water_level);
+				if (b != biome_id::plains && b != biome_id::savanna) continue;
+				int h = get_terrain_generator().sample_height(x, z);
+				bool flat = h > water_level + 1;
+				for (int dx = -8; dx <= 40 && flat; dx += 4) {
+					for (int dz = -8; dz <= 8 && flat; dz += 4) {
+						flat = std::abs(get_terrain_generator().sample_height(x + dx, z + dz) - h) <= 3;
+					}
+				}
+				if (flat) {
+					field = ivec2(x, z);
+					found_field = true;
+				}
+			}
+		}
+		if (!found_field) printf("  no open plains within 2000 blocks\n");
+		else {
+		vec3 field_home = position;
+		load_around(vec3(field.x + 0.5f, get_terrain_generator().sample_height(field.x, field.y) + 1.5f, field.y + 0.5f));
+		printf("  on plains at (%d, %d)\n", field.x, field.y);
+		mat4 field_light = mat4(0.0f);
+		field_light[3] = vec4(0.0f, 0.0f, 2.0f, 1.0f);
+		shot_light = field_light;
+		{
+			vec3 eye = position + vec3(0.0f, 0.72f, 0.0f);
+			vec3 look = vec3(1.0f, 0.0f, 0.0f);
+			MobManager pets;
+			MobContext pet_context;
+			pet_context.player_eye = eye;
+			for (const char* line : { "/summon haku", "/summon horse", "/summon unicorn", "/fly" }) {
+				printf("  %-16s -> %s\n", line, run_command(line, pets, eye, look).c_str());
+			}
+			Mob* eastern = nullptr;
+			Mob* steed = nullptr;
+			for (const auto& m : pets.all()) {
+				if (m->type.name == "eastern_dragon") eastern = m.get();
+				if (m->type.name == "horse") steed = m.get();
+			}
+			auto settle = [&](int frames) { for (int i = 0; i < frames; ++i) pets.update(1.0f / 60.0f, pet_context); };
+			settle(60);
+			if (eastern != nullptr) shoot(*eastern, "dragon_eastern_idle", pets);
+
+			//ride a mob with fixed controls for a while; returns how far it went
+			auto ride_for = [&](Mob& mount, RideInput input, int frames) {
+				vec3 start = mount.position;
+				mount.ridden = true;
+				for (int i = 0; i < frames; ++i) {
+					mount.steer(input);
+					settle(1);
+				}
+				return mount.position - start;
+			};
+			Mob rider_model(rider_type(), vec3(0.0f), 0u);
+			auto seat_rider = [&](const Mob& mount) {
+				rider_model.position = mount.seat() + vec3(0.0f, rider_model.size.y * 0.5f, 0.0f);
+				rider_model.yaw = mount.yaw;
+				rider_model.pitch = mount.pitch;
+				rider_model.bank = mount.bank;
+			};
+
+			if (steed != nullptr) {
+				RideInput gallop;
+				gallop.forward = 1.0f;
+				gallop.sprint = true;
+				//along +x, the stretch the field search checked is open
+				gallop.yaw = 1.5708f;
+				gallop.look = vec3(1.0f, 0.0f, 0.0f);
+				vec3 moved = ride_for(*steed, gallop, 180);
+				float top = steed->position.y;
+				RideInput jump = gallop;
+				jump.up = true;
+				jump.forward = 0.0f;
+				for (int i = 0; i < 40; ++i) {
+					steed->steer(jump);
+					settle(1);
+					top = glm::max(top, steed->position.y);
+					jump.up = i < 2;
+				}
+				printf("  horse ridden at a gallop for 3 s: %.1f blocks; a jump rises %.2f blocks\n", length(vec2(moved.x, moved.z)), top - (steed->position.y));
+				seat_rider(*steed);
+				shoot(*steed, "ride_horse", pets, &rider_model);
+				steed->ridden = false;
+			}
+
+			if (eastern != nullptr) {
+				RideInput cruise;
+				cruise.forward = 1.0f;
+				cruise.yaw = eastern->yaw - 0.8f;
+				cruise.look = normalize(vec3(sin(cruise.yaw), 0.3f, cos(cruise.yaw)));
+				vec3 moved = ride_for(*eastern, cruise, 180);
+				printf("  eastern dragon ridden for 3 s: %.1f blocks, %.1f up\n", length(moved), moved.y);
+				seat_rider(*eastern);
+				shoot(*eastern, "ride_eastern_flying", pets, &rider_model);
+				eastern->ridden = false;
+				float before = eastern->position.y;
+				settle(180);
+				printf("  let go, it hovers: %.2f blocks of drift in height over 3 s (flying: %s)\n", eastern->position.y - before, eastern->flying ? "yes" : "no");
+			}
+
+			//walk the player 40 blocks away; the pets should come after them
+			pet_context.player_eye = eye + vec3(40.0f, 6.0f, 0.0f);
+			for (Mob* pet : { eastern }) {
+				if (pet == nullptr) continue;
+				float start = distance(pet->position, pet_context.player_eye);
+				int frames = 0;
+				while (distance(pet->position, pet_context.player_eye) > 6.0f && frames < 60 * 20) {
+					settle(1);
+					frames++;
+				}
+				printf("  %s %.0f blocks from the player: %s after %.1f s\n", pet->type.name.c_str(), start,
+					distance(pet->position, pet_context.player_eye) <= 6.0f ? "caught up" : "still behind", frames / 60.0f);
+			}
+		}
+
+		shot_light = shadow_light;
+		load_around(field_home);
 		}
 		//the polar sea: ice floes, and snow seals on and around them
 		printf("\npolar sea (3600 frames simulated at 60 fps)\n");
