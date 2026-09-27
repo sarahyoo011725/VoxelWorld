@@ -25,6 +25,8 @@ private:
 	MobManager mobs;
 	MobRenderer mob_renderer;
 	MobSoundPlayer mob_sounds;
+	bool attack_was_down = false;
+	const float attack_damage = 2.0f;
 	double last_mob_update = 0.0;
 	Texture texture = Texture("Resources/Textures/texture_atlas_blocks.png", GL_TEXTURE1, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 	bool wireframe = false;
@@ -55,6 +57,20 @@ public:
 		sm.mob_shader.set_uniform_1i("part_matrices", MobRenderer::matrix_unit);
 		sm.mob_shadow_shader.activate();
 		sm.mob_shadow_shader.set_uniform_1i("part_matrices", MobRenderer::matrix_unit);
+	}
+
+	/*
+		a mob under the crosshair takes the click instead of the block behind it: the
+		block ray is cut short at the mob, and a fresh left click hits it
+	*/
+	void update_attack() {
+		float distance;
+		Mob* target = mobs.pick(player.eye_position(), player.camera.direction, player.reach(), distance);
+		player.limit_reach(target != nullptr ? distance : player.reach());
+
+		bool attack_down = glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+		if (target != nullptr && attack_down && !attack_was_down) target->hurt(attack_damage, player.position);
+		attack_was_down = attack_down;
 	}
 
 	void gl_settings() {
@@ -123,6 +139,7 @@ public:
 
 		//before anything is drawn, so this frame shows this frame's input rather than the last one's
 		if (window_setting->window_active) {
+			update_attack();
 			player.update();
 			sm.frame_buffer_shader.activate();
 			sm.frame_buffer_shader.set_uniform_1i("is_underwater", player.is_underwater());
@@ -136,7 +153,7 @@ public:
 		mob_context.player_eye = player.eye_position();
 		mobs.update(mob_dt, mob_context);
 		for (const auto& m : mobs.all()) {
-			if (m->ambient_sound >= 0) mob_sounds.play(m->type.sounds.ambient[m->ambient_sound], m->position, player.camera.view, 0.8f + 0.4f * (rand() / (float)RAND_MAX));
+			if (const string* sound = m->take_sound()) mob_sounds.play(*sound, m->position, player.camera.view, 0.8f + 0.4f * (rand() / (float)RAND_MAX));
 		}
 		mob_renderer.build(mobs.all());
 

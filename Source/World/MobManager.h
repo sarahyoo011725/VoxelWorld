@@ -15,6 +15,8 @@ public:
 	MobManager();
 	void update(float dt, const MobContext& context);
 	const vector<unique_ptr<Mob>>& all() const { return mobs; }
+	//the nearest living mob whose hitbox the ray enters within max_distance, or null
+	Mob* pick(vec3 origin, vec3 direction, float max_distance, float& distance) const;
 
 	int max_mobs = 20;
 	float spawn_min_distance = 20.0f; //out of the player's immediate view

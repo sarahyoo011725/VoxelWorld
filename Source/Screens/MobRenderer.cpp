@@ -21,6 +21,15 @@ namespace {
 	}
 
 	//a point on a face of the unit box, from s across the skin rect (left to right) and t down it
+	//half the widest part, in blocks: how far a toppled mob's side sits from its centre line
+	float size_of_flank(const Mob& mob) {
+		float half = 0.0f;
+		for (const ModelPart& part : mob.type.model.parts) {
+			if (part.parent < 0) half = glm::max(half, glm::max(std::abs(part.from.x), std::abs(part.from.x + part.size.x)));
+		}
+		return half / 16.0f;
+	}
+
 	vec3 face_point(int face, float s, float t) {
 		switch (face) {
 		case 0: return vec3(1, 1 - t, s);
@@ -87,10 +96,16 @@ MobRenderer::TypeMesh& MobRenderer::mesh_for(const MobType& type) {
 	return result;
 }
 
-//a matrix per part, parents first, then the daylight at the mob
+//a matrix per part, parents first, then the daylight at the mob and whether it flashes red
 void MobRenderer::pose(const Mob& mob, vector<vec4>& out) const {
 	const vector<ModelPart>& parts = mob.type.model.parts;
 	mat4 root = rotate(translate(mat4(1.0f), mob.feet()), mob.yaw, vec3(0, 1, 0));
+	if (mob.dying()) {
+		//topples onto its side, fast at first like a fall
+		float topple = sqrt(glm::min(1.0f, mob.death_time / 0.6f));
+		//raised as it goes over, so the flank it lands on rests on the ground instead of in it
+		root = rotate(translate(root, vec3(0.0f, topple * size_of_flank(mob), 0.0f)), topple * 1.5707963f, vec3(0, 0, 1));
+	}
 	float swing = sin(mob.walk_phase) * 0.5f * mob.leg_swing;
 
 	vector<mat4> matrices(parts.size());
@@ -120,7 +135,8 @@ void MobRenderer::pose(const Mob& mob, vector<vec4>& out) const {
 		ivec3 local = world_to_local_coord(mob.position);
 		light = daylight_level(chunk->get_height(local.x, local.z), (int)std::round(mob.position.y)) / 15.0f;
 	}
-	out.push_back(vec4(light, 0.0f, 0.0f, 0.0f));
+	float flash = mob.hurt_time > 0.0f || mob.dying() ? 1.0f : 0.0f;
+	out.push_back(vec4(light, flash, 0.0f, 0.0f));
 }
 
 void MobRenderer::build(const vector<unique_ptr<Mob>>& mobs) {

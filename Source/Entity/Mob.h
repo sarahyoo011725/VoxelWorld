@@ -5,6 +5,7 @@
 #include "PlayerPhysics.h"
 #include <memory>
 #include <random>
+#include <string>
 #include <vector>
 
 /*
@@ -20,16 +21,22 @@ public:
 	vec3 feet() const { return position - vec3(0.0f, size.y * 0.5f, 0.0f); }
 	//the hitbox can be wider than a block column, so a clear column alone isn't enough to spawn in
 	bool fits() { return physics.is_position_clear(*this); }
-	//no drop of more than two blocks and no water one step along this direction
+	//no wall, no drop of more than two blocks and no water one step along this direction
 	bool path_is_safe(vec3 direction) const;
 	float random_between(float lo, float hi);
 	float wrap_angle(float a) const;
+	//a hit from something at `source`: knocks the mob away from it and sends it fleeing.
+	//false while it is still recovering from the last hit, or already dying
+	bool hurt(float amount, vec3 source);
+	bool dying() const { return health <= 0.0f; }
+	bool finished_dying() const { return death_time >= death_duration; }
 
 	const MobType& type;
 
 	//steering, set by goals
 	float target_yaw = 0.0f;
 	float move = 0.0f; //0 stand, 1 walk at full speed
+	float turn_boost = 1.0f; //multiplies the type's turn rate, e.g. to spin round and flee
 	float target_head_yaw = 0.0f; //relative to the body
 	float target_head_pitch = 0.0f; //positive looks down
 	bool blocked = false; //the last step was refused: unsafe ground or a wall
@@ -41,12 +48,26 @@ public:
 	float walk_phase = 0.0f;
 	float leg_swing = 0.0f; //0 standing still, 1 walking at full speed
 
-	//sound requests, collected by the manager each frame
-	int ambient_sound = -1;
+	float health = 0.0f;
+	float hurt_time = 0.0f; //counts down after a hit: the red flash, and no further damage until it ends
+	float death_time = 0.0f; //seconds since health ran out
+	float panic_time = 0.0f; //counts down after a hit; while it runs the mob flees from `threat`
+	vec3 threat = vec3(0.0f);
+
+	static constexpr float invulnerable_time = 0.5f;
+	static constexpr float death_duration = 1.0f;
+	static constexpr float panic_duration = 5.0f;
+	static constexpr float safe_fall = 3.0f; //blocks a mob can drop without harm
+
+	//the sound the mob wants played since the last call, or null
+	const string* take_sound() { const string* s = sound; sound = nullptr; return s; }
 
 private:
 	void run_goals(float dt, const MobContext& context);
 	void locomote(float dt);
+	void take_damage(float amount);
+	void track_fall(float y_before);
+	const string* pick_sound(const vector<string>& files);
 
 	PlayerPhysics physics;
 	std::mt19937 rng;
@@ -55,4 +76,8 @@ private:
 	vec3 last_position = vec3(0.0f);
 	float stuck_time = 0.0f;
 	float ambient_timer = 0.0f;
+	vec3 knockback = vec3(0.0f); //horizontal push from the last hit, fading out
+	bool was_on_ground = true;
+	const string* sound = nullptr;
+	float fall_start_y = 0.0f;
 };

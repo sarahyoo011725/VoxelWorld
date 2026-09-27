@@ -7,6 +7,44 @@ namespace {
 	}
 }
 
+bool PanicGoal::can_start(Mob& mob, const MobContext& context, float dt) {
+	return mob.panic_time > 0.0f;
+}
+
+bool PanicGoal::keep_going(Mob& mob, const MobContext& context) {
+	return mob.panic_time > 0.0f;
+}
+
+void PanicGoal::flee(Mob& mob) {
+	vec3 away = mob.position - mob.threat;
+	float heading = atan2(away.x, away.z);
+	mob.target_yaw = mob.wrap_angle(heading + mob.random_between(-0.35f, 0.35f));
+	time_left = mob.random_between(0.8f, 1.6f);
+}
+
+void PanicGoal::start(Mob& mob, const MobContext& context) {
+	mob.move = speed;
+	mob.turn_boost = 3.0f;
+	mob.target_head_yaw = mob.target_head_pitch = 0.0f;
+	flee(mob);
+}
+
+void PanicGoal::tick(Mob& mob, const MobContext& context, float dt) {
+	Goal::tick(mob, context, dt);
+	if (mob.blocked) {
+		mob.target_yaw = mob.wrap_angle(mob.yaw + mob.random_between(1.6f, 4.7f));
+		time_left = mob.random_between(0.8f, 1.6f);
+	}
+	else if (time_left <= 0.0f) {
+		flee(mob);
+	}
+}
+
+void PanicGoal::stop(Mob& mob) {
+	mob.move = 0.0f;
+	mob.turn_boost = 1.0f;
+}
+
 bool WanderGoal::can_start(Mob& mob, const MobContext& context, float dt) {
 	return roll(mob, chance, dt);
 }

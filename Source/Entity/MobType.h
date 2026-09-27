@@ -65,6 +65,7 @@ struct MobType {
 	vec3 hitbox = vec3(0.9f);
 	float walk_speed = 1.0f; //blocks per second
 	float turn_rate = 2.5f; //radians per second
+	float max_health = 10.0f;
 	MobModel model;
 	MobSounds sounds;
 	SpawnRule spawn;

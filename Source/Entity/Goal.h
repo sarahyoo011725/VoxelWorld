@@ -34,6 +34,21 @@ protected:
 	float time_left = 0.0f;
 };
 
+//after being hurt, runs from whatever hit it, weaving a little and turning off walls and edges
+class PanicGoal : public Goal {
+public:
+	PanicGoal(int priority, float speed = 1.8f) : Goal(priority), speed(speed) {}
+	bool can_start(Mob& mob, const MobContext& context, float dt) override;
+	bool keep_going(Mob& mob, const MobContext& context) override;
+	void start(Mob& mob, const MobContext& context) override;
+	void tick(Mob& mob, const MobContext& context, float dt) override;
+	void stop(Mob& mob) override;
+
+private:
+	void flee(Mob& mob);
+	float speed;
+};
+
 //walks a few blocks on a random heading, turning away from drops, water and walls
 class WanderGoal : public Goal {
 public:

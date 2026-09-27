@@ -17,6 +17,9 @@ public:
 	vec3 placement_position = vec3(0.0f);
 	Inventory inventory;
 	void update(vec3 origin, vec3 direction);
+	float reach() const { return max_ray_length; }
+	//blocks past this distance can't be hovered, e.g. behind a mob in the way
+	float reach_limit = 4.5f;
 private:
 	void raycast(vec3 origin, vec3 direction);
 	void interact();

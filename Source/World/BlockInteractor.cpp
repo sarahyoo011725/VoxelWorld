@@ -78,7 +78,7 @@ void BlockInteractor::raycast(vec3 world_origin, vec3 direction) {
 	float dist = 0.0f;
 	Block* previous = nullptr;
 	vec3 previous_position = vec3(0.0f);
-	while (dist < max_ray_length) {
+	while (dist < glm::min(max_ray_length, reach_limit)) {
 		Block* block = cm.get_block_worldspace(current);
 		if (block != nullptr) {
 			hovered_block = block;

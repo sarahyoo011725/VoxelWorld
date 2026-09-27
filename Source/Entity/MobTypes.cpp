@@ -28,6 +28,7 @@ namespace {
 		t.name = "sheep";
 		t.hitbox = vec3(0.9f, 1.3f, 0.9f);
 		t.walk_speed = 1.1f;
+		t.max_health = 8.0f;
 		t.model.skin = "Resources/Textures/Mobs/sheep.png";
 		t.model.parts = {
 			{ -1, vec3(0, 9, 0), vec3(-5, 0, -8), vec3(10, 9, 16), ivec2(0, 0) },
@@ -35,7 +36,7 @@ namespace {
 		};
 		add_legs(t.model.parts, vec3(4, 9, 4), 9, 3, 5);
 		t.spawn = { grassy, 12, 2, 4 };
-		t.goals = { goal<WanderGoal>(5), goal<GrazeGoal>(5), goal<LookAtPlayerGoal>(5) };
+		t.goals = { goal<PanicGoal>(1), goal<WanderGoal>(5), goal<GrazeGoal>(5), goal<LookAtPlayerGoal>(5) };
 		return t;
 	}
 
@@ -54,7 +55,7 @@ namespace {
 		};
 		add_legs(t.model.parts, vec3(4, 12, 4), 12, 4, 6);
 		t.spawn = { grassy, 8, 2, 4 };
-		t.goals = { goal<WanderGoal>(5), goal<GrazeGoal>(5), goal<LookAtPlayerGoal>(5) };
+		t.goals = { goal<PanicGoal>(1), goal<WanderGoal>(5), goal<GrazeGoal>(5), goal<LookAtPlayerGoal>(5) };
 		return t;
 	}
 
@@ -72,7 +73,7 @@ namespace {
 		};
 		add_legs(t.model.parts, vec3(4, 6, 4), 6, 3, 5);
 		t.spawn = { grassy, 10, 2, 4 };
-		t.goals = { goal<WanderGoal>(5), goal<LookAtPlayerGoal>(5) };
+		t.goals = { goal<PanicGoal>(1), goal<WanderGoal>(5), goal<LookAtPlayerGoal>(5) };
 		return t;
 	}
 }

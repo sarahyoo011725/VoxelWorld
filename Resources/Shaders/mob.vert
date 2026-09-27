@@ -8,7 +8,7 @@ layout (location = 3) in float vertex_part;
 
 uniform samplerBuffer part_matrices;
 uniform int first_texel;
-uniform int texels_per_mob; //4 per part, then one holding the mob's daylight
+uniform int texels_per_mob; //4 per part, then one holding the mob's daylight and hurt flash
 uniform mat4 cam_matrix;
 uniform vec3 cam_pos;
 uniform float fog_start;
@@ -34,8 +34,9 @@ void main() {
 	gl_Position = cam_matrix * world;
 	tex_coord = vec2(0.0);
 	tile_origin = vertex_uv;
-	tint = vec3(1.0);
-	block_light = texelFetch(part_matrices, base + texels_per_mob - 1).x;
+	vec4 extra = texelFetch(part_matrices, base + texels_per_mob - 1);
+	tint = mix(vec3(1.0), vec3(1.0, 0.45, 0.45), extra.y);
+	block_light = extra.x;
 	block_glow = 0.0;
 	world_pos = world.xyz;
 	normal = mat3(model) * vertex_normal;

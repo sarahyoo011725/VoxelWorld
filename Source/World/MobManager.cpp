@@ -70,11 +70,37 @@ void MobManager::try_spawn_herd(vec3 player_position) {
 	}
 }
 
+Mob* MobManager::pick(vec3 origin, vec3 direction, float max_distance, float& distance) const {
+	Mob* nearest = nullptr;
+	distance = max_distance;
+	for (const auto& m : mobs) {
+		if (m->dying()) continue;
+		//slab test: the ray is inside the box between its latest entry and earliest exit
+		vec3 low = m->position - m->size * 0.5f, high = m->position + m->size * 0.5f;
+		float enter = 0.0f, exit = max_distance;
+		for (int axis = 0; axis < 3 && enter <= exit; ++axis) {
+			if (std::abs(direction[axis]) < 1e-6f) {
+				if (origin[axis] < low[axis] || origin[axis] > high[axis]) enter = exit + 1.0f;
+				continue;
+			}
+			float t0 = (low[axis] - origin[axis]) / direction[axis];
+			float t1 = (high[axis] - origin[axis]) / direction[axis];
+			enter = glm::max(enter, glm::min(t0, t1));
+			exit = glm::min(exit, glm::max(t0, t1));
+		}
+		if (enter <= exit && enter < distance) {
+			distance = enter;
+			nearest = m.get();
+		}
+	}
+	return nearest;
+}
+
 void MobManager::update(float dt, const MobContext& context) {
 	vec3 player = context.player_eye;
 	mobs.erase(remove_if(mobs.begin(), mobs.end(), [&](const unique_ptr<Mob>& m) {
 		vec2 offset = vec2(m->position.x - player.x, m->position.z - player.z);
-		return length(offset) > despawn_distance || !chunk_ready(m->position) || m->position.y < -10.0f;
+		return m->finished_dying() || length(offset) > despawn_distance || !chunk_ready(m->position) || m->position.y < -10.0f;
 	}), mobs.end());
 
 	for (auto& m : mobs) m->update(dt, context);
