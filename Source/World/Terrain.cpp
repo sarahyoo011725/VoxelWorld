@@ -1,4 +1,5 @@
 #include "Terrain.h"
+#include "Onsen.h"
 #include <algorithm>
 #include <chrono>
 
@@ -409,4 +410,6 @@ void Terrain::spawn_structures(Chunk* chunk) {
 			}
 		}
 	}
+	//after the vegetation, so the terrace is clear of anything that grew there
+	onsen::build_in_chunk(chunk);
 }

@@ -19,6 +19,8 @@ void audio::play_block_sound_effect(block_type type) {
 		sound = sound_effect::dirt;
 		break;
 	case wood:
+	case planks:
+	case red_lacquer:
 		sound = sound_effect::wood;
 		break;
 	case stone:
@@ -31,6 +33,8 @@ void audio::play_block_sound_effect(block_type type) {
 	case diamond_ore:
 	case glowstone:
 	case ice:
+	case roof_tile:
+	case stone_brick:
 		sound = sound_effect::stone;
 		break;
 	case sand:

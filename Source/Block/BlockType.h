@@ -35,6 +35,11 @@ enum block_type : unsigned char {
 	lava,
 	glowstone,
 	ice, //floes on polar seas; see-through like glass
+	//building blocks for the hot spring
+	planks,
+	red_lacquer, //vermilion, for torii gates
+	roof_tile,
+	stone_brick,
 };
 
 //names block faces
@@ -109,5 +114,9 @@ namespace {
 		{lava, {{Front,vec2(14,15)},{Back,vec2(14,15)},{Left,vec2(14,15)},{Right,vec2(14,15)},{Top,vec2(14,15)},{Bottom,vec2(14,15)}}},
 		{glowstone, {{Front,vec2(10,7)},{Back,vec2(10,7)},{Left,vec2(10,7)},{Right,vec2(10,7)},{Top,vec2(10,7)},{Bottom,vec2(10,7)}}},
 		{ice, {{Front,vec2(4,5)},{Back,vec2(4,5)},{Left,vec2(4,5)},{Right,vec2(4,5)},{Top,vec2(4,5)},{Bottom,vec2(4,5)}}},
+		{planks, {{Front,vec2(5,1)},{Back,vec2(5,1)},{Left,vec2(5,1)},{Right,vec2(5,1)},{Top,vec2(5,1)},{Bottom,vec2(5,1)}}},
+		{red_lacquer, {{Front,vec2(2,9)},{Back,vec2(2,9)},{Left,vec2(2,9)},{Right,vec2(2,9)},{Top,vec2(2,9)},{Bottom,vec2(2,9)}}},
+		{roof_tile, {{Front,vec2(3,8)},{Back,vec2(3,8)},{Left,vec2(3,8)},{Right,vec2(3,8)},{Top,vec2(3,8)},{Bottom,vec2(3,8)}}},
+		{stone_brick, {{Front,vec2(7,4)},{Back,vec2(7,4)},{Left,vec2(7,4)},{Right,vec2(7,4)},{Top,vec2(7,4)},{Bottom,vec2(7,4)}}},
 	};
 }

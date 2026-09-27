@@ -62,6 +62,7 @@ add_executable(VoxelWorld
 	Source/World/ChunkManager.cpp
 	Source/World/MobManager.cpp
 	Source/World/Commands.cpp
+	Source/World/Onsen.cpp
 	Source/World/StructureGenerator.cpp
 	Source/World/Biome.cpp
 	Source/World/SectionVisibility.cpp
@@ -135,6 +136,7 @@ add_executable(render_bench
 	Source/Screens/MobRenderer.cpp
 	Source/World/MobManager.cpp
 	Source/World/Commands.cpp
+	Source/World/Onsen.cpp
 	Source/Screens/PlayerRenderer.cpp
 	Source/Buffers/EBO.cpp
 	Source/Buffers/FBO.cpp

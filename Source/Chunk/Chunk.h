@@ -126,6 +126,8 @@ public:
 	Chunk& operator=(const Chunk&) = delete;
 	~Chunk();
 	int get_height(int x, int z) const { return height_map[height_index(x, z)]; }
+	//for a structure that reshapes the ground, so daylight is measured from the new surface
+	void set_height(int x, int z, int h) { height_map[height_index(x, z)] = h; }
 	biome_id get_biome(int x, int z) const { return biome_map[height_index(x, z)]; }
 
 	/*
