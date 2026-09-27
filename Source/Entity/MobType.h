@@ -100,11 +100,17 @@ struct MobType {
 	float dry_out_time = -1.0f; //seconds a water mob lasts out of water before it starts to suffocate; negative never
 
 	bool flies = false; //takes to the air to follow its owner, or when ridden and told to climb
-	bool hovers = false; //a flier that never lands: it drifts in the air when idle
+	bool hovers = false; //a flier that drifts in the air when idle, and never lands unless it has a perch pose
 	float fly_speed = 0.0f; //blocks per second
+	//a hovering flier with a pose of its own for resting on the ground: these rest angles are added to the
+	//parts' own while it stands, and the root moves by the offset (pixels); both blend away as it takes off
+	vector<vec3> perch_rest;
+	vec3 perch_offset = vec3(0.0f);
+	float leg_tuck = 0.0f; //radians the legs fold back in flight
 
 	bool rideable = false;
-	vec3 seat = vec3(0.0f); //where the rider sits, in model pixels from the feet
+	vec3 seat = vec3(0.0f); //where the rider sits, in model pixels from the feet, or from seat_part's pivot
+	int seat_part = -1; //the part the rider sits on, for a body that bends under them
 	float ride_speed = 0.0f; //on the ground, blocks per second
 	float jump_speed = 0.0f; //upward speed of a ridden jump
 	bool pet = false; //never spawns in the wild; one summoned is the player's, follows them and never despawns

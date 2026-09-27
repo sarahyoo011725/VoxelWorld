@@ -26,6 +26,26 @@ Mob::Mob(const MobType& type, vec3 feet_position, uint32_t seed) : type(type), r
 	flying = type.hovers;
 	ambient_timer = random_between(0.3f, 1.7f) * type.sounds.ambient_interval;
 	for (const auto& make : type.goals) goals.push_back(make());
+	//a serpent's spine: the link its first serpent link hangs from, then each part hanging from the last
+	//that bends with the body, the tail included
+	const vector<ModelPart>& parts = type.model.parts;
+	auto first = std::find_if(parts.begin(), parts.end(), [](const ModelPart& p) { return p.motion == part_motion::serpent; });
+	if (first != parts.end() && first->parent >= 0) {
+		spine_chain.push_back(first->parent);
+		for (bool grew = true; grew;) {
+			grew = false;
+			for (size_t i = 0; i < parts.size() && !grew; ++i) {
+				bool bends = parts[i].motion == part_motion::serpent || parts[i].motion == part_motion::tail_sway;
+				if (parts[i].parent == spine_chain.back() && bends) {
+					spine_chain.push_back((int)i);
+					grew = true;
+				}
+			}
+		}
+		for (size_t k = 1; k < spine_chain.size(); ++k) spine_length.push_back(length(parts[spine_chain[k]].pivot) / 16.0f);
+		spine_length.push_back(spine_length.back());
+		spine.assign(parts.size(), vec2(0.0f));
+	}
 	stable_sort(goals.begin(), goals.end(), [](const unique_ptr<Goal>& a, const unique_ptr<Goal>& b) { return a->priority < b->priority; });
 }
 
@@ -98,7 +118,94 @@ mat4 Mob::body_matrix() const {
 }
 
 vec3 Mob::seat() const {
-	return vec3(body_matrix() * vec4(type.seat / 16.0f, 1.0f));
+	if (type.seat_part < 0) return vec3(body_matrix() * vec4(type.seat / 16.0f, 1.0f));
+	vector<int> lineage;
+	for (int p = type.seat_part; p >= 0; p = type.model.parts[p].parent) lineage.push_back(p);
+	mat4 m = body_matrix();
+	for (auto it = lineage.rbegin(); it != lineage.rend(); ++it) m = part_frame(*it, m);
+	return vec3(m * vec4(type.seat / 16.0f, 1.0f));
+}
+
+mat4 Mob::part_frame(int i, const mat4& parent) const {
+	const ModelPart& part = type.model.parts[i];
+	vec3 pivot = part.pivot;
+	vec3 rest = part.rest;
+	float landed = type.perch_rest.empty() ? 0.0f : 1.0f - wing_spread;
+	if (landed > 0.0f) {
+		if (part.parent < 0) pivot += type.perch_offset * landed;
+		if ((size_t)i < type.perch_rest.size()) rest += type.perch_rest[i] * landed;
+	}
+	mat4 m = translate(parent, pivot / 16.0f);
+	if (rest != vec3(0.0f)) m = rotate(rotate(rotate(m, rest.z, vec3(0, 0, 1)), rest.y, vec3(0, 1, 0)), rest.x, vec3(1, 0, 0));
+	if (!spine.empty() && spine[i] != vec2(0.0f)) m = rotate(rotate(m, spine[i].x, vec3(0, 1, 0)), spine[i].y, vec3(1, 0, 0));
+	return m;
+}
+
+//where the front of the body was, this many blocks back along the trail; past its end, straight on behind
+vec3 Mob::trail_point(float along) const {
+	for (size_t k = 1; k < trail.size(); ++k) {
+		float step = length(trail[k - 1] - trail[k]);
+		if (along <= step && step > 0.0f) return mix(trail[k - 1], trail[k], along / step);
+		along -= step;
+	}
+	vec3 behind = -vec3(sin(yaw) * cos(pitch), sin(pitch), cos(yaw) * cos(pitch));
+	return trail.back() + behind * along;
+}
+
+/*
+	a serpent swims through the air: its head weaves an S that stays where it was drawn, and every link
+	lies along the path the head took, so the body slides through the same bends behind it. hovering, a
+	slow wave runs down the body instead; resting on the ground, only the tail stirs
+*/
+void Mob::animate_spine(float dt) {
+	if (spine_chain.empty()) return;
+	mat4 body = body_matrix();
+	vec3 anchor = vec3(body * vec4(type.model.parts[spine_chain[0]].pivot / 16.0f, 1.0f));
+	float moved = length(anchor - last_anchor);
+	if (moved > 4.0f) {
+		trail.clear();
+		moved = 0.0f;
+	}
+	last_anchor = anchor;
+	weave_distance += moved;
+
+	float speed = length(velocity);
+	float follow = glm::clamp(speed / 3.0f, 0.0f, 1.0f);
+	//the S is about a body long; flying fast it flattens out, which also keeps a rider from being swung about
+	float sway = glm::clamp(speed / 4.0f, 0.0f, 1.0f) * glm::clamp(8.0f / glm::max(speed, 0.001f), 0.4f, 1.0f) * (ridden ? 0.5f : 1.1f);
+	float phase = weave_distance * 2.0f * half_turn / 7.0f;
+	vec3 side = vec3(cos(yaw), 0.0f, -sin(yaw));
+	vec3 front = anchor + side * (sin(phase) * sway) + vec3(0.0f, sin(phase * 0.5f + 1.3f) * sway * 0.45f, 0.0f);
+	if (trail.empty() || length(front - trail.front()) > 0.08f) trail.push_front(front);
+	float total = 1.0f;
+	for (float l : spine_length) total += l;
+	float run = 0.0f;
+	for (size_t k = 1; k < trail.size(); ++k) {
+		run += length(trail[k - 1] - trail[k]);
+		if (run > total) {
+			trail.resize(k + 1);
+			break;
+		}
+	}
+
+	mat3 frame = mat3(body);
+	float along = 0.0f;
+	for (size_t k = 0; k < spine_chain.size(); ++k) {
+		vec3 direction = trail_point(along) - trail_point(along + spine_length[k]);
+		along += spine_length[k];
+		vec2 path = vec2(0.0f);
+		if (length(direction) > 0.0001f) {
+			vec3 local = transpose(frame) * normalize(direction);
+			path = glm::clamp(vec2(atan2(local.x, local.z), -asin(glm::clamp(local.y, -1.0f, 1.0f))), vec2(-0.7f), vec2(0.7f));
+		}
+		float reach = (float)k / spine_chain.size();
+		vec2 idle = vec2(sin(flap_phase * 0.9f - k * 0.55f) * (0.12f + 0.12f * reach), sin(flap_phase * 0.6f - k * 0.4f) * 0.06f);
+		vec2 resting = vec2(reach > 0.75f ? sin(flap_phase * 0.5f - k * 0.5f) * 0.12f : 0.0f, 0.0f);
+		vec2 target = mix(resting, mix(idle, path, follow), wing_spread);
+		vec2& bend = spine[spine_chain[k]];
+		bend = mix(bend, target, glm::min(1.0f, dt * 12.0f));
+		frame = frame * mat3(rotate(rotate(mat4(1.0f), bend.x, vec3(0, 1, 0)), bend.y, vec3(1, 0, 0)));
+	}
 }
 
 void Mob::leap(float up, float forward) {
@@ -199,6 +306,11 @@ void Mob::locomote(float dt) {
 	yaw = wrap_angle(yaw + glm::clamp(turn, -max_turn, max_turn));
 
 	blocked = false;
+	//a percher rests until it has somewhere to go, then lifts off
+	if (!flying && !ridden && can_perch() && move > 0.0f) {
+		flying = true;
+		velocity.y = 3.0f;
+	}
 	if (ridden) ride(dt);
 	else if (flying) fly(dt, turn);
 	else if (in_water && type.lives != habitat::land) swim(dt, turn);
@@ -234,14 +346,23 @@ void Mob::fly(float dt, float turn) {
 		wanted = heading * type.fly_speed * 0.6f * move;
 	}
 	else if (type.hovers) {
-		wanted.y = sin(flap_phase * 0.5f) * 0.3f;
+		//with nowhere to go a percher settles to the ground, unless there's only water under it
+		bool water_below = false;
+		for (int drop = 1; drop < 24; ++drop) {
+			Block* b = block_at(position - vec3(0.0f, (float)drop, 0.0f));
+			if (b != nullptr && b->type != none) {
+				water_below = b->type == water;
+				break;
+			}
+		}
+		wanted.y = can_perch() && !water_below ? -2.0f : sin(flap_phase * 0.5f) * 0.3f;
 	}
 	else {
 		wanted.y = -2.5f;
 	}
 	velocity = mix(velocity, wanted + knockback, glm::min(1.0f, dt * 2.5f));
 	physics.integrate(*this, dt, true, 0.0f);
-	if (!type.hovers && move == 0.0f && physics.on_ground) flying = false;
+	if ((!type.hovers || can_perch()) && move == 0.0f && physics.on_ground) flying = false;
 	leg_swing = approach(leg_swing, 0.0f, dt * 4.0f);
 }
 
@@ -260,7 +381,7 @@ void Mob::ride(float dt) {
 		velocity = mix(velocity, wanted + knockback, glm::min(1.0f, dt * 2.5f));
 		physics.integrate(*this, dt, true, 0.0f);
 		//touching down with descent held lands a flier that can land
-		if (!type.hovers && physics.on_ground && control.down) flying = false;
+		if ((!type.hovers || can_perch()) && physics.on_ground && control.down) flying = false;
 		float along = length(vec2(velocity.x, velocity.z));
 		pitch = approach(pitch, glm::clamp(atan2(velocity.y, glm::max(along, 1.0f)), -0.8f, 0.8f), dt * 4.0f);
 		leg_swing = approach(leg_swing, 0.0f, dt * 4.0f);
@@ -358,6 +479,7 @@ void Mob::update(float dt, const MobContext& context) {
 	else run_goals(dt, context);
 	float y_before = position.y;
 	locomote(dt);
+	animate_spine(dt);
 	track_fall(y_before);
 	dry_out(dt);
 

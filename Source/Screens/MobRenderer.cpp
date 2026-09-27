@@ -159,26 +159,24 @@ void MobRenderer::pose(const Mob& mob, vector<vec4>& out) const {
 	float wing_lift = mix(0.25f, 0.1f + beat * 0.75f, spread);
 	float tip_sweep = 1.0f * (1.0f - spread);
 	float tip_lift = spread * sin(mob.flap_phase - 0.9f) * 0.5f;
+	float tuck = spread * mob.type.leg_tuck;
 
 	vector<mat4> matrices(parts.size());
 	for (size_t i = 0; i < parts.size(); ++i) {
 		const ModelPart& part = parts[i];
-		mat4 m = translate(part.parent < 0 ? root : matrices[part.parent], part.pivot / 16.0f);
-		if (part.rest != vec3(0.0f)) {
-			m = rotate(rotate(rotate(m, part.rest.z, vec3(0, 0, 1)), part.rest.y, vec3(0, 1, 0)), part.rest.x, vec3(1, 0, 0));
-		}
+		mat4 m = mob.part_frame((int)i, part.parent < 0 ? root : matrices[part.parent]);
 		switch (part.motion) {
 		case part_motion::head:
 			m = rotate(rotate(m, mob.head_yaw, vec3(0, 1, 0)), mob.head_pitch, vec3(1, 0, 0));
 			break;
 		case part_motion::leg_forward:
-			m = rotate(m, swing, vec3(1, 0, 0));
+			m = rotate(m, swing + tuck, vec3(1, 0, 0));
 			break;
 		case part_motion::leg_back:
-			m = rotate(m, -swing, vec3(1, 0, 0));
+			m = rotate(m, -swing + tuck, vec3(1, 0, 0));
 			break;
 		case part_motion::tail_sway:
-			m = rotate(m, tail, vec3(0, 1, 0));
+			if (mob.spine.empty()) m = rotate(m, tail, vec3(0, 1, 0));
 			break;
 		case part_motion::tail_beat:
 			m = rotate(m, tail * 0.7f, vec3(1, 0, 0));
@@ -202,9 +200,11 @@ void MobRenderer::pose(const Mob& mob, vector<vec4>& out) const {
 			m = rotate(rotate(m, -tip_sweep, vec3(0, 1, 0)), -tip_lift, vec3(0, 0, 1));
 			break;
 		case part_motion::serpent:
-			//each link a little behind the one before, so the ripple travels down the body
-			m = rotate(m, sin(mob.flap_phase - i * 0.55f) * 0.3f, vec3(0, 1, 0));
-			m = rotate(m, sin(mob.flap_phase * 0.8f - i * 0.45f) * 0.1f, vec3(1, 0, 0));
+			//the mob bends its spine itself (Mob::animate_spine); this ripple is only for a serpent link without one
+			if (mob.spine.empty()) {
+				m = rotate(m, sin(mob.flap_phase - i * 0.55f) * 0.3f, vec3(0, 1, 0));
+				m = rotate(m, sin(mob.flap_phase * 0.8f - i * 0.45f) * 0.1f, vec3(1, 0, 0));
+			}
 			break;
 		default:
 			break;

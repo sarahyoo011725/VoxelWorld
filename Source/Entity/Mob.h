@@ -3,6 +3,7 @@
 #include "Goal.h"
 #include "MobType.h"
 #include "PlayerPhysics.h"
+#include <deque>
 #include <memory>
 #include <random>
 #include <string>
@@ -50,6 +51,11 @@ public:
 	mat4 body_matrix() const;
 	//where a rider sits, in world space
 	vec3 seat() const;
+	//a part's frame hung from its parent's: pivot and pose before its motion, i.e. rest angles, the perch
+	//pose while landed and the spine's bends
+	mat4 part_frame(int i, const mat4& parent) const;
+	//a hovering flier with a perch pose lands to rest when it has nowhere to go
+	bool can_perch() const { return type.hovers && !type.perch_rest.empty(); }
 	float random_between(float lo, float hi);
 	float wrap_angle(float a) const;
 	//a hit from something at `source`: knocks the mob away from it and sends it fleeing.
@@ -86,6 +92,9 @@ public:
 	float bank = 0.0f; //roll into a turn while flying, positive to the left
 	float flap_phase = 0.0f; //drives wing beats, and the ripple down a serpent's body
 	float wing_spread = 0.0f; //0 folded on the ground, 1 open in flight
+	//per part: the yaw and pitch (about x) a serpent's body link bends by, so the body follows the path its head
+	//swam through the air; empty for mobs without a serpent body
+	vector<vec2> spine;
 
 	float health = 0.0f;
 	float hurt_time = 0.0f; //counts down after a hit: the red flash, and no further damage until it ends
@@ -111,6 +120,8 @@ private:
 	void dry_out(float dt);
 	void take_damage(float amount);
 	void track_fall(float y_before);
+	void animate_spine(float dt);
+	vec3 trail_point(float along) const;
 	const string* pick_sound(const vector<string>& files);
 
 	PlayerPhysics physics;
@@ -127,4 +138,9 @@ private:
 	float time_out_of_water = 0.0f;
 	float suffocation_timer = 0.0f;
 	RideInput control;
+	vector<int> spine_chain; //the root link, the serpent links behind it and the tail, front to back
+	vector<float> spine_length; //blocks from each chain part's pivot to the next one's
+	std::deque<vec3> trail; //where the front of the body has been, newest first, a little apart
+	float weave_distance = 0.0f; //blocks flown, which sets where along its S-curve the head swims
+	vec3 last_anchor = vec3(0.0f);
 };
