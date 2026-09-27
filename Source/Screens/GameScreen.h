@@ -7,6 +7,7 @@
 #include "PlayerRenderer.h"
 #include "MobRenderer.h"
 #include "World/MobManager.h"
+#include "World/Commands.h"
 #include "Audio/MobSoundPlayer.h"
 #include "Audio/AudioManager.h"
 #include <GLFW/glfw3.h>
@@ -26,7 +27,17 @@ private:
 	MobRenderer mob_renderer;
 	MobSoundPlayer mob_sounds;
 	bool attack_was_down = false;
+	bool use_was_down = false;
 	const float attack_damage = 2.0f;
+
+	//the console: T or / opens it, Enter runs the line, Esc closes it
+	bool console_open = false;
+	string console_text;
+	string console_message;
+	double console_message_until = 0.0;
+	bool open_key_was_down = false, slash_key_was_down = false, enter_key_was_down = false, backspace_key_was_down = false, escape_key_was_down = false;
+	bool camera_key_was_down = false;
+	unique_ptr<Mob> rider; //the player as others would see them, drawn in the saddle in third person
 	double last_mob_update = 0.0;
 	Texture texture = Texture("Resources/Textures/texture_atlas_blocks.png", GL_TEXTURE1, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 	bool wireframe = false;
@@ -61,11 +72,12 @@ public:
 
 	/*
 		a mob under the crosshair takes the click instead of the block behind it: the
-		block ray is cut short at the mob, and a fresh left click hits it
+		block ray is cut short at the mob, a fresh left click hits it, and a right click
+		climbs onto it if it can be ridden. while riding, a right click gets off
 	*/
 	void update_attack() {
 		float distance;
-		Mob* target = mobs.pick(player.eye_position(), player.camera.direction, player.reach(), distance);
+		Mob* target = mobs.pick(player.eye_position(), player.camera.direction, player.reach(), distance, player.mount);
 		player.limit_reach(target != nullptr ? distance : player.reach());
 
 		bool attack_down = glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
@@ -73,6 +85,74 @@ public:
 			audio::play_attack(target->dying());
 		}
 		attack_was_down = attack_down;
+
+		bool use_down = glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+		if (use_down && !use_was_down) {
+			if (player.mount != nullptr) player.dismount();
+			else if (target != nullptr && target->type.rideable && !target->dying()) player.ride(target);
+		}
+		use_was_down = use_down;
+
+		bool camera_key_down = glfwGetKey(window_setting->window, GLFW_KEY_F5) == GLFW_PRESS;
+		if (camera_key_down && !camera_key_was_down) player.third_person = !player.third_person;
+		camera_key_was_down = camera_key_down;
+	}
+
+	void show_message(const string& text) {
+		console_message = text;
+		console_message_until = glfwGetTime() + 6.0;
+	}
+
+	void update_console() {
+		GLFWwindow* w = window_setting->window;
+		auto pressed = [&](int key, bool& was_down) {
+			bool down = glfwGetKey(w, key) == GLFW_PRESS;
+			bool edge = down && !was_down;
+			was_down = down;
+			return edge;
+		};
+		bool open_key = pressed(GLFW_KEY_T, open_key_was_down);
+		bool slash_key = pressed(GLFW_KEY_SLASH, slash_key_was_down);
+		bool enter_key = pressed(GLFW_KEY_ENTER, enter_key_was_down);
+		bool backspace_key = pressed(GLFW_KEY_BACKSPACE, backspace_key_was_down);
+		bool escape_key = pressed(GLFW_KEY_ESCAPE, escape_key_was_down);
+
+		if (!console_open) {
+			//the key that opens it arrives as a typed character too; that one is dropped here
+			if (window_setting->window_active && (open_key || slash_key)) {
+				console_open = true;
+				console_text = slash_key ? "/" : "";
+			}
+			window_setting->typed_text.clear();
+			return;
+		}
+		console_text += window_setting->typed_text;
+		window_setting->typed_text.clear();
+		if (backspace_key && !console_text.empty()) console_text.pop_back();
+		if (escape_key) {
+			console_open = false;
+			return;
+		}
+		if (enter_key) {
+			string reply = run_command(console_text, mobs, player.eye_position(), player.camera.direction);
+			if (!reply.empty()) show_message(reply);
+			console_open = false;
+		}
+	}
+
+	//the rider model sits in the mount's saddle and turns its head to where the player looks
+	const Mob* rider_to_draw() {
+		if (player.mount == nullptr || !player.third_person) return nullptr;
+		if (rider == nullptr) rider = make_unique<Mob>(rider_type(), vec3(0.0f), 0u);
+		const Mob& mount = *player.mount;
+		rider->position = mount.seat() + vec3(0.0f, rider->size.y * 0.5f, 0.0f);
+		rider->yaw = mount.yaw;
+		rider->pitch = mount.pitch;
+		rider->bank = mount.bank;
+		vec3 look = player.camera.direction;
+		rider->head_yaw = glm::clamp(rider->wrap_angle(atan2(look.x, look.z) - mount.yaw), -1.2f, 1.2f);
+		rider->head_pitch = glm::clamp(-asin(glm::clamp(look.y, -1.0f, 1.0f)) - mount.pitch, -0.9f, 0.9f);
+		return rider.get();
 	}
 
 	void gl_settings() {
@@ -93,22 +173,26 @@ public:
 	* draws game scene and updates terrain and player. this must be called every frame
 	*/
 	void draw() {
-		if (glfwGetKey(window_setting->window, GLFW_KEY_1) == GLFW_PRESS) {
+		update_console();
+		//typing a command mustn't also toggle things bound to the same keys
+		bool keys_free = !console_open;
+
+		if (keys_free && glfwGetKey(window_setting->window, GLFW_KEY_1) == GLFW_PRESS) {
 			wireframe = !wireframe;
 		}
-		if (glfwGetKey(window_setting->window, GLFW_KEY_4) == GLFW_PRESS) {
+		if (keys_free && glfwGetKey(window_setting->window, GLFW_KEY_4) == GLFW_PRESS) {
 			enable_music = !enable_music;
 			if (enable_music == false && audio::current_music != nullptr) {
 				audio::current_music->stop();
 			}
 		}
-		bool perf_key_down = glfwGetKey(window_setting->window, GLFW_KEY_F3) == GLFW_PRESS;
+		bool perf_key_down = keys_free && glfwGetKey(window_setting->window, GLFW_KEY_F3) == GLFW_PRESS;
 		if (perf_key_down && !perf_key_was_down) {
 			show_perf_overlay = !show_perf_overlay;
 		}
 		perf_key_was_down = perf_key_down;
 
-		bool occlusion_key_down = glfwGetKey(window_setting->window, GLFW_KEY_F4) == GLFW_PRESS;
+		bool occlusion_key_down = keys_free && glfwGetKey(window_setting->window, GLFW_KEY_F4) == GLFW_PRESS;
 		if (occlusion_key_down && !occlusion_key_was_down) {
 			terrain.occlusion_culling = !terrain.occlusion_culling;
 		}
@@ -123,7 +207,7 @@ public:
 		last_frame_time = now;
 
 		//edge-detected, unlike the toggles above: this writes files to disk
-		bool debug_export_key_down = glfwGetKey(window_setting->window, GLFW_KEY_9) == GLFW_PRESS;
+		bool debug_export_key_down = keys_free && glfwGetKey(window_setting->window, GLFW_KEY_9) == GLFW_PRESS;
 		if (debug_export_key_down && !debug_export_key_was_down) {
 			ivec3 p = ivec3(player.position);
 			get_terrain_generator().export_debug_maps("terrain_debug", p.x, p.z, 512);
@@ -140,9 +224,14 @@ public:
 		terrain.update_chunks();
 
 		//before anything is drawn, so this frame shows this frame's input rather than the last one's
-		if (window_setting->window_active) {
+		if (window_setting->window_active && keys_free) {
 			update_attack();
 			player.update();
+		}
+		else {
+			player.rest_mount();
+		}
+		if (window_setting->window_active) {
 			audio::update_water(player.feet_in_water(), player.is_underwater(), player.velocity.y);
 			sm.frame_buffer_shader.activate();
 			sm.frame_buffer_shader.set_uniform_1i("is_underwater", player.is_underwater());
@@ -155,10 +244,13 @@ public:
 		MobContext mob_context;
 		mob_context.player_eye = player.eye_position();
 		mobs.update(mob_dt, mob_context);
+		//the mount moved with the mobs; the player's seat and view follow it
+		if (player.mount != nullptr && player.mount->dying()) player.dismount();
+		player.follow_mount();
 		for (const auto& m : mobs.all()) {
 			if (const string* sound = m->take_sound()) mob_sounds.play(*sound, m->position, player.camera.view, 0.8f + 0.4f * (rand() / (float)RAND_MAX));
 		}
-		mob_renderer.build(mobs.all());
+		mob_renderer.build(mobs.all(), rider_to_draw());
 
 		//shadow pass: render opaque + foliage geometry depth-only from the sun's POV.
 		//refreshed on an interval, or immediately when geometry changed
@@ -224,6 +316,7 @@ public:
 		renderer.draw_outlines(player.view_matrix(), player.hovered_block(), player.hovered_position());
 		renderer.draw_HUDs();
 		renderer.draw_hotbar(player.inventory());
+		renderer.draw_console(console_text, console_open, glfwGetTime() < console_message_until ? console_message : "");
 
 		if (show_perf_overlay) {
 			terrain.stats.frame_ms = smoothed_frame_ms;

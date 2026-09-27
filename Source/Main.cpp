@@ -24,6 +24,7 @@ bool start_game = false;
 void resize_window(GLFWwindow *window, int width, int height);
 void process_inputs(GLFWwindow *window);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void char_callback(GLFWwindow* window, unsigned int codepoint);
 void focus_callback(GLFWwindow* window, int focused);
 void on_window_focused(GLFWwindow* window);
 void unfocus_window(GLFWwindow* window);
@@ -85,6 +86,7 @@ int run_game() {
 	glfwSetWindowFocusCallback(window, focus_callback);
 	glfwSetFramebufferSizeCallback(window, resize_window);
 	glfwSetScrollCallback(window, scroll_callback);
+	glfwSetCharCallback(window, char_callback);
 	
 	gladLoadGL();
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -157,6 +159,13 @@ void process_inputs(GLFWwindow *window) {
 */
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 	window_setting.scroll_delta_y += yoffset;
+}
+
+/*
+* callback function for typed text, read by the in-game console
+*/
+void char_callback(GLFWwindow* window, unsigned int codepoint) {
+	if (codepoint >= 32 && codepoint < 127) window_setting.typed_text += (char)codepoint;
 }
 
 /*

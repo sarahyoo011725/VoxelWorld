@@ -32,6 +32,8 @@ public:
 	void draw_sky_background(mat4 view, mat4 projection, vec3 zenith_color, vec3 horizon_color, vec3 to_sun);
 	void draw_clouds(mat4 cam_matrix, vec2 player_xz, float time, vec3 light_color);
 	void draw_perf_overlay(const PerfStats& stats);
+	//the command line near the bottom of the screen while typing, and the last reply above it
+	void draw_console(const string& input, bool typing, const string& message);
 	void post_process();
 private:
 	void add_text(const string& text, vec2 top_left, float pixel_size);
@@ -49,6 +51,7 @@ private:
 	vec4 crosshair_color = vec4(1.0); //white
 
 	const float overlay_pixel_size = 0.009f; //one dot of the 5x7 font, in ndc
+	const float console_pixel_size = 0.007f;
 
 	const float hotbar_slot_size = 0.09f; //ndc half-size before aspect correction
 	const float hotbar_slot_spacing = 0.02f;

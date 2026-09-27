@@ -17,6 +17,8 @@ public:
 	vec3 placement_position = vec3(0.0f);
 	Inventory inventory;
 	void update(vec3 origin, vec3 direction);
+	//treats the mouse buttons as already held, so a click used for something else (getting on or off a mount) doesn't also place or break
+	void consume_clicks() { left_click_was_down = right_click_was_down = true; }
 	float reach() const { return max_ray_length; }
 	//blocks past this distance can't be hovered, e.g. behind a mob in the way
 	float reach_limit = 4.5f;

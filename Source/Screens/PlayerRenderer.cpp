@@ -245,6 +245,42 @@ void PlayerRenderer::draw_perf_overlay(const PerfStats& stats) {
 	glEnable(GL_DEPTH_TEST);
 }
 
+void PlayerRenderer::draw_console(const string& input, bool typing, const string& message) {
+	if (!typing && message.empty()) return;
+	sm.HUD_shader.activate();
+	sm.HUD_shader.set_uniform_1i("use_texture", GL_FALSE);
+	sm.HUD_shader.set_uniform_2f("uv_offset", 1, vec2(0.0f));
+	sm.HUD_shader.set_uniform_2f("uv_scale", 1, vec2(1.0f));
+	glDisable(GL_DEPTH_TEST);
+
+	float line = (bitmap_font::glyph_height + 3) * console_pixel_size;
+	float input_top = -0.62f;
+	auto draw_line = [&](const string& text, float top, vec4 color) {
+		text_vertices.clear();
+		string shown = text;
+		for (char& c : shown) c = (char)toupper((unsigned char)c);
+		add_text(shown, vec2(-0.95f, top), console_pixel_size);
+		sm.HUD_shader.set_uniform_4f("color", 1, color);
+		sm.HUD_shader.set_uniform_2f("offset", 1, vec2(0.0f));
+		sm.HUD_shader.set_uniform_2f("scale", 1, vec2(1.0f));
+		text_vao.bind();
+		text_vbo.reset_vertices(text_vertices.data(), sizeof(vertex_2d) * text_vertices.size(), GL_DYNAMIC_DRAW);
+		glDrawArrays(GL_TRIANGLES, 0, (GLsizei)text_vertices.size());
+	};
+
+	if (typing) {
+		quad_vao.bind();
+		sm.HUD_shader.set_uniform_4f("color", 1, vec4(0.0f, 0.0f, 0.0f, 0.55f));
+		sm.HUD_shader.set_uniform_2f("offset", 1, vec2(0.0f, input_top - line * 0.4f));
+		sm.HUD_shader.set_uniform_2f("scale", 1, vec2(0.97f, line * 0.75f));
+		glDrawArrays(GL_TRIANGLES, 0, quad_vertices.size());
+		bool caret = fmod(glfwGetTime(), 1.0) < 0.5;
+		draw_line(input + (caret ? "_" : " "), input_top, vec4(1.0f));
+	}
+	if (!message.empty()) draw_line(message, input_top + line * 1.6f, vec4(1.0f, 0.9f, 0.45f, 1.0f));
+	glEnable(GL_DEPTH_TEST);
+}
+
 /*
 	draws outlined objects
 */

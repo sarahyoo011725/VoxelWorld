@@ -61,6 +61,7 @@ add_executable(VoxelWorld
 	Source/World/ChunkGeneration.cpp
 	Source/World/ChunkManager.cpp
 	Source/World/MobManager.cpp
+	Source/World/Commands.cpp
 	Source/World/StructureGenerator.cpp
 	Source/World/Biome.cpp
 	Source/World/SectionVisibility.cpp
@@ -133,6 +134,7 @@ add_executable(render_bench
 	Source/Entity/MobTypes.cpp
 	Source/Screens/MobRenderer.cpp
 	Source/World/MobManager.cpp
+	Source/World/Commands.cpp
 	Source/Screens/PlayerRenderer.cpp
 	Source/Buffers/EBO.cpp
 	Source/Buffers/FBO.cpp
