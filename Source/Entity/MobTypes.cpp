@@ -171,13 +171,14 @@ namespace {
 		t.turn_rate = 2.0f;
 		t.max_health = 10.0f;
 		t.model.skin = "Resources/Textures/Mobs/" + name + ".png";
+		//a chubby pup: short round body, a big head held up high, little flippers
 		t.model.parts = {
-			{ -1, vec3(0), vec3(-4, 0, -7), vec3(8, 6, 14), ivec2(0, 0) },
-			{ -1, vec3(0, 4, 7), vec3(-3, -1, 0), vec3(6, 6, 5), ivec2(0, 21), part_motion::head },
-			{ -1, vec3(4, 1, 4), vec3(0, -0.5f, -1.5f), vec3(4, 1, 3), ivec2(22, 21), part_motion::flipper_left },
-			{ -1, vec3(-4, 1, 4), vec3(-4, -0.5f, -1.5f), vec3(4, 1, 3), ivec2(22, 21), part_motion::flipper_right },
-			{ -1, vec3(1.5f, 1, -7), vec3(-1.5f, -0.5f, -5), vec3(3, 1, 5), ivec2(22, 26), part_motion::tail_beat },
-			{ -1, vec3(-1.5f, 1, -7), vec3(-1.5f, -0.5f, -5), vec3(3, 1, 5), ivec2(22, 26), part_motion::tail_beat },
+			{ -1, vec3(0), vec3(-4.5f, 0, -6), vec3(9, 7, 12), ivec2(0, 0) },
+			{ -1, vec3(0, 4, 6), vec3(-4, -1.5f, 0), vec3(8, 7, 7), ivec2(0, 20), part_motion::head },
+			{ -1, vec3(4.5f, 1, 3), vec3(0, -0.5f, -1.5f), vec3(3, 1, 3), ivec2(32, 20), part_motion::flipper_left },
+			{ -1, vec3(-4.5f, 1, 3), vec3(-3, -0.5f, -1.5f), vec3(3, 1, 3), ivec2(32, 20), part_motion::flipper_right },
+			{ -1, vec3(1.5f, 1, -6), vec3(-1.5f, -0.5f, -4), vec3(3, 1, 4), ivec2(32, 25), part_motion::tail_beat },
+			{ -1, vec3(-1.5f, 1, -6), vec3(-1.5f, -0.5f, -4), vec3(3, 1, 4), ivec2(32, 25), part_motion::tail_beat },
 		};
 		t.spawn = { std::move(coasts), 8, 1, 3 };
 		t.spawn.ground = { sand, gravel, snow, stone, ice };
