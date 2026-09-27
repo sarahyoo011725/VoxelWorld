@@ -945,6 +945,80 @@ int main(int argc, char** argv) {
 			shot_light = shadow_light;
 			load_around(home);
 		}
+		//the polar sea: ice floes, and snow seals on and around them
+		printf("\npolar sea (3600 frames simulated at 60 fps)\n");
+		ivec2 floe = ivec2(0);
+		bool found_floe = false;
+		for (int r = 16; r <= 4000 && !found_floe; r += 16) {
+			for (int a = 0; a < 64 && !found_floe; ++a) {
+				int x = (int)(cos(a * 0.0982f) * r), z = (int)(sin(a * 0.0982f) * r);
+				ClimateSample c = get_terrain_generator().sample_climate(x, z);
+				if (select_biome(c, water_level) == biome_id::frozen_ocean && get_terrain_generator().has_ice(x, z, c.temperature)) {
+					floe = ivec2(x, z);
+					found_floe = true;
+				}
+			}
+		}
+		if (!found_floe) printf("  no ice within 4000 blocks\n");
+		else {
+			vec3 home = position;
+			load_around(vec3(floe.x + 0.5f, water_level + 2.0f, floe.y + 0.5f));
+			int ice_cells = 0, open_cells = 0;
+			for (int dx = -48; dx <= 48; ++dx) {
+				for (int dz = -48; dz <= 48; ++dz) {
+					Block* b = cm.get_block_worldspace(vec3(floe.x + dx, water_level, floe.y + dz));
+					if (b == nullptr) continue;
+					if (b->type == ice) ice_cells++;
+					if (b->type == water) open_cells++;
+				}
+			}
+			printf("  floe at (%d, %d); sea surface within 48 blocks: %d ice, %d open water\n", floe.x, floe.y, ice_cells, open_cells);
+
+			MobManager polar;
+			MobContext polar_context;
+			polar_context.player_eye = position;
+			const MobType* snow_seal_type = nullptr;
+			for (const MobType& t : mob_types()) if (t.name == "snow_seal") snow_seal_type = &t;
+			Mob* watched = polar.add(*snow_seal_type, vec3(floe.x, water_level + 0.51f, floe.y));
+
+			map<const Mob*, bool> seen_polar;
+			map<string, int> polar_spawned;
+			long polar_frames = 0, polar_overlap = 0, on_ice = 0, seal_frames = 0;
+			int dives = 0, climbs = 0;
+			bool watched_in_water = false;
+			for (int f = 0; f < 3600; ++f) {
+				polar.update(1.0f / 60.0f, polar_context);
+				for (const auto& m : polar.all()) {
+					if (!seen_polar[m.get()]) {
+						seen_polar[m.get()] = true;
+						polar_spawned[m->type.name]++;
+					}
+					polar_frames++;
+					if (penetrates(*m)) polar_overlap++;
+					if (&m->type != snow_seal_type) continue;
+					seal_frames++;
+					Block* under = cm.get_block_worldspace(round(m->feet() - vec3(0.0f, 0.5f, 0.0f)));
+					if (m->on_ground() && under != nullptr && under->type == ice) on_ice++;
+				}
+				if (watched != nullptr) {
+					if (watched->in_water && !watched_in_water) dives++;
+					if (!watched->in_water && watched_in_water && watched->on_ground()) climbs++;
+					if (!watched->in_water && watched->on_ground()) watched_in_water = false;
+					else if (watched->in_water) watched_in_water = true;
+				}
+			}
+			printf("  spawned:");
+			for (const auto& entry : polar_spawned) printf(" %d %s", entry.second, entry.first.c_str());
+			printf("\n  snow seals on ice in %ld of %ld seal-frames; hitbox in a block in %ld of %ld mob-frames\n", on_ice, seal_frames, polar_overlap, polar_frames);
+			printf("  the snow seal set on a floe: slipped into the water %d times, climbed back onto ice or shore %d times\n", dives, climbs);
+
+			mat4 no_shadow = mat4(0.0f);
+			no_shadow[3] = vec4(0.0f, 0.0f, 2.0f, 1.0f);
+			shot_light = no_shadow;
+			if (watched != nullptr) shoot(*watched, "polar_snow_seal", polar);
+			shot_light = shadow_light;
+			load_around(home);
+		}
 	}
 
 	printf("\nstreaming (walking east one chunk at a time, %.0f ms build budget)\n", 3.0f);
