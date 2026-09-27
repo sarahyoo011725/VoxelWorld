@@ -2,6 +2,7 @@
 #include "Goal.h"
 
 namespace {
+	const string sounds = "Resources/Sound Effects/";
 	const vector<biome_id> grassy = { biome_id::plains, biome_id::savanna, biome_id::forest, biome_id::autumn_forest, biome_id::taiga };
 
 	//four legs of the given size under a body: diagonal pairs swing together
@@ -30,6 +31,7 @@ namespace {
 		t.walk_speed = 1.1f;
 		t.max_health = 8.0f;
 		t.model.skin = "Resources/Textures/Mobs/sheep.png";
+		t.sounds.ambient = { sounds + "sheep_bleat.ogg", sounds + "sheep_bleat2.ogg" };
 		t.model.parts = {
 			{ -1, vec3(0, 9, 0), vec3(-5, 0, -8), vec3(10, 9, 16), ivec2(0, 0) },
 			{ -1, vec3(0, 15, 7), vec3(-3, -1, 0), vec3(6, 6, 7), ivec2(16, 32), part_motion::head },
@@ -47,6 +49,8 @@ namespace {
 		t.walk_speed = 1.0f;
 		t.turn_rate = 2.0f;
 		t.model.skin = "Resources/Textures/Mobs/cow.png";
+		t.sounds.hurt = { sounds + "cow_hurt.ogg" };
+		t.sounds.death = { sounds + "cow_death.ogg" };
 		t.model.parts = {
 			{ -1, vec3(0, 12, 0), vec3(-6, 0, -9), vec3(12, 10, 18), ivec2(0, 0) },
 			{ -1, vec3(0, 19, 9), vec3(-4, -4, 0), vec3(8, 8, 6), ivec2(16, 32), part_motion::head },
