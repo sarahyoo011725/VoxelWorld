@@ -87,6 +87,7 @@ static int report_debug_failure(int, char* message, int*) {
 #include "Screens/MobRenderer.h"
 #include "World/MobManager.h"
 #include "World/Commands.h"
+#include "World/Onsen.h"
 #include <map>
 #include <functional>
 
@@ -587,7 +588,8 @@ int main(int argc, char** argv) {
 
 		//a close look at a mob, lit and shadowed like the game draws it
 		mat4 shot_light = shadow_light; //the aquatic shots are far from the shadow map and switch it off
-		//view 0 from the side, 1 a chase view from behind and above (a flier's wingspan), 2 face on and close
+		vec3 custom_eye = vec3(0.0f), custom_target = vec3(0.0f); //for view 3
+		//view 0 from the side, 1 a chase view from behind and above (a flier's wingspan), 2 face on and close, 3 from custom_eye at custom_target
 		auto shoot = [&](const Mob& subject, const string& name, const MobManager& source, const Mob* extra = nullptr, int view = 0) {
 			vec3 side = vec3(cos(subject.yaw), 0.0f, -sin(subject.yaw));
 			vec3 ahead = vec3(sin(subject.yaw), 0.0f, cos(subject.yaw));
@@ -601,6 +603,10 @@ int main(int argc, char** argv) {
 				//straight at the face, level with the head
 				target = subject.position + ahead * (subject.size.x * 0.6f) + vec3(0.0f, 0.2f, 0.0f);
 				eye = target + ahead * 1.8f + vec3(0.0f, 0.15f, 0.0f);
+			}
+			if (view == 3) {
+				eye = custom_eye;
+				target = custom_target;
 			}
 			for (float lift : { 0.6f, 1.6f, 2.6f, 4.0f }) {
 				for (float flip : { 1.0f, -1.0f }) {
@@ -1161,6 +1167,77 @@ int main(int argc, char** argv) {
 			}
 			shot_light = shadow_light;
 			load_around(home);
+		}
+		//the hot springs: where they are, what gets built, and Haku living at one
+		printf("\nonsen\n");
+		{
+			vector<OnsenSite> sites = onsen::sites_near(vec3(0.0f), 3000.0f);
+			float spacing = 0.0f;
+			for (const OnsenSite& a : sites) {
+				float closest = 1e9f;
+				for (const OnsenSite& b : sites) {
+					if (&a == &b) continue;
+					closest = glm::min(closest, length(vec2(a.centre.x - b.centre.x, a.centre.z - b.centre.z)));
+				}
+				spacing += closest;
+			}
+			printf("  %zu onsen within 3000 blocks of the origin, %.0f blocks to the next one on average\n", sites.size(), sites.size() > 1 ? spacing / sites.size() : 0.0f);
+			OnsenSite site;
+			if (!onsen::nearest(vec3(0.0f), 3000.0f, site)) printf("  none to visit\n");
+			else {
+				vec3 onsen_home = position;
+				load_around(vec3(site.centre) + vec3(0.5f, 3.0f, onsen::radius + 4.5f));
+				printf("  nearest at %d %d %d, %.0f blocks from the origin\n", site.centre.x, site.centre.y, site.centre.z, length(vec2(site.centre.x, site.centre.z)));
+				map<block_type, int> counts;
+				int blocked_above = 0;
+				for (int dx = -onsen::radius; dx <= onsen::radius; ++dx) {
+					for (int dz = -onsen::radius; dz <= onsen::radius; ++dz) {
+						for (int dy = -3; dy <= 16; ++dy) {
+							Block* b = cm.get_block_worldspace(vec3(site.centre.x + dx, site.centre.y + dy, site.centre.z + dz));
+							if (b == nullptr) continue;
+							counts[b->type]++;
+							//anything natural left standing on the terrace
+							bool built = b->type == planks || b->type == red_lacquer || b->type == roof_tile || b->type == stone_brick
+								|| b->type == wood || b->type == glowstone || b->type == stone || b->type == mossy_stone;
+							if (dy >= 1 && dx * dx + dz * dz <= onsen::radius * onsen::radius && b->type != none && !built) blocked_above++;
+						}
+					}
+				}
+				printf("  built: %d hot water, %d glowstone, %d vermilion, %d roof tiles, %d planks, %d stone bricks; %d stray blocks left above the terrace\n",
+					counts[water], counts[glowstone], counts[red_lacquer], counts[roof_tile], counts[planks], counts[stone_brick], blocked_above);
+
+				MobManager spring;
+				MobContext spring_context;
+				spring_context.player_eye = position + vec3(0.0f, 0.72f, 0.0f);
+				Mob* resident = nullptr;
+				float furthest = 0.0f;
+				for (int f = 0; f < 60 * 60; ++f) {
+					spring.update(1.0f / 60.0f, spring_context);
+					for (const auto& m : spring.all()) {
+						if (m->has_home) resident = m.get();
+					}
+					if (resident != nullptr) furthest = glm::max(furthest, distance(resident->position, resident->home));
+				}
+				printf("  %s; over 60 s it strays at most %.1f blocks from its spring\n",
+					resident != nullptr ? "Haku has moved in" : "no Haku came", furthest);
+
+				mat4 no_shadow = mat4(0.0f);
+				no_shadow[3] = vec4(0.0f, 0.0f, 2.0f, 1.0f);
+				shot_light = no_shadow;
+				custom_target = vec3(site.centre) + vec3(0.0f, 1.0f, -1.0f);
+				custom_eye = vec3(site.centre) + vec3(9.0f, 9.0f, 20.0f);
+				if (!spring.all().empty()) {
+					const Mob& subject = resident != nullptr ? *resident : *spring.all().front();
+					shoot(subject, "onsen_overview", spring, nullptr, 3);
+					custom_eye = vec3(site.centre) + vec3(-14.0f, 16.0f, -4.0f);
+					shoot(subject, "onsen_above", spring, nullptr, 3);
+					custom_eye = vec3(site.centre) + vec3(0.5f, 2.5f, 13.0f);
+					custom_target = vec3(site.centre) + vec3(0.5f, 2.0f, -6.0f);
+					shoot(subject, "onsen_gate", spring, nullptr, 3);
+				}
+				shot_light = shadow_light;
+				load_around(onsen_home);
+			}
 		}
 	}
 
