@@ -25,6 +25,7 @@ public:
 	void limit_reach(float distance) { block_interactor.reach_limit = distance; }
 private:
 	void update_movement(float dt);
+	block_type ground_type() const;
 
 	WindowSetting* window_setting;
 	PlayerPhysics physics;

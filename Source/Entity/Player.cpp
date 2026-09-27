@@ -68,23 +68,18 @@ void Player::update_movement(float dt) {
 	velocity.z = input_dir.z * speed;
 	if (!enable_physics) velocity.y = input_dir.y * speed;
 
-	if (enable_physics) {
-		//TODO: walking sound effect
-		if (physics.on_ground) {
-			if (glfwGetKey(window_setting->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-				velocity.y = jump_force;
-			}
-			if (velocity.x != 0 && velocity.z != 0) {
-				audio::play_block_walked(dirt_grass); //TODO: detect what type of block the player is walking on
-			}
-			else {
-				audio::effect_player2.stop();
-			}
-		}
-		else if (audio::effect_player2.is_playing()) {
-			audio::effect_player2.stop();
-		}
+	if (enable_physics && physics.on_ground && glfwGetKey(window_setting->window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+		velocity.y = jump_force;
 	}
 
 	physics.integrate(*this, dt, enable_physics);
+
+	bool walking = enable_physics && physics.on_ground && (velocity.x != 0.0f || velocity.z != 0.0f);
+	audio::update_footsteps(walking ? ground_type() : none);
+}
+
+block_type Player::ground_type() const {
+	vec3 below = position - vec3(0.0f, size.y * 0.5f + 0.1f, 0.0f);
+	Block* block = ChunkManager::get_instance().get_block_worldspace(round(below));
+	return block != nullptr ? block->type : none;
 }
