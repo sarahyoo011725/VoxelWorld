@@ -47,6 +47,7 @@ struct TerrainConfig {
 	float variation_frequency = 0.0015f; //splits biomes that share a climate cell
 	float moisture_frequency = 0.004f;
 	float temperature_frequency = 0.0018f;
+	float ice_frequency = 0.045f; //floe size on frozen seas
 };
 
 //kept separate from the elevation math so new biomes can key off these
@@ -84,6 +85,12 @@ public:
 		per-column chunk generation uses this instead.
 	*/
 	ClimateSample sample_climate(int x, int z) const;
+	/*
+		whether the surface of a frozen sea is ice here. floes are sparse where the
+		sea is only just cold enough to freeze and close into a pack, split by open
+		leads, where it's coldest
+	*/
+	bool has_ice(int x, int z, float temperature) const;
 
 	//PPM rather than PNG so this needs no image-writing dependency
 	void export_debug_maps(const std::string& path_prefix, int center_x, int center_z, int size) const;
@@ -112,6 +119,7 @@ private:
 	FastNoiseLite variation_noise;
 	FastNoiseLite moisture_noise;
 	FastNoiseLite temperature_noise;
+	FastNoiseLite ice_noise;
 };
 
 //the one generator the whole game shares; everything seeded from the world reads its config

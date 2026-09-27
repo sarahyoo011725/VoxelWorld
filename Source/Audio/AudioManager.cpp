@@ -30,6 +30,7 @@ void audio::play_block_sound_effect(block_type type) {
 	case redstone_ore:
 	case diamond_ore:
 	case glowstone:
+	case ice:
 		sound = sound_effect::stone;
 		break;
 	case sand:

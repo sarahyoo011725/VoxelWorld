@@ -46,6 +46,7 @@ TerrainGenerator::TerrainGenerator(const TerrainConfig& cfg) : config(cfg) {
 	configure(variation_noise, config.world_seed + 13, config.variation_frequency, 2);
 	configure(moisture_noise, config.world_seed + 9, config.moisture_frequency, 3);
 	configure(temperature_noise, config.world_seed + 10, config.temperature_frequency, 2);
+	configure(ice_noise, config.world_seed + 17, config.ice_frequency, 2);
 }
 
 TerrainGenerator::elevation_result TerrainGenerator::compute_elevation(int x, int z) const {
@@ -132,6 +133,12 @@ TerrainGenerator::elevation_result TerrainGenerator::compute_elevation(int x, in
 	with sample(), so a column resolves to the same climate either way - this
 	just skips the slope work biome selection has no use for.
 */
+bool TerrainGenerator::has_ice(int x, int z, float temperature) const {
+	float coldness = glm::clamp((polar_temperature - temperature) / 0.12f, 0.0f, 1.0f);
+	float threshold = glm::mix(0.72f, 0.38f, coldness);
+	return ice_noise.GetNoise((float)x, (float)z) * 0.5f + 0.5f > threshold;
+}
+
 ClimateSample TerrainGenerator::sample_climate(int x, int z) const {
 	elevation_result e = compute_elevation(x, z);
 	float fx = (float)x, fz = (float)z;
@@ -207,6 +214,7 @@ void TerrainGenerator::export_debug_maps(const std::string& path_prefix, int cen
 		{206, 222, 220}, //tundra
 		{124, 120, 116}, //mountain
 		{248, 250, 252}, //snowy peak
+		{140, 180, 222}, //frozen ocean
 	};
 
 	int half = size / 2;

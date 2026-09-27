@@ -33,13 +33,16 @@ void fill_chunk_terrain(glm::ivec2 chunk_id, int width, int height, int length,
 	heights.resize((size_t)width * length);
 	biomes.resize((size_t)width * length);
 	blocks.assign((size_t)width * height * length, Block());
+	std::vector<bool> iced((size_t)width * length, false);
 
 	for (int x = 0; x < width; ++x) {
 		for (int z = 0; z < length; ++z) {
 			//one climate sample feeds both the height and the biome
 			ClimateSample climate = generator.sample_climate(origin_x + x, origin_z + z);
 			heights[(size_t)x * length + z] = glm::clamp(climate.elevation, 0, height);
-			biomes[(size_t)x * length + z] = select_biome(climate, sea_level);
+			biome_id biome = select_biome(climate, sea_level);
+			biomes[(size_t)x * length + z] = biome;
+			iced[(size_t)x * length + z] = biome == biome_id::frozen_ocean && generator.has_ice(origin_x + x, origin_z + z, climate.temperature);
 		}
 	}
 
@@ -53,7 +56,7 @@ void fill_chunk_terrain(glm::ivec2 chunk_id, int width, int height, int length,
 			for (int y = 0; y < height; ++y) {
 				block_type type = none;
 				if (y > h && y <= sea_level) {
-					type = water;
+					type = y == sea_level && iced[(size_t)x * length + z] ? ice : water;
 				}
 				if (y == h) {
 					type = biome.surface;

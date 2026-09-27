@@ -20,6 +20,7 @@ namespace {
 		{ biome_id::tundra,       "tundra",       snow,       dirt,   4, vec3(0.50f,0.62f,0.50f), vec3(0.42f,0.55f,0.45f), 220,  40, 160, flower_white  },
 		{ biome_id::mountain,     "mountain",     stone,      stone,  6, vec3(0.45f,0.65f,0.38f), vec3(0.38f,0.56f,0.32f), 300,  60, 220, flower_purple },
 		{ biome_id::snowy_peak,   "snowy peak",   snow,       stone,  5, vec3(0.55f,0.66f,0.58f), vec3(0.48f,0.58f,0.52f),   0,   0,   0, flower_white  },
+		{ biome_id::frozen_ocean, "frozen ocean", gravel,     gravel, 4, vec3(0.50f,0.62f,0.50f), vec3(0.42f,0.55f,0.45f),   0,   0,   0, flower_white  },
 	};
 }
 
@@ -32,7 +33,7 @@ const BiomeDefinition& biome_of(biome_id id) {
 biome_id select_biome(const ClimateSample& c, int sea_level) {
 	//water and altitude ignore climate: an ocean is an ocean at any temperature,
 	//and nothing grows on a peak however wet it is
-	if (c.feature == terrain_feature::ocean) return biome_id::ocean;
+	if (c.feature == terrain_feature::ocean) return c.temperature < polar_temperature ? biome_id::frozen_ocean : biome_id::ocean;
 
 	int above_sea = c.landform_elevation - sea_level;
 	if (above_sea >= 34) return biome_id::snowy_peak;
@@ -42,7 +43,8 @@ biome_id select_biome(const ClimateSample& c, int sea_level) {
 	//just above sea level, so a wider band would classify whole lowland plains
 	//as beach
 	if (above_sea <= 0 && c.feature == terrain_feature::land) {
-		return c.temperature < 0.22f ? biome_id::tundra : biome_id::beach;
+		//a cold shore stays snowy, so a frozen sea is ringed with snow rather than sand
+		return c.temperature < polar_temperature ? biome_id::tundra : biome_id::beach;
 	}
 
 	//river and lake banks stay lush, which is what makes water read as an oasis
@@ -57,7 +59,7 @@ biome_id select_biome(const ClimateSample& c, int sea_level) {
 		     |  plains   forest   forest
 		cold |  tundra   taiga    taiga
 	*/
-	if (c.temperature < 0.28f) {
+	if (c.temperature < polar_temperature) {
 		return c.moisture < 0.35f ? biome_id::tundra : biome_id::taiga;
 	}
 	if (c.temperature > 0.72f) {

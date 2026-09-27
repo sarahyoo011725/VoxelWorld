@@ -72,6 +72,7 @@ namespace {
 		switch (type) {
 		case water:
 		case glass:
+		case ice:
 		case grass:
 		case flower_red:
 		case flower_yellow:

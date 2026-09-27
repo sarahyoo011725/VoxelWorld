@@ -13,6 +13,9 @@ enum class terrain_feature {
 	land
 };
 
+//below this temperature land is tundra and the sea freezes over
+const float polar_temperature = 0.28f;
+
 enum class biome_id {
 	ocean,
 	beach,
@@ -26,6 +29,7 @@ enum class biome_id {
 	tundra,
 	mountain,
 	snowy_peak,
+	frozen_ocean, //polar sea, dotted with ice floes
 	count
 };
 

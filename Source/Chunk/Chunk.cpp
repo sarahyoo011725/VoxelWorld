@@ -692,28 +692,34 @@ void Chunk::build_block_faces(int y_lo, int y_hi) {
 				block_type right = blocks[block_index(x + 1, y, z)].type;
 				block_type front = blocks[block_index(x, y, z + 1)].type;
 
-				if (am_i_foliage || left == none || has_transparency(left) && !am_i_transparent) {
+				//ice keeps its faces against water too, so a floe is seen from underneath;
+				//the water leaves its own face out there, so the two never fight
+				auto shows_face = [&](block_type neighbor) {
+					return am_i_foliage || neighbor == none || (has_transparency(neighbor) && !am_i_transparent)
+						|| (type == ice && neighbor == water);
+				};
+				if (shows_face(left)) {
 					add_face(Left, type, pos);
 				}
 				if (y > 0) {
 					block_type below = blocks[block_index(x, y - 1, z)].type;
-					if (am_i_foliage || below == none || has_transparency(below) && !am_i_transparent) {
+					if (shows_face(below)) {
 						add_face(Bottom, type, pos);
 					}
 				}
-				if (am_i_foliage || back == none || has_transparency(back) && !am_i_transparent) {
+				if (shows_face(back)) {
 					add_face(Back, type, pos);
 				}
-				if (am_i_foliage || right == none || has_transparency(right) && !am_i_transparent) {
+				if (shows_face(right)) {
 					add_face(Right, type, pos);
 				}
 				if (y < height - 1) {
 					block_type above = blocks[block_index(x, y + 1, z)].type;
-					if (am_i_foliage || above == none || has_transparency(above) && !am_i_transparent) {
+					if (shows_face(above)) {
 						add_face(Top, type, pos);
 					}
 				}
-				if (am_i_foliage || front == none || has_transparency(front) && !am_i_transparent) {
+				if (shows_face(front)) {
 					add_face(Front, type, pos);
 				}
 			}
