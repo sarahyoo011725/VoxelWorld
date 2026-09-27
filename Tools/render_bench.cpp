@@ -1017,7 +1017,17 @@ int main(int argc, char** argv) {
 			}
 			auto settle = [&](int frames) { for (int i = 0; i < frames; ++i) pets.update(1.0f / 60.0f, pet_context); };
 			settle(60);
-			if (eastern != nullptr) shoot(*eastern, "dragon_eastern_idle", pets);
+			if (eastern != nullptr) {
+				shoot(*eastern, "dragon_eastern_idle", pets);
+				eastern->head_yaw = eastern->head_pitch = 0.0f;
+				shoot(*eastern, "dragon_eastern_face", pets, {}, 2);
+				//three-quarter view of the head, close
+				vec3 ahead = vec3(sin(eastern->yaw), 0.0f, cos(eastern->yaw));
+				vec3 side = vec3(cos(eastern->yaw), 0.0f, -sin(eastern->yaw));
+				custom_target = eastern->position + ahead * 0.6f + vec3(0.0f, 0.2f, 0.0f);
+				custom_eye = custom_target + ahead * 2.6f + side * 2.2f + vec3(0.0f, 0.9f, 0.0f);
+				shoot(*eastern, "dragon_eastern_closeup", pets, {}, 3);
+			}
 
 			//the player's avatar walking, from outside and from their own eyes
 			{
@@ -1112,18 +1122,18 @@ int main(int argc, char** argv) {
 				printf("  let go, it hovers: %.2f blocks of drift in height over 3 s (flying: %s)\n", eastern->position.y - before, eastern->flying ? "yes" : "no");
 			}
 
-			//walk the player 40 blocks away; the pets should come after them
-			pet_context.player_eye = eye + vec3(40.0f, 6.0f, 0.0f);
+			//pets come over only now and then, but always before they'd be left behind: go past that leash
+			pet_context.player_eye = eye + vec3(110.0f, 6.0f, 0.0f);
 			for (Mob* pet : { eastern }) {
 				if (pet == nullptr) continue;
 				float start = distance(pet->position, pet_context.player_eye);
 				int frames = 0;
-				while (distance(pet->position, pet_context.player_eye) > 6.0f && frames < 60 * 20) {
+				while (distance(pet->position, pet_context.player_eye) > 7.0f && frames < 60 * 30) {
 					settle(1);
 					frames++;
 				}
 				printf("  %s %.0f blocks from the player: %s after %.1f s\n", pet->type.name.c_str(), start,
-					distance(pet->position, pet_context.player_eye) <= 6.0f ? "caught up" : "still behind", frames / 60.0f);
+					distance(pet->position, pet_context.player_eye) <= 7.0f ? "caught up" : "still behind", frames / 60.0f);
 			}
 		}
 
