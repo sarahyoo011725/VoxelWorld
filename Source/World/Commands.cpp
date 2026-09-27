@@ -1,4 +1,5 @@
 #include "Commands.h"
+#include "World/Onsen.h"
 #include <algorithm>
 #include <cctype>
 #include <sstream>
@@ -67,7 +68,7 @@ namespace {
 	}
 }
 
-string run_command(const string& line, MobManager& mobs, vec3 eye, vec3 look) {
+string run_command(const string& line, MobManager& mobs, vec3 eye, vec3 look, vec3* teleport_to) {
 	string text = lower(line);
 	if (!text.empty() && text[0] == '/') text = text.substr(1);
 	istringstream words(text);
@@ -76,7 +77,29 @@ string run_command(const string& line, MobManager& mobs, vec3 eye, vec3 look) {
 	if (args.empty()) return "";
 
 	if (args[0] == "help") {
-		return "/SUMMON DRAGON  /SUMMON HAKU  /SUMMON HORSE  /SUMMON <MOB>";
+		return "/SUMMON <MOB>  /LOCATE ONSEN  /TP ONSEN  /TP X Y Z";
+	}
+	if (args[0] == "locate" || (args[0] == "tp" && args.size() == 2)) {
+		if (args.size() < 2 || args[1] != "onsen") return "TRY /LOCATE ONSEN";
+		OnsenSite site;
+		if (!onsen::nearest(eye, 4000.0f, site)) return "NO ONSEN WITHIN 4000 BLOCKS";
+		int away = (int)length(vec2(site.centre.x - eye.x, site.centre.z - eye.z));
+		string where = to_string(site.centre.x) + " " + to_string(site.centre.y) + " " + to_string(site.centre.z);
+		if (args[0] == "locate") return "NEAREST ONSEN AT " + where + " - " + to_string(away) + " BLOCKS AWAY";
+		if (teleport_to == nullptr) return "CANNOT TELEPORT FROM HERE";
+		//just outside the torii, looking in
+		*teleport_to = vec3(site.centre) + vec3(0.5f, 2.0f, onsen::radius + 3.5f);
+		return "TELEPORTED TO THE ONSEN AT " + where;
+	}
+	if (args[0] == "tp") {
+		if (args.size() < 4 || teleport_to == nullptr) return "TRY /TP X Y Z OR /TP ONSEN";
+		try {
+			*teleport_to = vec3(stof(args[1]), stof(args[2]), stof(args[3]));
+		}
+		catch (...) {
+			return "TRY /TP X Y Z OR /TP ONSEN";
+		}
+		return "TELEPORTED TO " + args[1] + " " + args[2] + " " + args[3];
 	}
 	if (args[0] == "summon") {
 		if (args.size() < 2) return "SUMMON WHAT? " + mob_list();

@@ -134,8 +134,14 @@ public:
 			return;
 		}
 		if (enter_key) {
-			string reply = run_command(console_text, mobs, player.eye_position(), player.camera.direction);
+			vec3 teleport = vec3(NAN);
+			string reply = run_command(console_text, mobs, player.eye_position(), player.camera.direction, &teleport);
 			if (!reply.empty()) show_message(reply);
+			if (!isnan(teleport.x)) {
+				player.dismount();
+				player.position = teleport;
+				player.velocity = vec3(0.0f);
+			}
 			console_open = false;
 		}
 	}
