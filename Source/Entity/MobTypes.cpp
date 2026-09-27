@@ -160,16 +160,17 @@ namespace {
 		return t;
 	}
 
-	MobType seal() {
+	//a seal of either coat: grey on temperate shores, white on snowy ones
+	MobType seal(const string& name, vector<biome_id> coasts) {
 		MobType t;
-		t.name = "seal";
+		t.name = name;
 		t.hitbox = vec3(0.9f, 0.6f, 0.9f);
 		t.lives = habitat::amphibious;
 		t.walk_speed = 0.5f; //a slow shuffle on land
 		t.swim_speed = 2.5f;
 		t.turn_rate = 2.0f;
 		t.max_health = 10.0f;
-		t.model.skin = "Resources/Textures/Mobs/seal.png";
+		t.model.skin = "Resources/Textures/Mobs/" + name + ".png";
 		t.model.parts = {
 			{ -1, vec3(0), vec3(-4, 0, -7), vec3(8, 6, 14), ivec2(0, 0) },
 			{ -1, vec3(0, 4, 7), vec3(-3, -1, 0), vec3(6, 6, 5), ivec2(0, 21), part_motion::head },
@@ -178,15 +179,40 @@ namespace {
 			{ -1, vec3(1.5f, 1, -7), vec3(-1.5f, -0.5f, -5), vec3(3, 1, 5), ivec2(22, 26), part_motion::tail_beat },
 			{ -1, vec3(-1.5f, 1, -7), vec3(-1.5f, -0.5f, -5), vec3(3, 1, 5), ivec2(22, 26), part_motion::tail_beat },
 		};
-		t.spawn = { { biome_id::beach, biome_id::ocean, biome_id::tundra }, 8, 1, 3 };
+		t.spawn = { std::move(coasts), 8, 1, 3 };
 		t.spawn.ground = { sand, gravel, snow, stone };
 		t.spawn.shore_distance = 4;
 		t.goals = { goal<PanicGoal>(1), goal<HaulOutGoal>(5), goal<SwimGoal>(5), goal<WanderGoal>(5, 0.2f), goal<LookAtPlayerGoal>(5) };
 		return t;
 	}
+
+	MobType horse() {
+		MobType t;
+		t.name = "horse";
+		t.hitbox = vec3(1.3f, 1.6f, 1.3f);
+		t.walk_speed = 1.8f;
+		t.turn_rate = 2.0f;
+		t.max_health = 20.0f;
+		t.model.skin = "Resources/Textures/Mobs/horse.png";
+		t.model.parts = {
+			{ -1, vec3(0, 11, 0), vec3(-5, 0, -10), vec3(10, 9, 20), ivec2(0, 0) },
+			//the neck carries the head, so grazing and looking about swing the whole neck
+			{ -1, vec3(0, 17, 8), vec3(-2, 0, -2), vec3(4, 9, 5), ivec2(16, 32), part_motion::head },
+			{ 1, vec3(0, 9, 0), vec3(-2.5f, -3, -1), vec3(5, 5, 9), ivec2(34, 32) },
+			{ 2, vec3(0), vec3(-2, 2, 0), vec3(1, 2, 1), ivec2(20, 48) },
+			{ 2, vec3(0), vec3(1, 2, 0), vec3(1, 2, 1), ivec2(20, 48) },
+			{ 1, vec3(0), vec3(-1, 0, -3), vec3(2, 10, 1), ivec2(0, 48) },
+			{ -1, vec3(0, 19, -10), vec3(-1.5f, -10, -2), vec3(3, 10, 3), ivec2(8, 48), part_motion::tail_sway },
+		};
+		add_legs(t.model.parts, vec3(4, 11, 4), 11, 3, 7);
+		t.spawn = { { biome_id::plains, biome_id::savanna }, 5, 2, 4 };
+		t.goals = { goal<PanicGoal>(1), goal<WanderGoal>(5), goal<GrazeGoal>(5), goal<LookAtPlayerGoal>(5) };
+		return t;
+	}
 }
 
 const vector<MobType>& mob_types() {
-	static const vector<MobType> types = { sheep(), cow(), pig(), seal(), dolphin(), cod(), salmon(), tropical_fish() };
+	static const vector<MobType> types = { sheep(), cow(), pig(), horse(), seal("seal", { biome_id::beach, biome_id::ocean }),
+		seal("snow_seal", { biome_id::tundra }), dolphin(), cod(), salmon(), tropical_fish() };
 	return types;
 }
