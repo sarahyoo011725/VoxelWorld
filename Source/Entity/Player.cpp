@@ -24,9 +24,32 @@ void Player::update() {
 		return;
 	}
 	update_movement(dt);
-	view_eye = eye_position();
-	camera.update(view_eye);
+	place_camera();
 	block_interactor.update(eye_position(), camera.direction);
+}
+
+void Player::next_view() {
+	view_mode = view_mode == view::first_person ? view::behind : view_mode == view::behind ? view::in_front : view::first_person;
+}
+
+void Player::place_camera() {
+	view_eye = eye_position();
+	camera.look_back = view_mode == view::in_front;
+	if (view_mode != view::first_person) {
+		//back along the look (or out in front of the face), pulled in rather than through a block
+		vec3 away = view_mode == view::behind ? -camera.direction : camera.direction;
+		float wanted = (mount != nullptr ? mount->size.x * 2.0f : 0.0f) + 4.0f;
+		float allowed = 0.0f;
+		ChunkManager& cm = ChunkManager::get_instance();
+		for (float d = 0.25f; d <= wanted; d += 0.25f) {
+			Block* b = cm.get_block_worldspace(round(view_eye + away * d + vec3(0.0f, d * 0.15f, 0.0f)));
+			if (b != nullptr && is_solid(b->type)) break;
+			allowed = d;
+		}
+		float d = glm::max(allowed - 0.3f, 0.0f);
+		view_eye = view_eye + away * d + vec3(0.0f, d * 0.15f, 0.0f);
+	}
+	camera.update(view_eye);
 }
 
 void Player::steer_mount() {
@@ -75,20 +98,7 @@ void Player::follow_mount() {
 	//sitting: hips on the saddle, so the centre is a little above it
 	position = mount->seat() + vec3(0.0f, 0.25f, 0.0f);
 	velocity = mount->velocity;
-	view_eye = eye_position();
-	if (third_person) {
-		//back along the look, pulled in rather than through a block
-		float wanted = mount->size.x * 2.0f + 3.5f;
-		float allowed = 0.0f;
-		ChunkManager& cm = ChunkManager::get_instance();
-		for (float d = 0.25f; d <= wanted; d += 0.25f) {
-			Block* b = cm.get_block_worldspace(round(view_eye - camera.direction * d + vec3(0.0f, d * 0.15f, 0.0f)));
-			if (b != nullptr && is_solid(b->type)) break;
-			allowed = d;
-		}
-		view_eye = view_eye - camera.direction * glm::max(allowed - 0.3f, 0.0f) + vec3(0.0f, allowed * 0.15f, 0.0f);
-	}
-	camera.update(view_eye);
+	place_camera();
 	block_interactor.update(eye_position(), camera.direction);
 }
 

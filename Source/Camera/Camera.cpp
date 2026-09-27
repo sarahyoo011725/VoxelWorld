@@ -132,7 +132,8 @@ void Camera::update_matrix(vec3 eye_position) {
 	vec3 world_up = vec3(0.0f, 1.0f, 0.0f);
 	vec3 right = normalize(cross(direction, world_up));
 	vec3 up = normalize(cross(right, direction));
-	view = lookAt(eye_position, eye_position + direction, up);
+	vec3 facing = look_back ? -direction : direction;
+	view = lookAt(eye_position, eye_position + facing, up);
 	projection = perspective(radians(fov_degrees), (float)window_setting->width / window_setting->height, near_plane, far_plane);
 	mat = projection * view;
 }

@@ -27,7 +27,10 @@ public:
 
 	//riding: the mount moves by the player's keys, and the player sits in its saddle
 	Mob* mount = nullptr;
-	bool third_person = false; //while riding, look on from behind instead of from the saddle
+	//F5 cycles: from the eyes, from behind, and from the front looking back at the player
+	enum class view { first_person, behind, in_front };
+	view view_mode = view::first_person;
+	void next_view();
 	void ride(Mob* mob);
 	void dismount();
 	//after the mobs have moved this frame: sit in the saddle and look from there
@@ -37,6 +40,8 @@ public:
 	vec3 view_position() const { return view_eye; }
 private:
 	void update_movement(float dt);
+	//places the camera for the current view mode around the eyes, kept out of blocks, and updates it
+	void place_camera();
 	void steer_mount();
 	vec3 view_eye = vec3(0.0f);
 

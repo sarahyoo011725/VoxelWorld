@@ -37,7 +37,10 @@ private:
 	double console_message_until = 0.0;
 	bool open_key_was_down = false, slash_key_was_down = false, enter_key_was_down = false, backspace_key_was_down = false, escape_key_was_down = false;
 	bool camera_key_was_down = false;
-	unique_ptr<Mob> rider; //the player as others would see them, drawn in the saddle in third person
+	//the player as seen from outside: in the saddle, standing, the body seen looking down in first person, and the first-person arm
+	unique_ptr<Mob> rider, avatar, avatar_body, hand;
+	float body_yaw = 0.0f; //the body turns only once the head has turned far enough, like a person's
+	float arm_swing = 1.0f; //0 to 1 through a swing of the arm; 1 at rest
 	double last_mob_update = 0.0;
 	Texture texture = Texture("Resources/Textures/texture_atlas_blocks.png", GL_TEXTURE1, GL_TEXTURE_2D, GL_RGBA, GL_RGBA, GL_UNSIGNED_BYTE);
 	bool wireframe = false;
@@ -81,6 +84,9 @@ public:
 		player.limit_reach(target != nullptr ? distance : player.reach());
 
 		bool attack_down = glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+		bool place_down = glfwGetMouseButton(window_setting->window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+		//every hit, break or place swings the arm
+		if ((attack_down && !attack_was_down) || (place_down && !use_was_down)) arm_swing = 0.0f;
 		if (target != nullptr && attack_down && !attack_was_down && target->hurt(attack_damage, player.position)) {
 			audio::play_attack(target->dying());
 		}
@@ -94,7 +100,7 @@ public:
 		use_was_down = use_down;
 
 		bool camera_key_down = glfwGetKey(window_setting->window, GLFW_KEY_F5) == GLFW_PRESS;
-		if (camera_key_down && !camera_key_was_down) player.third_person = !player.third_person;
+		if (camera_key_down && !camera_key_was_down) player.next_view();
 		camera_key_was_down = camera_key_down;
 	}
 
@@ -146,19 +152,77 @@ public:
 		}
 	}
 
-	//the rider model sits in the mount's saddle and turns its head to where the player looks
-	const Mob* rider_to_draw() {
-		if (player.mount == nullptr || !player.third_person) return nullptr;
-		if (rider == nullptr) rider = make_unique<Mob>(rider_type(), vec3(0.0f), 0u);
-		const Mob& mount = *player.mount;
-		rider->position = mount.seat() + vec3(0.0f, rider->size.y * 0.5f, 0.0f);
-		rider->yaw = mount.yaw;
-		rider->pitch = mount.pitch;
-		rider->bank = mount.bank;
+	/*
+		the player's own models this frame: in third person the whole avatar (or the
+		rider, in the saddle); in first person the body seen looking down, and the arm
+	*/
+	vector<const Mob*> avatars_to_draw(float dt) {
+		vector<const Mob*> shown;
+		auto make = [](unique_ptr<Mob>& slot, const MobType& type) -> Mob& {
+			if (slot == nullptr) slot = make_unique<Mob>(type, vec3(0.0f), 0u);
+			return *slot;
+		};
 		vec3 look = player.camera.direction;
-		rider->head_yaw = glm::clamp(rider->wrap_angle(atan2(look.x, look.z) - mount.yaw), -1.2f, 1.2f);
-		rider->head_pitch = glm::clamp(-asin(glm::clamp(look.y, -1.0f, 1.0f)) - mount.pitch, -0.9f, 0.9f);
-		return rider.get();
+		float look_yaw = atan2(look.x, look.z);
+		float look_pitch = asin(glm::clamp(look.y, -1.0f, 1.0f));
+		bool first_person = player.view_mode == Player::view::first_person;
+
+		if (player.mount != nullptr) {
+			const Mob& mount = *player.mount;
+			body_yaw = mount.yaw;
+			if (!first_person) {
+				Mob& r = make(rider, rider_type());
+				r.position = mount.seat() + vec3(0.0f, r.size.y * 0.5f, 0.0f);
+				r.yaw = mount.yaw;
+				r.pitch = mount.pitch;
+				r.bank = mount.bank;
+				r.head_yaw = glm::clamp(r.wrap_angle(look_yaw - mount.yaw), -1.2f, 1.2f);
+				r.head_pitch = glm::clamp(-look_pitch - mount.pitch, -0.9f, 0.9f);
+				shown.push_back(&r);
+			}
+		}
+		else {
+			//the body follows the head once it has turned more than about 45 degrees, and straight away when walking
+			vec2 walk = vec2(player.velocity.x, player.velocity.z);
+			float speed = length(walk);
+			float lag = avatar != nullptr ? avatar->wrap_angle(look_yaw - body_yaw) : 0.0f;
+			if (speed > 0.5f || std::abs(lag) > 0.8f) body_yaw = avatar != nullptr ? avatar->wrap_angle(body_yaw + lag * glm::min(1.0f, dt * 8.0f)) : look_yaw;
+
+			for (auto* slot : { &avatar, &avatar_body }) {
+				Mob& a = make(*slot, slot == &avatar ? player_type() : player_body_type());
+				a.position = player.position;
+				a.yaw = body_yaw;
+				a.head_yaw = glm::clamp(a.wrap_angle(look_yaw - body_yaw), -1.2f, 1.2f);
+				a.head_pitch = glm::clamp(-look_pitch, -1.2f, 1.2f);
+				a.leg_swing += (glm::min(speed / 4.3f, 1.0f) - a.leg_swing) * glm::min(1.0f, dt * 8.0f);
+				a.walk_phase += dt * speed * 2.2f;
+			}
+			if (!first_person) shown.push_back(avatar.get());
+			else {
+				//a little behind the eyes, so looking down shows the chest and legs rather than the inside of the shoulders
+				avatar_body->position -= vec3(sin(body_yaw), 0.0f, cos(body_yaw)) * 0.22f;
+				shown.push_back(avatar_body.get());
+			}
+		}
+
+		if (first_person) {
+			//the right arm low in the corner, bobbing as the player walks and swinging on a click
+			Mob& h = make(hand, player_hand_type());
+			vec3 right = normalize(cross(look, vec3(0.0f, 1.0f, 0.0f)));
+			vec3 up = cross(right, look);
+			float bob = avatar != nullptr ? avatar->walk_phase : 0.0f;
+			float stride = avatar != nullptr ? avatar->leg_swing : 0.0f;
+			arm_swing = glm::min(1.0f, arm_swing + dt * 4.0f);
+			float swing = sin(arm_swing * 3.14159265f);
+			h.position = player.eye_position() + right * (0.38f + cos(bob) * 0.015f * stride) - up * (0.34f - abs(sin(bob)) * 0.02f * stride) + look * 0.36f;
+			h.yaw = look_yaw;
+			h.pitch = look_pitch;
+			//up and in toward the crosshair, and back
+			h.head_pitch = -swing * 0.6f;
+			h.head_yaw = swing * 0.5f;
+			shown.push_back(&h);
+		}
+		return shown;
 	}
 
 	void gl_settings() {
@@ -256,7 +320,7 @@ public:
 		for (const auto& m : mobs.all()) {
 			if (const string* sound = m->take_sound()) mob_sounds.play(*sound, m->position, player.camera.view, 0.8f + 0.4f * (rand() / (float)RAND_MAX));
 		}
-		mob_renderer.build(mobs.all(), rider_to_draw());
+		mob_renderer.build(mobs.all(), avatars_to_draw(mob_dt));
 
 		//shadow pass: render opaque + foliage geometry depth-only from the sun's POV.
 		//refreshed on an interval, or immediately when geometry changed
@@ -320,6 +384,9 @@ public:
 		mob_renderer.draw();
 		terrain.draw_translucent();
 		renderer.draw_outlines(player.view_matrix(), player.hovered_block(), player.hovered_position());
+		//the first-person arm over everything, so it never sinks into a wall
+		glClear(GL_DEPTH_BUFFER_BIT);
+		mob_renderer.draw_overlay();
 		renderer.draw_HUDs();
 		renderer.draw_hotbar(player.inventory());
 		renderer.draw_console(console_text, console_open, glfwGetTime() < console_message_until ? console_message : "");

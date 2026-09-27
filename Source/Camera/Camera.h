@@ -26,6 +26,7 @@ public:
 	mat4 view = mat4(0.0f);
 	mat4 projection = mat4(0.0f);
 	vec3 direction = vec3(0.0f, 0.0f, -1.0f);
+	bool look_back = false; //the view faces against direction, for a camera out in front of the player looking at them
 	mat4 light_space_matrix = mat4(1.0f); //recomputed each frame, centered on the player, for the shadow pass
 	mat4 shadow_matrix = mat4(1.0f);
 	void commit_shadow_matrix() { shadow_matrix = light_space_matrix; }
