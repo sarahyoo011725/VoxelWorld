@@ -1018,15 +1018,21 @@ int main(int argc, char** argv) {
 			auto settle = [&](int frames) { for (int i = 0; i < frames; ++i) pets.update(1.0f / 60.0f, pet_context); };
 			settle(60);
 			if (eastern != nullptr) {
+				//the horse steps aside so nothing stands between the camera and Haku
+				vec3 aside = vec3(0.0f, 0.0f, 40.0f);
+				if (steed != nullptr) steed->position += aside;
 				shoot(*eastern, "dragon_eastern_idle", pets);
 				eastern->head_yaw = eastern->head_pitch = 0.0f;
 				shoot(*eastern, "dragon_eastern_face", pets, {}, 2);
 				//three-quarter view of the head, close
 				vec3 ahead = vec3(sin(eastern->yaw), 0.0f, cos(eastern->yaw));
 				vec3 side = vec3(cos(eastern->yaw), 0.0f, -sin(eastern->yaw));
-				custom_target = eastern->position + ahead * 0.6f + vec3(0.0f, 0.2f, 0.0f);
-				custom_eye = custom_target + ahead * 2.6f + side * 2.2f + vec3(0.0f, 0.9f, 0.0f);
+				custom_target = eastern->position + ahead * 0.9f + vec3(0.0f, 1.25f, 0.0f);
+				custom_eye = custom_target + ahead * 2.2f + side * 1.8f + vec3(0.0f, 0.5f, 0.0f);
 				shoot(*eastern, "dragon_eastern_closeup", pets, {}, 3);
+				custom_eye = custom_target + side * 2.6f + vec3(0.0f, 0.2f, 0.0f);
+				shoot(*eastern, "dragon_eastern_profile", pets, {}, 3);
+				if (steed != nullptr) steed->position -= aside;
 			}
 
 			//the player's avatar walking, from outside and from their own eyes
