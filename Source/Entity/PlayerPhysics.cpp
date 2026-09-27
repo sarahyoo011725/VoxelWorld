@@ -133,7 +133,8 @@ void PlayerPhysics::settle_onto_ground(GameObject& target) {
 }
 
 bool PlayerPhysics::is_underwater(vec3 position) {
-	Block* block = cm.get_block_worldspace(position);
+	//blocks are centred on integer coordinates, so the one containing a point is at its rounded position
+	Block* block = cm.get_block_worldspace(round(position));
 	return block != nullptr && block->type == water;
 }
 
