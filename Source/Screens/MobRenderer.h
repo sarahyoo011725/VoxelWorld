@@ -27,9 +27,11 @@ class MobRenderer {
 public:
 	MobRenderer();
 	~MobRenderer();
-	//extra: one more mob outside the list, e.g. the player seen riding in third person
-	void build(const vector<unique_ptr<Mob>>& mobs, const Mob* extra = nullptr);
+	//extras: mobs outside the list, such as the player's own avatar and first-person arm
+	void build(const vector<unique_ptr<Mob>>& mobs, const vector<const Mob*>& extras = {});
 	void draw();
+	//overlay types only, e.g. the first-person arm; the caller clears depth first so it never sinks into a wall
+	void draw_overlay();
 	void draw_depth(const mat4& light_space_matrix);
 
 	static const int skin_unit = 5;
@@ -48,7 +50,7 @@ private:
 
 	TypeMesh& mesh_for(const MobType& type);
 	void pose(const Mob& mob, vector<vec4>& out) const;
-	void draw_all(Shader& shader, bool with_skin);
+	void draw_all(Shader& shader, bool with_skin, bool overlay);
 
 	ShaderManager& sm;
 	map<const MobType*, unique_ptr<TypeMesh>> meshes;

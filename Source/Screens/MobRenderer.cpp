@@ -183,11 +183,11 @@ void MobRenderer::pose(const Mob& mob, vector<vec4>& out) const {
 	out.push_back(vec4(light, flash, 0.0f, 0.0f));
 }
 
-void MobRenderer::build(const vector<unique_ptr<Mob>>& mobs, const Mob* extra) {
+void MobRenderer::build(const vector<unique_ptr<Mob>>& mobs, const vector<const Mob*>& extras) {
 	for (auto& entry : meshes) entry.second->instances = 0;
 	map<const MobType*, vector<const Mob*>> by_type;
 	for (const auto& m : mobs) by_type[&m->type].push_back(m.get());
-	if (extra != nullptr) by_type[&extra->type].push_back(extra);
+	for (const Mob* extra : extras) by_type[&extra->type].push_back(extra);
 
 	texels.clear();
 	for (auto& entry : by_type) {
@@ -203,13 +203,13 @@ void MobRenderer::build(const vector<unique_ptr<Mob>>& mobs, const Mob* extra) {
 }
 
 //culling stays off: the boxes are closed, so the depth test already hides their far sides
-void MobRenderer::draw_all(Shader& shader, bool with_skin) {
+void MobRenderer::draw_all(Shader& shader, bool with_skin, bool overlay) {
 	glActiveTexture(GL_TEXTURE0 + matrix_unit);
 	glBindTexture(GL_TEXTURE_BUFFER, matrix_texture);
 	glDisable(GL_CULL_FACE);
 	for (auto& entry : meshes) {
 		TypeMesh& mesh = *entry.second;
-		if (mesh.instances == 0) continue;
+		if (mesh.instances == 0 || entry.first->overlay != overlay) continue;
 		if (with_skin) {
 			mesh.skin->activate();
 			mesh.skin->bind();
@@ -226,12 +226,18 @@ void MobRenderer::draw_all(Shader& shader, bool with_skin) {
 void MobRenderer::draw() {
 	if (texels.empty()) return;
 	sm.mob_shader.activate();
-	draw_all(sm.mob_shader, true);
+	draw_all(sm.mob_shader, true, false);
+}
+
+void MobRenderer::draw_overlay() {
+	if (texels.empty()) return;
+	sm.mob_shader.activate();
+	draw_all(sm.mob_shader, true, true);
 }
 
 void MobRenderer::draw_depth(const mat4& light_space_matrix) {
 	if (texels.empty()) return;
 	sm.mob_shadow_shader.activate();
 	sm.mob_shadow_shader.set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, light_space_matrix);
-	draw_all(sm.mob_shadow_shader, false);
+	draw_all(sm.mob_shadow_shader, false, false);
 }

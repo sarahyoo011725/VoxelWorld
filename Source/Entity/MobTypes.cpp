@@ -270,7 +270,7 @@ namespace {
 		MobType t;
 		t.name = "rider";
 		t.hitbox = vec3(0.6f, 1.8f, 0.6f);
-		t.model.skin = "Resources/Textures/Mobs/rider.png";
+		t.model.skin = "Resources/Textures/Mobs/player.png";
 		t.model.parts = {
 			{ -1, vec3(0), vec3(-4, 0, -2), vec3(8, 12, 4), ivec2(16, 16) },
 			{ 0, vec3(0, 12, 0), vec3(-4, 0, -4), vec3(8, 8, 8), ivec2(0, 0), part_motion::head },
@@ -300,5 +300,48 @@ const MobType* find_mob_type(const string& name) {
 
 const MobType& rider_type() {
 	static const MobType type = rider();
+	return type;
+}
+
+namespace {
+	//standing, facing +z: arms swing against the legs on the same side as they walk
+	MobType player_model(bool with_head) {
+		MobType t;
+		t.name = with_head ? "player" : "player_body";
+		t.hitbox = vec3(0.6f, 1.8f, 0.6f);
+		t.model.skin = "Resources/Textures/Mobs/player.png";
+		t.model.parts = { { -1, vec3(0, 12, 0), vec3(-4, 0, -2), vec3(8, 12, 4), ivec2(16, 16) } };
+		if (with_head) t.model.parts.push_back({ 0, vec3(0, 12, 0), vec3(-4, 0, -4), vec3(8, 8, 8), ivec2(0, 0), part_motion::head });
+		t.model.parts.push_back({ 0, vec3(-5.5f, 11, 0), vec3(-1.5f, -11, -2), vec3(3, 12, 4), ivec2(40, 16), part_motion::leg_forward });
+		t.model.parts.push_back({ 0, vec3(5.5f, 11, 0), vec3(-1.5f, -11, -2), vec3(3, 12, 4), ivec2(40, 16), part_motion::leg_back });
+		t.model.parts.push_back({ -1, vec3(-2, 12, 0), vec3(-2, -12, -2), vec3(4, 12, 4), ivec2(0, 16), part_motion::leg_back });
+		t.model.parts.push_back({ -1, vec3(2, 12, 0), vec3(-2, -12, -2), vec3(4, 12, 4), ivec2(0, 16), part_motion::leg_forward });
+		return t;
+	}
+
+	//one arm reaching forward from the shoulder; head yaw and pitch swing it
+	MobType player_hand() {
+		MobType t;
+		t.name = "player_hand";
+		t.hitbox = vec3(0.1f, 0.0f, 0.1f); //no height, so the model's origin is the shoulder itself
+		t.overlay = true;
+		t.model.skin = "Resources/Textures/Mobs/player.png";
+		t.model.parts = { { -1, vec3(0), vec3(-1.5f, -12, -2), vec3(3, 12, 4), ivec2(40, 16), part_motion::head, vec3(-1.3f, 0.35f, 0) } };
+		return t;
+	}
+}
+
+const MobType& player_type() {
+	static const MobType type = player_model(true);
+	return type;
+}
+
+const MobType& player_body_type() {
+	static const MobType type = player_model(false);
+	return type;
+}
+
+const MobType& player_hand_type() {
+	static const MobType type = player_hand();
 	return type;
 }

@@ -101,6 +101,7 @@ struct MobType {
 	float ride_speed = 0.0f; //on the ground, blocks per second
 	float jump_speed = 0.0f; //upward speed of a ridden jump
 	bool pet = false; //never spawns in the wild; one summoned is the player's, follows them and never despawns
+	bool overlay = false; //drawn over the world after the depth is cleared, like a first-person arm
 	MobModel model;
 	MobSounds sounds;
 	SpawnRule spawn;
@@ -111,3 +112,8 @@ const vector<MobType>& mob_types();
 const MobType* find_mob_type(const string& name);
 //the player as seen from outside, sitting astride a mount; drawn only in third person
 const MobType& rider_type();
+//the player standing and walking; the headless one is what they see of themselves in first person
+const MobType& player_type();
+const MobType& player_body_type();
+//the first-person right arm, drawn over the world
+const MobType& player_hand_type();
