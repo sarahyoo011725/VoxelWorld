@@ -15,12 +15,9 @@ using namespace std;
 namespace audio {
 	static SoundDevice* sound_device = LISTENER->get_instance();
 	static SoundEffectsPlayer effect_player1 = SoundEffectsPlayer(); //used to play sound effects for block interaction
-	static SoundEffectsPlayer effect_player2 = SoundEffectsPlayer(); //used to play sound effects for block walking
 	static MusicBuffer *current_music = nullptr;
 
 	void play_block_sound_effect(block_type type);
-	//loops footsteps for the block underfoot while walking; none stops them
-	void update_footsteps(block_type ground);
 	void play_random_music();
 	//a hit that landed on a mob; a killing blow sounds heavier
 	void play_attack(bool killed);
@@ -55,5 +52,4 @@ namespace sound_effect {
 	const static ALuint water = SE_LOAD("Resources/Sound Effects/place_water.ogg");
 	const static ALuint wood = SE_LOAD("Resources/Sound Effects/place_and_break_wood.ogg");
 
-	const static ALuint walk_grass = SE_LOAD("Resources/Sound Effects/walk_grass.ogg");
 }

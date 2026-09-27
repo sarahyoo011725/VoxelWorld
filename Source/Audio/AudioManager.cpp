@@ -46,28 +46,6 @@ void audio::play_block_sound_effect(block_type type) {
 	}
 }
 
-void audio::update_footsteps(block_type ground) {
-	ALuint sound = 0;
-	switch (ground) {
-	case none:
-	case water:
-	case lava:
-		break;
-	default:
-		sound = sound_effect::walk_grass; //the only footstep sound so far
-		break;
-	}
-	if (sound == 0) {
-		if (effect_player2.is_playing()) effect_player2.stop();
-		return;
-	}
-	//play() restarts a sound that is already playing, so only start one that isn't
-	if (!effect_player2.is_playing()) {
-		effect_player2.set_looping(true);
-		effect_player2.play(sound);
-	}
-}
-
 namespace {
 	//loaded on first use, once OpenAL is up, rather than at static initialisation in every file that includes the header
 	struct PlayerSounds {

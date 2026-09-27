@@ -1,5 +1,4 @@
 #include "Player.h"
-#include "Audio/AudioManager.h"
 
 Player::Player(WindowSetting* setting, vec3 position)
 	: camera(setting), window_setting(setting), block_interactor(setting) {
@@ -73,13 +72,4 @@ void Player::update_movement(float dt) {
 	}
 
 	physics.integrate(*this, dt, enable_physics);
-
-	bool walking = enable_physics && physics.on_ground && (velocity.x != 0.0f || velocity.z != 0.0f);
-	audio::update_footsteps(walking ? ground_type() : none);
-}
-
-block_type Player::ground_type() const {
-	vec3 below = position - vec3(0.0f, size.y * 0.5f + 0.1f, 0.0f);
-	Block* block = ChunkManager::get_instance().get_block_worldspace(round(below));
-	return block != nullptr ? block->type : none;
 }
