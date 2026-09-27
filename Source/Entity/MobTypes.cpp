@@ -215,11 +215,12 @@ namespace {
 		return t;
 	}
 
-	//a long wingless river dragon that swims through the air, after Haku
+	//a long wingless river dragon that swims through the air, after Haku in Spirited Away: sculpted in
+	//voxels half a skin pixel across by Tools/sculpt_haku.py, see Resources/Models/haku
 	MobType eastern_dragon() {
 		MobType t;
 		t.name = "eastern_dragon";
-		t.hitbox = vec3(1.0f, 0.8f, 1.0f);
+		t.hitbox = vec3(1.4f, 1.4f, 1.4f);
 		t.walk_speed = 0.0f;
 		t.turn_rate = 2.5f;
 		t.max_health = 50.0f;
@@ -227,41 +228,34 @@ namespace {
 		t.hovers = true;
 		t.fly_speed = 12.0f;
 		t.rideable = true;
-		t.seat = vec3(0, 11, -9);
+		t.seat = vec3(0, 19.5f, -14);
 		t.pet = true;
-		t.model.skin = "Resources/Textures/Mobs/eastern_dragon.png";
-		t.model.skin_size = ivec2(128, 128);
 		vector<ModelPart>& p = t.model.parts;
-		p = {
-			{ -1, vec3(0, 8, 0), vec3(-3, -3, -6), vec3(6, 6, 6), ivec2(0, 0) },
-			//1: a long wolfish head with a snout, a jaw, swept horns, whiskers and a mane
-			{ 0, vec3(0), vec3(-3.5f, -3, 0), vec3(7, 6, 9), ivec2(24, 0), part_motion::head },
-			{ 1, vec3(0), vec3(-2.5f, -3, 9), vec3(5, 3, 5), ivec2(56, 0) },
-			{ 1, vec3(0, -3, 6), vec3(-2.5f, -1, 0), vec3(5, 1, 6), ivec2(56, 8) },
-			{ 1, vec3(2, 3, 2), vec3(-0.5f, 0, -0.5f), vec3(1, 4, 1), ivec2(78, 0), part_motion::none, vec3(-0.7f, 0, -0.25f) },
-			{ 1, vec3(-2, 3, 2), vec3(-0.5f, 0, -0.5f), vec3(1, 4, 1), ivec2(78, 0), part_motion::none, vec3(-0.7f, 0, 0.25f) },
-			{ 2, vec3(2.5f, -1, 4), vec3(-0.5f, -0.5f, 0), vec3(1, 1, 10), ivec2(82, 0), part_motion::none, vec3(0.2f, 2.5f, 0) },
-			{ 2, vec3(-2.5f, -1, 4), vec3(-0.5f, -0.5f, 0), vec3(1, 1, 10), ivec2(82, 0), part_motion::none, vec3(0.2f, -2.5f, 0) },
-			{ 1, vec3(0, 3, 0), vec3(-2.5f, 0, -4), vec3(5, 3, 8), ivec2(0, 15) },
+		auto sculpted = [&](int parent, vec3 pivot, const string& file, part_motion motion = part_motion::none, vec3 rest = vec3(0.0f)) {
+			ModelPart part;
+			part.parent = parent;
+			part.pivot = pivot;
+			part.motion = motion;
+			part.rest = rest;
+			part.voxels = "Resources/Models/haku/" + file + ".vox";
+			p.push_back(part);
+			return (int)p.size() - 1;
 		};
-		//9: fifteen more links behind the first; the ripple runs down them from the head
-		int previous = 0;
-		vector<int> links = { 0 };
+		//the neck lifts a little from the body, and the head bows gently on it
+		vector<int> links;
+		links.push_back(sculpted(-1, vec3(0, 17, 0), "body_00", part_motion::none, vec3(-0.3f, 0, 0)));
+		sculpted(links[0], vec3(0), "head", part_motion::head, vec3(0.45f, 0, 0));
 		for (int i = 1; i < 16; ++i) {
-			p.push_back({ previous, vec3(0, 0, -6), vec3(-3, -3, -6), vec3(6, 6, 6), ivec2(0, 0), part_motion::serpent });
-			previous = (int)p.size() - 1;
-			links.push_back(previous);
+			char name[16];
+			snprintf(name, sizeof(name), "body_%02d", i);
+			links.push_back(sculpted(links.back(), vec3(0, 0, -8), name, part_motion::serpent, vec3(i == 1 ? 0.3f : 0.0f, 0, 0)));
 		}
-		for (int i = 1; i < 15; i += 2) {
-			p.push_back({ links[i], vec3(0, 3, 0), vec3(-1, 0, -5), vec3(2, 3, 5), ivec2(26, 15) });
-		}
+		sculpted(links.back(), vec3(0, 0, -8), "tail", part_motion::tail_sway);
 		for (int pair : { 2, 11 }) {
 			for (float side : { 1.0f, -1.0f }) {
-				p.push_back({ links[pair], vec3(3 * side, -2, -3), vec3(-1, -5, -1), vec3(2, 5, 2), ivec2(40, 15),
-					side > 0.0f ? part_motion::leg_forward : part_motion::leg_back, vec3(0.5f, 0, 0) });
+				sculpted(links[pair], vec3(2.2f * side, -1.5f, -4), "leg", side > 0.0f ? part_motion::leg_forward : part_motion::leg_back);
 			}
 		}
-		p.push_back({ links.back(), vec3(0, 0, -6), vec3(-0.5f, -2.5f, -6), vec3(1, 5, 6), ivec2(48, 15), part_motion::tail_sway });
 		t.goals = { goal<FollowOwnerGoal>(2), goal<ReturnHomeGoal>(3), goal<DriftGoal>(5), goal<LookAtPlayerGoal>(5, 12.0f) };
 		return t;
 	}
