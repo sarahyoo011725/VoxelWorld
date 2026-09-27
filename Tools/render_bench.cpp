@@ -1032,6 +1032,40 @@ int main(int argc, char** argv) {
 				shoot(*eastern, "dragon_eastern_closeup", pets, {}, 3);
 				custom_eye = custom_target + side * 2.6f + vec3(0.0f, 0.2f, 0.0f);
 				shoot(*eastern, "dragon_eastern_profile", pets, {}, 3);
+				//left with nowhere to go over dry ground, Haku settles and rests as in the film
+				eastern->position = vec3(field.x + 0.5f, (float)get_terrain_generator().sample_height(field.x, field.y) + 4.0f, field.y + 0.5f);
+				eastern->velocity = vec3(0.0f);
+				int waited = 0;
+				while (eastern->flying && waited < 600) {
+					settle(1);
+					waited++;
+				}
+				settle(60);
+				printf("  Haku left over the field: %s after %.1f s\n", eastern->flying ? "still flying" : "landed", waited / 60.0f);
+				eastern->head_yaw = eastern->head_pitch = 0.0f;
+				shoot(*eastern, "dragon_eastern_perched", pets);
+				ahead = vec3(sin(eastern->yaw), 0.0f, cos(eastern->yaw));
+				side = vec3(cos(eastern->yaw), 0.0f, -sin(eastern->yaw));
+				custom_target = eastern->position + vec3(0.0f, 0.5f, 0.0f) - ahead * 1.5f;
+				custom_eye = custom_target + side * 6.0f + ahead * 3.5f + vec3(0.0f, 1.2f, 0.0f);
+				shoot(*eastern, "dragon_eastern_perched_three_quarter", pets, {}, 3);
+				eastern->flying = true;
+				eastern->position.y += 3.0f;
+				//flying on his own he swims through the air in S-curves, the body following his head's path
+				for (int f = 0; f < 150; ++f) {
+					eastern->move = 1.0f;
+					eastern->target_pitch = 0.15f;
+					settle(1);
+				}
+				ahead = vec3(sin(eastern->yaw), 0.0f, cos(eastern->yaw));
+				side = vec3(cos(eastern->yaw), 0.0f, -sin(eastern->yaw));
+				custom_target = eastern->position - ahead * 3.5f;
+				custom_eye = custom_target + vec3(0.0f, 10.0f, 0.0f) - ahead * 3.0f;
+				shoot(*eastern, "dragon_eastern_swimming_above", pets, {}, 3);
+				custom_eye = custom_target + side * 9.0f + ahead * 2.0f + vec3(0.0f, 1.5f, 0.0f);
+				shoot(*eastern, "dragon_eastern_swimming_side", pets, {}, 3);
+				eastern->move = 0.0f;
+				eastern->target_pitch = 0.0f;
 				if (steed != nullptr) steed->position -= aside;
 			}
 
@@ -1122,10 +1156,18 @@ int main(int argc, char** argv) {
 				printf("  eastern dragon ridden for 3 s: %.1f blocks, %.1f up\n", length(moved), moved.y);
 				seat_rider(*eastern);
 				shoot(*eastern, "ride_eastern_flying", pets, { &rider_model });
+				//the body lies along the path the head swam: seen from above and from the side
+				vec3 ahead = vec3(sin(eastern->yaw), 0.0f, cos(eastern->yaw));
+				vec3 side = vec3(cos(eastern->yaw), 0.0f, -sin(eastern->yaw));
+				custom_target = eastern->position - ahead * 3.5f;
+				custom_eye = custom_target + vec3(0.0f, 11.0f, 0.0f) - ahead * 3.0f;
+				shoot(*eastern, "ride_eastern_coils_above", pets, { &rider_model }, 3);
+				custom_eye = custom_target + side * 10.0f + vec3(0.0f, 1.5f, 0.0f);
+				shoot(*eastern, "ride_eastern_coils_side", pets, { &rider_model }, 3);
 				eastern->ridden = false;
 				float before = eastern->position.y;
 				settle(180);
-				printf("  let go, it hovers: %.2f blocks of drift in height over 3 s (flying: %s)\n", eastern->position.y - before, eastern->flying ? "yes" : "no");
+				printf("  let go, it settles toward the ground: %.2f blocks in 3 s (flying: %s)\n", eastern->position.y - before, eastern->flying ? "yes" : "no");
 			}
 
 			//pets come over only now and then, but always before they'd be left behind: go past that leash
