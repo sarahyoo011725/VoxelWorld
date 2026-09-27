@@ -341,9 +341,15 @@ void Mob::fly(float dt, float turn) {
 		Block* ahead = block_at(position + heading * (size.x * 0.5f + 1.0f));
 		if (ahead != nullptr && is_solid(ahead->type)) {
 			blocked = true;
-			heading = normalize(vec3(heading.x * 0.3f, 1.0f, heading.z * 0.3f));
+			//under an overhang such as a tree's crown there's no climbing over it: back out and to the side
+			Block* above = block_at(position + vec3(0.0f, size.y * 0.5f + 1.0f, 0.0f));
+			vec3 side = vec3(cos(yaw), 0.0f, -sin(yaw));
+			if (above != nullptr && is_solid(above->type)) heading = normalize(vec3(-heading.x, 0.0f, -heading.z) + side);
+			else heading = normalize(vec3(heading.x * 0.3f, 1.0f, heading.z * 0.3f));
 		}
 		wanted = heading * type.fly_speed * 0.6f * move;
+		//setting off from the ground, rise clear of it first
+		if (physics.on_ground) wanted.y = glm::max(wanted.y, 4.0f);
 	}
 	else if (type.hovers) {
 		//with nowhere to go a percher settles to the ground, unless there's only water under it

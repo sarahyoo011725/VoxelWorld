@@ -5,6 +5,22 @@ namespace {
 	bool roll(Mob& mob, float chance_per_second, float dt) {
 		return mob.random_between(0.0f, 1.0f) < chance_per_second * dt;
 	}
+
+	//blocks of air under the mob down to the ground or water, up to `limit`
+	int clearance(const Mob& mob, int limit) {
+		ChunkManager& cm = ChunkManager::get_instance();
+		int blocks = 0;
+		for (; blocks < limit; ++blocks) {
+			Block* b = cm.get_block_worldspace(round(mob.position - vec3(0.0f, blocks + 1.0f, 0.0f)));
+			if (b != nullptr && (is_solid(b->type) || b->type == water)) break;
+		}
+		return blocks;
+	}
+
+	//a flier on its way somewhere cruises above the treetops rather than weaving through the trunks
+	void keep_clear_of_trees(Mob& mob) {
+		if (mob.flying && clearance(mob, 6) < 6) mob.target_pitch = glm::max(mob.target_pitch, 0.6f);
+	}
 }
 
 bool PanicGoal::can_start(Mob& mob, const MobContext& context, float dt) {
@@ -269,6 +285,7 @@ void FollowOwnerGoal::tick(Mob& mob, const MobContext& context, float dt) {
 	mob.target_pitch = mob.flying ? glm::clamp(atan2(to.y, length(vec2(to.x, to.z))), -0.7f, 0.7f) : 0.0f;
 	mob.move = far > 24.0f ? 1.6f : 1.0f;
 	mob.turn_boost = 2.0f;
+	if (far > 12.0f) keep_clear_of_trees(mob);
 }
 
 void FollowOwnerGoal::stop(Mob& mob) {
@@ -294,6 +311,7 @@ void ReturnHomeGoal::tick(Mob& mob, const MobContext& context, float dt) {
 	mob.target_yaw = atan2(to.x, to.z);
 	mob.target_pitch = mob.flying ? glm::clamp(atan2(to.y, length(vec2(to.x, to.z))), -0.7f, 0.7f) : 0.0f;
 	mob.move = 1.0f;
+	keep_clear_of_trees(mob);
 }
 
 void ReturnHomeGoal::stop(Mob& mob) {
@@ -310,14 +328,9 @@ void DriftGoal::start(Mob& mob, const MobContext& context) {
 	bool rising = !mob.flying;
 	mob.flying = true;
 	mob.target_yaw = mob.wrap_angle(mob.yaw + mob.random_between(-1.8f, 1.8f));
-	int clearance = 0;
-	ChunkManager& cm = ChunkManager::get_instance();
-	for (; clearance < 12; ++clearance) {
-		Block* b = cm.get_block_worldspace(round(mob.position - vec3(0.0f, clearance + 1.0f, 0.0f)));
-		if (b != nullptr && (is_solid(b->type) || b->type == water)) break;
-	}
-	if (clearance < 3) mob.target_pitch = mob.random_between(0.2f, 0.4f);
-	else if (clearance > 9) mob.target_pitch = mob.random_between(-0.4f, -0.2f);
+	int clear = clearance(mob, 12);
+	if (clear < 3) mob.target_pitch = mob.random_between(0.2f, 0.4f);
+	else if (clear > 9) mob.target_pitch = mob.random_between(-0.4f, -0.2f);
 	else mob.target_pitch = mob.random_between(-0.2f, 0.2f);
 	//a flight from the ground is a proper soar: up, faster, and for longer
 	if (rising) mob.target_pitch = mob.random_between(0.3f, 0.5f);
