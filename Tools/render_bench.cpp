@@ -585,7 +585,8 @@ int main(int argc, char** argv) {
 		printf("  cost per frame: update %.3f ms, pose upload %.3f ms\n", update_ms / frames, build_ms / frames);
 
 		//a close look at a mob, lit and shadowed like the game draws it
-		auto shoot = [&](const Mob& subject, const string& name) {
+		mat4 shot_light = shadow_light; //the aquatic shots are far from the shadow map and switch it off
+		auto shoot = [&](const Mob& subject, const string& name, const MobManager& source) {
 			vec3 side = vec3(cos(subject.yaw), 0.0f, -sin(subject.yaw));
 			vec3 ahead = vec3(sin(subject.yaw), 0.0f, cos(subject.yaw));
 			//the first spot beside the mob, a little ahead so the face shows, with a clear line of sight to it
@@ -597,7 +598,7 @@ int main(int argc, char** argv) {
 					bool clear = true;
 					for (float t = 0.15f; t <= 1.0f && clear; t += 0.05f) {
 						Block* b = cm.get_block_worldspace(round(mix(subject.position, candidate, t)));
-						clear = b == nullptr || (b->type == none);
+						clear = b == nullptr || b->type == none || b->type == water;
 					}
 					if (clear && !found) { eye = candidate; found = true; }
 				}
@@ -609,7 +610,7 @@ int main(int argc, char** argv) {
 				s->activate();
 				s->set_uniform_1i("texture1", s == &sm.mob_shader ? MobRenderer::skin_unit : 1);
 				s->set_uniform_1i("shadow_map", 4);
-				s->set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shadow_light);
+				s->set_uniform_mat4f("light_space_matrix", 1, GL_FALSE, shot_light);
 			}
 			sm.mob_shader.set_uniform_1i("part_matrices", MobRenderer::matrix_unit);
 			glActiveTexture(GL_TEXTURE4);
@@ -623,9 +624,10 @@ int main(int argc, char** argv) {
 			atlas.bind();
 			glClearColor(0.6f, 0.75f, 0.95f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			terrain.draw(view_projection);
-			mob_renderer.build(mobs.all());
+			terrain.draw_opaque(view_projection);
+			mob_renderer.build(source.all());
 			mob_renderer.draw();
+			terrain.draw_translucent();
 			vector<unsigned char> pixels(1200 * 700 * 3);
 			glPixelStorei(GL_PACK_ALIGNMENT, 1);
 			glReadPixels(0, 0, 1200, 700, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
@@ -640,7 +642,7 @@ int main(int argc, char** argv) {
 			Mob*& best = subjects[m->type.name];
 			if (best == nullptr || distance(m->position, position) < distance(best->position, position)) best = m.get();
 		}
-		for (const auto& entry : subjects) shoot(*entry.second, entry.first);
+		for (const auto& entry : subjects) shoot(*entry.second, entry.first, mobs);
 
 		printf("\ncombat\n");
 		auto step = [&](int count) { for (int i = 0; i < count; ++i) mobs.update(1.0f / 60.0f, context); };
@@ -687,7 +689,7 @@ int main(int argc, char** argv) {
 			}
 			printf("  died after %d hits of 2 (%.0f health)\n", hits, victim->type.max_health);
 			step(20);
-			shoot(*victim, "dying");
+			shoot(*victim, "dying", mobs);
 			int frames_after = 20;
 			while (alive(victim) && frames_after < 600) {
 				step(1);
@@ -699,7 +701,7 @@ int main(int argc, char** argv) {
 			for (const auto& m : mobs.all()) {
 				if (tested == 3) break;
 				Mob* faller = m.get();
-				if (faller->dying() || faller->hurt_time > 0.0f || faller->panic_time > 0.0f) continue;
+				if (faller->dying() || faller->hurt_time > 0.0f || faller->panic_time > 0.0f || faller->type.lives != habitat::land) continue;
 				float drop = 0.0f;
 				for (float lift : { 8.0f, 7.0f, 6.0f, 5.0f }) {
 					faller->position.y += lift;
@@ -721,6 +723,191 @@ int main(int argc, char** argv) {
 				printf("  %s fell %.2f blocks: health %.0f -> %.0f (expected %.0f)\n", faller->type.name.c_str(), fell,
 					health_before_fall, faller->health, health_before_fall - glm::max(0.0f, std::floor(fell + 0.01f - Mob::safe_fall)));
 			}
+		}
+		//the sea: move to the nearest deep water, let swimmers settle in, then come back
+		printf("\naquatic mobs (3600 frames simulated at 60 fps)\n");
+		ivec2 sea = ivec2(0);
+		bool found_sea = false;
+		for (int r = 16; r <= 3000 && !found_sea; r += 16) {
+			for (int a = 0; a < 48 && !found_sea; ++a) {
+				int x = (int)(cos(a * 0.1309f) * r), z = (int)(sin(a * 0.1309f) * r);
+				if (get_terrain_generator().sample_height(x, z) <= water_level - 7) {
+					sea = ivec2(x, z);
+					found_sea = true;
+				}
+			}
+		}
+		if (!found_sea) printf("  no deep water within 3000 blocks\n");
+		auto load_around = [&](vec3 where) {
+			position = where;
+			float budget = terrain.build_budget_ms;
+			terrain.build_budget_ms = 1e9f;
+			for (int i = 0; i < 400; ++i) {
+				terrain.update_chunks();
+				terrain.draw(mat4(1.0f));
+				if (i > 2 && terrain.stats.chunks_pending == 0) break;
+			}
+			terrain.build_budget_ms = budget;
+		};
+		if (found_sea) {
+			vec3 home = position;
+			load_around(vec3(sea.x + 0.5f, water_level + 2.0f, sea.y + 0.5f));
+			printf("  sea at (%d, %d), %d blocks deep\n", sea.x, sea.y, water_level - get_terrain_generator().sample_height(sea.x, sea.y));
+
+			MobManager sea_mobs;
+			MobContext sea_context;
+			sea_context.player_eye = position;
+			long swimmer_frames = 0, beached_frames = 0, sea_overlap = 0, sea_frames = 0;
+			int breaches = 0, hauled_out = 0, went_in = 0;
+			map<const Mob*, int> medium; //seals: 1 water, 2 land
+			map<const Mob*, bool> airborne;
+			map<const Mob*, bool> counted;
+			map<string, int> spawned;
+			double sea_update_ms = 0;
+			for (int f = 0; f < 3600; ++f) {
+				double a = now_ms();
+				sea_mobs.update(1.0f / 60.0f, sea_context);
+				sea_update_ms += now_ms() - a;
+				for (const auto& m : sea_mobs.all()) {
+					if (!counted[m.get()]) {
+						counted[m.get()] = true;
+						spawned[m->type.name]++;
+					}
+					sea_frames++;
+					if (penetrates(*m)) sea_overlap++;
+					if (m->type.lives == habitat::water) {
+						swimmer_frames++;
+						if (!m->in_water) beached_frames++;
+					}
+					if (m->type.lives == habitat::amphibious) {
+						int now = m->in_water ? 1 : (m->on_ground() ? 2 : 0);
+						int& last = medium[m.get()];
+						if (now != 0) {
+							if (last == 1 && now == 2) hauled_out++;
+							if (last == 2 && now == 1) went_in++;
+							last = now;
+						}
+					}
+					if (m->type.name == "dolphin") {
+						bool up = m->feet().y > water_level + 0.5f;
+						if (up && !airborne[m.get()]) breaches++;
+						airborne[m.get()] = up;
+					}
+				}
+			}
+			printf("  spawned:");
+			for (const auto& entry : spawned) printf(" %d %s", entry.second, entry.first.c_str());
+			printf("\n  swimmers out of the water in %ld of %ld frames, hitbox in a block in %ld of %ld mob-frames\n", beached_frames, swimmer_frames, sea_overlap, sea_frames);
+			printf("  dolphin leaps clear of the surface: %d; seals hauling out: %d, slipping back in: %d\n", breaches, hauled_out, went_in);
+			int seals = 0, seals_swimming = 0;
+			for (const auto& m : sea_mobs.all()) {
+				if (m->type.lives != habitat::amphibious) continue;
+				seals++;
+				if (m->in_water) seals_swimming++;
+			}
+			printf("  seals in the water at the end: %d of %d\n", seals_swimming, seals);
+			printf("  cost per frame: update %.3f ms for %zu mobs\n", sea_update_ms / 3600, sea_mobs.all().size());
+
+			//nearest of each kind, then a fish stranded on the shore
+			map<string, Mob*> sea_subjects;
+			for (const auto& m : sea_mobs.all()) {
+				Mob*& best = sea_subjects[m->type.name];
+				if (best == nullptr || distance(m->position, position) < distance(best->position, position)) best = m.get();
+			}
+			mat4 no_shadow = mat4(0.0f);
+			no_shadow[3] = vec4(0.0f, 0.0f, 2.0f, 1.0f);
+			shot_light = no_shadow;
+			for (const auto& entry : sea_subjects) shoot(*entry.second, "sea_" + entry.first, sea_mobs);
+
+			Mob* fish = nullptr;
+			for (const auto& m : sea_mobs.all()) {
+				if (m->type.lives == habitat::water && m->type.name != "dolphin") { fish = m.get(); break; }
+			}
+			if (fish != nullptr) {
+				bool placed = false;
+				ivec3 at = ivec3(round(fish->position));
+				for (int r = 1; r <= 64 && !placed; ++r) {
+					for (int dx = -r; dx <= r && !placed; ++dx) {
+						for (int dz = -r; dz <= r && !placed; dz += (std::abs(dx) == r ? 1 : 2 * r)) {
+							int x = at.x + dx, z = at.z + dz;
+							int h = get_terrain_generator().sample_height(x, z);
+							Block* top = cm.get_block_worldspace(vec3(x, h, z));
+							Block* above = cm.get_block_worldspace(vec3(x, h + 1, z));
+							if (h <= water_level || top == nullptr || !is_solid(top->type) || above == nullptr || above->type != none) continue;
+							fish->position = vec3(x, h + 0.51f + fish->size.y * 0.5f, z);
+							fish->velocity = vec3(0.0f);
+							placed = fish->fits();
+						}
+					}
+				}
+				if (placed) {
+					int hops = 0;
+					float died_at = -1.0f;
+					bool was_rising = false;
+					for (int f = 0; f < 600 && died_at < 0.0f; ++f) {
+						sea_mobs.update(1.0f / 60.0f, sea_context);
+						bool rising = fish->velocity.y > 2.0f;
+						if (rising && !was_rising) hops++;
+						was_rising = rising;
+						if (fish->dying()) died_at = f / 60.0f;
+						if (f == 30) shoot(*fish, "sea_stranded", sea_mobs);
+					}
+					printf("  a %s put on dry land: %d flops, %s\n", fish->type.name.c_str(), hops,
+						died_at >= 0.0f ? ("suffocated after " + to_string(died_at).substr(0, 4) + " s").c_str() : "still alive after 10 s");
+				}
+			}
+			auto type_named = [](const string& name) -> const MobType* {
+				for (const MobType& t : mob_types()) if (t.name == name) return &t;
+				return nullptr;
+			};
+			auto block_type_at = [&](int x, int y, int z) {
+				Block* b = cm.get_block_worldspace(vec3(x, y, z));
+				return b != nullptr ? b->type : bedrock;
+			};
+
+			//a seal put in the water a few blocks off a shore: how long until it climbs out
+			bool shore_found = false;
+			for (int r = 2; r <= 40 && !shore_found; ++r) {
+				for (int dx = -r; dx <= r && !shore_found; ++dx) {
+					for (int dz = -r; dz <= r && !shore_found; dz += (std::abs(dx) == r ? 1 : 2 * r)) {
+						int x = sea.x + dx, z = sea.y + dz, y = water_level;
+						if (!is_solid(block_type_at(x, y, z)) || block_type_at(x, y + 1, z) != none) continue;
+						for (ivec2 step : { ivec2(3, 0), ivec2(-3, 0), ivec2(0, 3), ivec2(0, -3) }) {
+							int wx = x + step.x, wz = z + step.y;
+							if (block_type_at(wx, y, wz) != water || block_type_at(wx, y - 1, wz) != water) continue;
+							Mob* seal = sea_mobs.add(*type_named("seal"), vec3(wx, y - 1.0f, wz));
+							if (seal == nullptr) continue;
+							shore_found = true;
+							float out_at = -1.0f;
+							for (int f = 0; f < 60 * 60 && out_at < 0.0f; ++f) {
+								sea_mobs.update(1.0f / 60.0f, sea_context);
+								if (!seal->in_water && seal->on_ground()) out_at = f / 60.0f;
+							}
+							printf("  a seal put in the water 3 blocks off a shore: %s\n",
+								out_at >= 0.0f ? ("hauled out after " + to_string(out_at).substr(0, 4) + " s").c_str() : "still swimming after 60 s");
+							break;
+						}
+					}
+				}
+			}
+
+			//a dolphin in open water: how often it leaps
+			Mob* dolphin = sea_mobs.add(*type_named("dolphin"), vec3(sea.x, water_level - 3.0f, sea.y));
+			if (dolphin != nullptr) {
+				int leaps = 0;
+				bool up = false;
+				for (int f = 0; f < 60 * 60; ++f) {
+					sea_mobs.update(1.0f / 60.0f, sea_context);
+					bool clear = dolphin->feet().y > water_level + 0.5f;
+					if (clear && !up) leaps++;
+					up = clear;
+					if (leaps == 1 && clear && dolphin->velocity.y < 0.0f && dolphin->velocity.y > -2.0f) shoot(*dolphin, "sea_dolphin_leap", sea_mobs);
+				}
+				printf("  a dolphin in open water: %d leaps in 60 s, %s\n", leaps, dolphin->in_water ? "back in the water" : "out of the water");
+			}
+
+			shot_light = shadow_light;
+			load_around(home);
 		}
 	}
 
