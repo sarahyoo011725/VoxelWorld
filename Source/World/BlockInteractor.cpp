@@ -170,12 +170,14 @@ void BlockInteractor::interact() {
 		}
 	}
 	if (left_clicked) {
-		if (is_breakable(hovered_block->type)) {
-			inventory.add_item(hovered_block->type);
-			if (is_nonblock(hovered_block->type)) {
+		//read up front: removing a plant's structure clears the block it points at
+		block_type broken = hovered_block->type;
+		if (is_breakable(broken)) {
+			inventory.add_item(broken);
+			if (is_nonblock(broken)) {
 				chunk->remove_structure(local_coord);
 			}
-			audio::play_block_sound_effect(hovered_block->type);
+			audio::play_block_sound_effect(broken);
 			cm.set_block_manual(chunk->id, local_coord, none, true);
 		}
 	}
